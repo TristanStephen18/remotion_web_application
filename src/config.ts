@@ -1,0 +1,1 @@
+export const backendPrefix = 'https://viralmotion-backend-1.onrender.com';
