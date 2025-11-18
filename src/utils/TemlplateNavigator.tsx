@@ -9,7 +9,6 @@ export const getTemplateRoute = (templateId: number, projectId: number) => {
       return `/project/${projectId}/texttypingtemplate`;
     case 3: // Bar Graph
       return `/project/${projectId}/bargraph`;
-    
     case 4: // KPI Flip Cards
       return `/project/${projectId}/kpiflipcards`;
     case 5: // Curve Line Trend
