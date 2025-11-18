@@ -23,6 +23,16 @@ export const TemplateNavigator = (template: string) => {
         return leading + "/storytelling";
       case "Curve Line Trend":
         return leading + "/curvelinetrend";
+      case "Kinetic Typography":
+        return leading + "/kinetictext";
+      case "Neon Flicker":
+        return leading + "/neonflicker";
+      case "Heat Map":
+        return leading + "/heatmap";
+      case "Flip Cards":
+        return leading + "/flipcards";
+      case "Logo Animation":
+        return leading + "/logoanimation";
       default:
         return "/";
     }

@@ -31,6 +31,11 @@ import PanoramaWideAngleIcon from "@mui/icons-material/PanoramaWideAngle";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import GridViewIcon from "@mui/icons-material/GridView";
 
+import PaletteIcon from '@mui/icons-material/Palette';
+import FlareIcon from '@mui/icons-material/Flare';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import StyleIcon from '@mui/icons-material/Style';
+
 export const quoteeditornavs = [
   { key: "quote", label: "Quote", icon: <FormatQuoteIcon /> },
   { key: "background", label: "Background", icon: <ImageIcon /> },
@@ -130,4 +135,25 @@ export const NewTextTypingNavs = [
   { key: "fonts", label: "Fonts", icon: <TextFieldsSharpIcon /> },
   { key: "background", label: "Themes", icon: <DarkModeIcon /> },
   { key: "sound", label: "Audio", icon: <LibraryMusicIcon /> },
+];
+
+export const neonflickernavs = [
+  { key: 'text', label: 'Text', icon: <TextFieldsIcon /> },
+  { key: 'colors', label: 'Colors', icon: <PaletteIcon /> },
+  { key: 'timing', label: 'Timing', icon: <TimerIcon /> },
+  { key: 'effects', label: 'Effects', icon: <FlareIcon /> },
+];
+
+export const heatmapnavs = [
+  { key: 'text', label: 'Text', icon: <TextFieldsIcon /> },
+  { key: 'data', label: 'Data', icon: <DataObjectIcon /> },
+  { key: 'colors', label: 'Colors', icon: <PaletteIcon /> },
+  { key: 'style', label: 'Style', icon: <StyleIcon /> },
+];
+
+
+export const logotemplatenavs = [
+  { key: "text", label: "Text", icon: <TextFieldsIcon /> },
+  { key: "color", label: "Color", icon: <PaletteIcon /> },
+  { key: "timing", label: "Timing", icon: <TimerIcon /> },
 ];

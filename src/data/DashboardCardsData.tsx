@@ -18,6 +18,24 @@ export const templateCategories = {
       description: "Simulates live typing animations for text intros.",
       url: "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794242/TypingAnimation_jlvcyk.mp4"
     },
+
+    {
+      name: "Kinetic Typography",
+      description: "Create a dynamic, high-energy text explosion intro.",
+      url: "../../KineticTypography - 1.mp4",
+    },
+
+    {
+      name: "Neon Flicker",
+      description: "A dynamic 'Neon Flicker' template for a fast-paced text intro.",
+      url: "../../NeonFlickerTitle.mp4",
+    },
+
+    {
+      name: "Logo Animation",
+      description: "Reveal your brand with a dynamic logo animation featuring a self-drawing outline and a glowing, liquid-fill effect.",
+      url: "../../LogoAnimation.mp4",
+    },
   ],
   Analytics: [
     {
@@ -34,7 +52,17 @@ export const templateCategories = {
       name: "Curve Line Trend",
       description: "Visualize time series data using animated trend line graphs.",
       url: "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794251/CurveLineTrend_ymo1il.mp4",
-    }
+    },
+    {  
+      name: "Heat Map",
+      description: "Animate your data into a sleek, colorful heatmap.",
+      url: "../../HeatMap.mp4",
+    },
+    {
+      name: "Flip Cards",
+      description: "Flipping card animations.",
+      url: "../../CardFlip.mp4",
+    },
   ],
   Layout: [
     {
@@ -95,6 +123,16 @@ export function templateUrlFinder (template: string){
         return "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794238/BarGraphAnalytics_ubzzcp.mp4";
       case "Typing Animation":
         return "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794242/TypingAnimation_jlvcyk.mp4";
+      case "Kinetic Typography":
+        return "../../KineticTypography - 1.mp4";
+      case "Neon Flicker":
+        return "../../NeonFlickerTitle.mp4";
+      case "Heat Map":
+        return "../../HeatMap.mp4";
+      case "Flip Cards":
+        return "../../CardFlip.mp4";
+      case "Logo Animation":
+        return "../../LogoAnimation.mp4"
     default:
       return "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794242/QuoteSpotlight_jn0iya.mp4";
   }

@@ -10,4 +10,8 @@ export const templatesWithTheirIds: { [key: string]: string } = {
     "9": "Fake Text Conversation",
     "10": "Reddit Post Narration",
     "11": "Ai Story Narration",
+    "12": "Kinetic Typography",
+    "13": "Neon Flicker",
+    "14": "Heat Map",
+    "15": "Flip Cards"
 };

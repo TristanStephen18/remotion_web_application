@@ -21,11 +21,16 @@ import QuoteGenerator from "./trials/geminischematester.tsx";
 import QuoteTester from "./trials/quotesapitester.tsx";
 import { QuoteSpotlightBatchRendering } from "./pages/batchrendering/QuoteSpotlight.tsx";
 import { TextTypingTemplateBatchRendering } from "./pages/batchrendering/TextTyping.tsx";
+import { KineticEditor } from "./components/editors/KineticText/Holder.tsx";
+import { NeonFlickerEditor } from "./components/editors/NeonFlicker/Holder.tsx";
 import { BarGraphBatchRendering } from "./pages/batchrendering/BarGraph.tsx";
 import { CurveLineTrendBatchRendering } from "./pages/batchrendering/CurveLineTrend.tsx";
 import { KenBurnsSwipeBatchRendering } from "./pages/batchrendering/KenburnsStack.tsx";
 import { FactCardsBatchRendering } from "./pages/batchrendering/FactCardsTemplate.tsx";
 import { KpiFlipBatchRendering } from "./pages/batchrendering/KpilipCards.tsx";
+import { HeatmapEditor } from "./components/editors/HeatMap/Holder.tsx";
+import { FlipCardsEditor } from "./components/editors/FlipCards/Holder.tsx";
+import { LogoAnimationEditor } from "./components/editors/LogoAnimation/Holder.tsx";
 import RequireAuth from "./pages/auth/AuthChecker.tsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword.tsx";
 
@@ -90,6 +95,40 @@ function App() {
             </RequireAuth>
           }
         />
+
+        <Route
+  path="/template/kinetictext"
+  element={
+    <RequireAuth>
+      <KineticEditor />
+    </RequireAuth>
+  }
+/>
+<Route
+  path="/project/:id/kinetictext"
+  element={
+    <RequireAuth>
+      <KineticEditor />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/template/flipcards"
+  element={
+    <RequireAuth>
+      <FlipCardsEditor />
+    </RequireAuth>
+  }
+/>
+<Route
+  path="/project/:id/flipcards"
+  element={
+    <RequireAuth>
+      <FlipCardsEditor />
+    </RequireAuth>
+  }
+/>
 
         <Route
           path="/template/factcards"
@@ -277,6 +316,59 @@ function App() {
             </RequireAuth>
           }
         />
+
+         <Route
+  path="/template/neonflicker"
+  element={
+    <RequireAuth>
+      <NeonFlickerEditor />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/project/:id/neonflicker"
+  element={
+    <RequireAuth>
+      <NeonFlickerEditor />
+    </RequireAuth>
+  }
+/>
+
+ <Route
+  path="/template/logoanimation"
+  element={
+    <RequireAuth>
+      <LogoAnimationEditor />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/project/:id/logoanimation"
+  element={
+    <RequireAuth>
+      <LogoAnimationEditor />
+    </RequireAuth>
+  }
+/>
+
+<Route
+  path="/template/heatmap"
+  element={
+    <RequireAuth>
+      <HeatmapEditor />
+    </RequireAuth>
+  }
+/>
+<Route
+  path="/project/:id/heatmap"
+  element={
+    <RequireAuth>
+      <HeatmapEditor />
+    </RequireAuth>
+  }
+/>
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

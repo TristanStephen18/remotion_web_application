@@ -21,6 +21,7 @@
     "@mui/system": "^7.3.2",
     "@remotion/google-fonts": "^4.0.340",
     "@remotion/player": "^4.0.340",
+    "@remotion/zod-types": "^4.0.375",
     "embla-carousel-react": "^8.6.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.12",
