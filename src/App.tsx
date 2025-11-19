@@ -35,6 +35,7 @@ import { NeonTubeFlickerEditor } from "./components/editors/NeonTubeFlicker/Hold
 import { DynamicTextEditor } from "./components/editors/RetroNeonText/Holder.tsx";
 import RequireAuth from "./pages/auth/AuthChecker.tsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword.tsx";
+import GoogleLoading from "./pages/auth/GoogleLoading.tsx";
 
 function App() {
   return (
@@ -397,6 +398,10 @@ function App() {
               <NeonTubeFlickerEditor />
             </RequireAuth>
           }
+        />
+        <Route
+          path="/loading"
+          element={<GoogleLoading/>}
         />
 
         <Route path="/login" element={<LoginPage />} />

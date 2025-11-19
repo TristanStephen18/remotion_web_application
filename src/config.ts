@@ -1,1 +1,1 @@
-export const backendPrefix = 'http://localhost:3000';
+export const backendPrefix = 'https://viralmotion-backend-f1m2.onrender.com';

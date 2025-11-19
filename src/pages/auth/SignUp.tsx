@@ -4,6 +4,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import Visibility from "@mui/icons-material/Visibility";
 import PersonIcon from "@mui/icons-material/Person";
 import { backendPrefix } from "../../config";
+import { GoogleButton } from "../../components/ui/buttons/GoogleButton";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -237,6 +238,12 @@ const SignupPage: React.FC = () => {
               >
                 {loading ? <span className="spinner" aria-hidden /> : "Sign Up"}
               </button>
+              <div className="flex items-center">
+                <div className="flex-grow h-px bg-gray-600"></div>
+                <span className="mx-2 text-gray-400 text-sm">or</span>
+                <div className="flex-grow h-px bg-gray-600"></div>
+              </div>
+              <GoogleButton />
 
               <div className="divider"></div>
             </form>

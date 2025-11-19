@@ -3,6 +3,7 @@ import "../css/Login.css";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { backendPrefix } from "../../config";
+import { GoogleButton } from "../../components/ui/buttons/GoogleButton";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -47,7 +48,7 @@ const LoginPage: React.FC = () => {
       }
 
       const data = await response.json();
-      toast.success('Log in successful. You will be redirected any second...');
+      toast.success("Log in successful. You will be redirected any second...");
 
       localStorage.setItem("token", data.token);
       setTimeout(() => navigate("/dashboard"), 1000);
@@ -205,6 +206,12 @@ const LoginPage: React.FC = () => {
             >
               {loading ? <span className="spinner" aria-hidden /> : "Log In"}
             </button>
+            <div className="flex items-center">
+              <div className="flex-grow h-px bg-gray-600"></div>
+              <span className="mx-2 text-gray-400 text-sm">or</span>
+              <div className="flex-grow h-px bg-gray-600"></div>
+            </div>
+            <GoogleButton />
 
             <div className="divider"></div>
           </form>
