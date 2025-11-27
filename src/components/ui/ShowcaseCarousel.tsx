@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { EffectCoverflow, Pagination, Autoplay } from "swiper/modules";
+import { EffectCoverflow, Pagination } from "swiper/modules";
 import { formatDateSafe } from "../../utils/DateFormatter";
 import { templatesWithTheirIds } from "../../data/TemplateIds";
+import type { Swiper as SwiperType } from "swiper";
 
 interface ShowcaseCarouselProps {
   items: any[];
@@ -13,21 +14,25 @@ export const ShowcaseCarousel: React.FC<ShowcaseCarouselProps> = ({
   items,
   type,
 }) => {
+  const swiperRef = useRef<SwiperType | null>(null);
+
+  const handleSlideClick = (index: number) => {
+    if (swiperRef.current) {
+      swiperRef.current.slideTo(index);
+    }
+  };
+
   return (
     <div className="relative w-full py-8">
       {/* Optional gradient background glow */}
       <div className="absolute inset-0 bg-gradient-to-r from-indigo-500 via-fuchsia-500 to-sky-500 opacity-10 blur-3xl rounded-3xl"></div>
 
       <Swiper
+        onSwiper={(swiper) => (swiperRef.current = swiper)}
         effect="coverflow"
         grabCursor
         centeredSlides
         slidesPerView="auto"
-        loop
-        autoplay={{
-          delay: 3500,
-          disableOnInteraction: false,
-        }}
         coverflowEffect={{
           rotate: 0,
           stretch: 0,
@@ -36,12 +41,13 @@ export const ShowcaseCarousel: React.FC<ShowcaseCarouselProps> = ({
           slideShadows: false,
         }}
         pagination={{ clickable: true }}
-        modules={[EffectCoverflow, Pagination, Autoplay]}
+        modules={[EffectCoverflow, Pagination]}
         className="mySwiper relative z-10"
       >
-        {items.map((item) => (
+        {items.map((item, index) => (
           <SwiperSlide
             key={item.id}
+            onClick={() => handleSlideClick(index)}
             className="!w-[240px] sm:!w-[280px] md:!w-[320px] lg:!w-[340px] cursor-pointer"
           >
             <div className="relative rounded-2xl overflow-hidden group shadow-[0_8px_25px_rgba(0,0,0,0.2)] hover:shadow-[0_12px_35px_rgba(80,63,205,0.4)] transition-all duration-500">
