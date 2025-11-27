@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -28,16 +28,41 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
   selectedTemplate,
   selectedDescription,
 }) => {
+  const [videoDimensions, setVideoDimensions] = useState({ width: 0, height: 0 });
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleLoadedMetadata = () => {
+      setVideoDimensions({
+        width: video.videoWidth,
+        height: video.videoHeight,
+      });
+    };
+
+    video.addEventListener("loadedmetadata", handleLoadedMetadata);
+    return () => video.removeEventListener("loadedmetadata", handleLoadedMetadata);
+  }, [selectedTemplate]);
+
+  // Calculate aspect ratio
+  const aspectRatio = videoDimensions.width && videoDimensions.height
+    ? videoDimensions.width / videoDimensions.height
+    : 9 / 16; // Default to portrait (1080x1920)
+
+  const isPortrait = aspectRatio < 1;
+
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="lg"
-      fullWidth
+      maxWidth={false}
       PaperProps={{
         sx: {
           borderRadius: 2,
           overflow: "hidden",
+          maxWidth: isPortrait ? "900px" : "1200px",
         },
       }}
     >
@@ -56,40 +81,52 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           <CloseIcon />
         </IconButton>
       </DialogTitle>
-
       <DialogContent dividers sx={{ p: 0 }}>
         <Box
           sx={{
             display: "flex",
             gap: 0,
             flexDirection: { xs: "column", md: "row" },
-            height: { xs: "auto", md: 480 },
+            minHeight: { xs: "auto", md: 480 },
           }}
         >
-          {/* Preview Video */}
+          {/* Preview Video - No padding, no background, exact aspect ratio */}
           <Box
             sx={{
-              flex: { xs: "none", md: 6 },
-              width: { xs: "100%", md: "60%" },
+              flex: "0 0 auto",
+              width: {
+                xs: "100%",
+                md: isPortrait ? "auto" : "60%",
+              },
+              height: {
+                xs: "auto",
+                md: isPortrait ? 600 : "auto",
+              },
               display: "flex",
-              alignItems: "center",
+              alignItems: "stretch",
               justifyContent: "center",
-              p: { xs: 2, md: 3 },
-              bgcolor: "white",
+              bgcolor: "#000",
+              overflow: "hidden",
             }}
           >
             <Box
               sx={{
-                width: "100%",
-                height: { xs: 360, md: "100%" },
-                maxWidth: 720,
-                borderRadius: 1.5,
-                overflow: "hidden",
-                boxShadow: "0 10px 30px rgba(2,6,23,0.4)",
-                bgcolor: "white",
+                position: "relative",
+                width: isPortrait
+                  ? { xs: "100%", md: "auto" }
+                  : "100%",
+                height: isPortrait
+                  ? { xs: `calc(100vw / ${aspectRatio})`, md: "100%" }
+                  : { xs: "auto", md: "100%" },
+                aspectRatio: isPortrait
+                  ? { md: `${aspectRatio}` }
+                  : { xs: `${aspectRatio}`, md: "auto" },
+                maxHeight: { xs: "70vh", md: isPortrait ? "600px" : "none" },
+                bgcolor: "#000",
               }}
             >
               <video
+                ref={videoRef}
                 muted
                 controls
                 autoPlay
@@ -109,8 +146,9 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           {/* Details */}
           <Box
             sx={{
-              flex: { xs: "none", md: 4 },
-              width: { xs: "100%", md: "40%" },
+              flex: { xs: "none", md: "1 1 auto" },
+              minWidth: { md: "320px" },
+              maxWidth: { md: "400px" },
               p: { xs: 2, md: 4 },
               display: "flex",
               flexDirection: "column",
@@ -127,12 +165,16 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                 {selectedDescription ?? "No description available."}
               </Typography>
             </Box>
-
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
-              <Chip label="1080×1920" size="small" />
-              <Chip label="Portrait" size="small" />
+              <Chip 
+                label={`${videoDimensions.width || 1080}×${videoDimensions.height || 1920}`} 
+                size="small" 
+              />
+              <Chip 
+                label={isPortrait ? "Portrait" : "Landscape"} 
+                size="small" 
+              />
             </Stack>
-
             <Box sx={{ mt: 2 }}>
               <Button
                 variant="contained"
@@ -155,7 +197,6 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                 Try this template
               </Button>
             </Box>
-
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
               Tip: Use batch rendering for multiple variations. Single output
               opens the template editor.
@@ -163,10 +204,6 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
           </Box>
         </Box>
       </DialogContent>
-
-      <DialogActions sx={{ pr: 3 }}>
-        <Button onClick={onClose}>Cancel</Button>
-      </DialogActions>
     </Dialog>
   );
 };

@@ -9,7 +9,6 @@ import {
   FiMenu,
   FiX,
 } from "react-icons/fi";
-
 import "../../../assets/Logo.css";
 
 export type DashboardSection =
@@ -24,6 +23,8 @@ interface DashboardSidebarNavProps {
   active: DashboardSection;
   onChange: (section: DashboardSection) => void;
   userInitials?: string;
+  isCollapsed: boolean;
+  setIsCollapsed: (collapsed: boolean) => void;
 }
 
 export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
@@ -31,6 +32,8 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
   onChange,
   userPfp,
   userInitials = "U",
+  isCollapsed,
+  setIsCollapsed,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -42,14 +45,21 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
 
   const navItems = [
     { id: "home", label: "Home", icon: <FiHome /> },
+    { id: "files", label: "Projects", icon: <FiFolder /> },
     { id: "templates", label: "My templates", icon: <FiGrid /> },
-    { id: "files", label: "My files", icon: <FiFolder /> },
-    { id: "renders", label: "My Renders", icon: <FiFilm /> },
+    { id: "", label: "ViralMotion AI", icon: null },
   ] as const;
 
   return (
     <>
+      {/* MOBILE HEADER */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 flex items-center justify-between px-4 py-3 z-50">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="text-gray-600 hover:text-gray-900"
+        >
+          <FiMenu size={22} />
+        </button>
         <div className="flex items-center gap-2">
           <span className="logo__dot"></span>
           <div className="flex flex-col leading-tight">
@@ -61,49 +71,91 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="text-gray-600 hover:text-gray-900"
-        >
-          <FiMenu size={22} />
-        </button>
+        <div className="w-[22px]"></div>
       </div>
 
       {/* SIDEBAR (desktop) */}
-      <aside className="hidden md:flex fixed top-0 left-0 h-screen w-64 bg-white border-r border-gray-200 flex-col justify-between py-5 shadow-sm z-40">
-        {/* Logo section */}
-        <div
-          className="flex flex-col gap-2 px-5 mb-6 cursor-pointer"
-          onClick={() => onChange("home")}
-        >
-          <div className="flex items-center gap-2">
-            <span className="logo__dot"></span>
-            <span className="logo__text text-lg text-gray-800">ViralMotion</span>
-          </div>
-          <span className="text-xs text-gray-500 font-medium tracking-wide ml-[50px]">
-            Create. Edit. Inspire.
-          </span>
+      <aside
+        className={`hidden md:flex fixed top-0 left-0 h-screen bg-white border-r border-gray-200 flex-col py-5 shadow-sm z-40 transition-all duration-300 ${
+          isCollapsed ? "w-20" : "w-64"
+        }`}
+      >
+        {/* Top section with logo and burger */}
+        <div className={`${isCollapsed ? "px-3" : "px-5"}`}>
+          {isCollapsed ? (
+            // Collapsed state - just logo dot and burger below
+            <div className="flex flex-col items-center gap-3">
+              <span
+                className="logo__dot cursor-pointer"
+                onClick={() => onChange("home")}
+                title="Home"
+              ></span>
+              <button
+                onClick={() => setIsCollapsed(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Expand sidebar"
+              >
+                <FiMenu size={20} className="text-gray-600" />
+              </button>
+            </div>
+          ) : (
+            // Expanded state - logo with text and burger on right
+            <div className="flex items-start justify-between">
+              <div
+                className="flex flex-col gap-2 cursor-pointer"
+                onClick={() => onChange("home")}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="logo__dot"></span>
+                  <span className="logo__text text-lg text-gray-800">
+                    ViralMotion
+                  </span>
+                </div>
+                <span className="text-[10px] text-gray-500 font-medium tracking-wide pl-[33px]">
+                  Create. Edit. Inspire.
+                </span>
+              </div>
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 mt-1"
+                title="Collapse sidebar"
+              >
+                <FiMenu size={20} className="text-gray-600" />
+              </button>
+            </div>
+          )}
 
-          {/* Divider under logo */}
-          <div className="border-b border-gray-100 mt-3"></div>
+          {/* Divider */}
+          <div className="border-b border-gray-100 mt-4"></div>
         </div>
 
-        <nav className="flex flex-col flex-1 space-y-1 px-4 overflow-y-auto">
+        {/* Navigation */}
+        <nav className="flex flex-col flex-1 space-y-1 px-4 mt-6 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = active === item.id;
             return (
               <button
                 key={item.id}
                 onClick={() => onChange(item.id)}
-                className={`flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200
-                ${
+                className={`flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 ${
+                  isCollapsed ? "justify-center" : ""
+                } ${
                   isActive
                     ? "bg-indigo-50 text-indigo-600"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
+                title={isCollapsed ? item.label : ""}
               >
-                <span className="text-xl mr-3">{item.icon}</span>
-                <span>{item.label}</span>
+                {item.icon == null ? (
+                  <div
+                    className={`logo__dot-sm ${isCollapsed ? "" : "mr-3"}`}
+                  ></div>
+                ) : (
+                  <span className={`text-xl ${isCollapsed ? "" : "mr-3"}`}>
+                    {item.icon}
+                  </span>
+                )}
+                {!isCollapsed && <span>{item.label}</span>}
               </button>
             );
           })}
@@ -113,39 +165,48 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
         <div className="px-4 mt-4 border-t border-gray-100 pt-4">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex items-center gap-3 w-full hover:bg-gray-50 rounded-lg p-2 transition"
+            className={`flex items-center gap-3 w-full hover:bg-gray-50 rounded-lg p-2 transition relative ${
+              isCollapsed ? "justify-center" : ""
+            }`}
           >
             {userPfp ? (
               <img
                 src={userPfp}
                 alt="User Avatar"
-                className="w-10 h-10 rounded-full border border-gray-300 object-cover"
+                className="w-10 h-10 rounded-full border border-gray-300 object-cover flex-shrink-0"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold">
+              <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold flex-shrink-0">
                 {userInitials}
               </div>
             )}
-            <div className="flex flex-col text-left">
-              <span className="text-sm font-medium text-gray-800">My Account</span>
-              <span className="text-xs text-gray-500">Manage profile</span>
-            </div>
+            {!isCollapsed && (
+              <div className="flex flex-col text-left">
+                <span className="text-sm font-medium text-gray-800">
+                  My Account
+                </span>
+                <span className="text-xs text-gray-500">Manage profile</span>
+              </div>
+            )}
           </button>
-
           {menuOpen && (
-            <div className="absolute bottom-20 left-4 bg-white shadow-md rounded-lg border border-gray-100 w-48 text-left z-50">
+            <div
+              className={`absolute bottom-20 bg-white shadow-lg rounded-lg border border-gray-100 w-48 text-left z-50 ${
+                isCollapsed ? "left-24" : "left-4"
+              }`}
+            >
               <button
                 onClick={() => {
                   setMenuOpen(false);
                   onChange("profile");
                 }}
-                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 rounded-t-lg"
               >
                 <FiUser /> View Profile
               </button>
               <button
                 onClick={handleLogout}
-                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
               >
                 <FiLogOut /> Logout
               </button>
@@ -154,6 +215,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
         </div>
       </aside>
 
+      {/* MOBILE SIDEBAR OVERLAY */}
       {mobileOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-40 md:hidden"
@@ -161,6 +223,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
         ></div>
       )}
 
+      {/* MOBILE SIDEBAR */}
       <div
         className={`fixed top-0 left-0 h-full bg-white shadow-lg border-r border-gray-200 z-50 transform transition-transform duration-300 md:hidden
         ${mobileOpen ? "translate-x-0" : "-translate-x-full"} w-64`}
@@ -169,17 +232,21 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
           <div className="logo flex flex-col gap-[2px]">
             <div className="flex items-center gap-2">
               <span className="logo__dot"></span>
-              <span className="logo__text text-lg text-gray-800">ViralMotion</span>
+              <span className="logo__text text-lg text-gray-800">
+                ViralMotion
+              </span>
             </div>
-            <span className="text-[10px] text-gray-500 font-medium tracking-wide ml-[26px]">
+            <span className="text-[10px] text-gray-500 font-medium tracking-wide pl-[33px]">
               Create. Edit. Inspire.
             </span>
           </div>
-          <button onClick={() => setMobileOpen(false)} className="text-gray-500">
+          <button
+            onClick={() => setMobileOpen(false)}
+            className="text-gray-500 hover:text-gray-900"
+          >
             <FiX size={20} />
           </button>
         </div>
-
         <nav className="flex flex-col p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = active === item.id;
@@ -197,12 +264,15 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 }`}
               >
-                <span className="text-xl mr-3">{item.icon}</span>
+                {item.icon == null ? (
+                  <div className="logo__dot-sm mr-3"></div>
+                ) : (
+                  <span className="text-xl mr-3">{item.icon}</span>
+                )}
                 <span>{item.label}</span>
               </button>
             );
           })}
-
           <button
             onClick={() => {
               onChange("profile");

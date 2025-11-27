@@ -120,19 +120,6 @@ export const MyTemplatesSection: React.FC<MyDesignProps> = ({
 
           {/* === Grid always shown === */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6 pb-12">
-            {/* Create a Design Card */}
-            <div
-              onClick={() => setNewProjectOpen(true)}
-              className="group relative border-2 border-dashed border-gray-200 hover:border-indigo-500 bg-white/70 backdrop-blur-lg rounded-2xl flex flex-col items-center justify-center h-60 cursor-pointer transition hover:-translate-y-1 hover:shadow-xl"
-              >
-              <div className="bg-indigo-100 text-indigo-600 p-4 rounded-full group-hover:bg-indigo-600 group-hover:text-white transition">
-                <FiPlus size={28} />
-              </div>
-              <p className="mt-3 font-medium text-gray-700 group-hover:text-indigo-600 transition">
-                Create a Design
-              </p>
-            </div>
-
             {/* Project Cards */}
             {filteredProjects.map((project) => (
               <div

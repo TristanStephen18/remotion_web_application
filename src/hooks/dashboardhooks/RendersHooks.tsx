@@ -34,6 +34,7 @@ export const useRendersHooks = () =>{
       };
     
       const handleDeleteRenders = async () => {
+        console.log("DELETE")
         try {
           await Promise.all(
             selectedRenders.map((id) =>
