@@ -114,24 +114,6 @@ export const DashboardContent: React.FC = () => {
           ${isCollapsed ? "md:ml-20" : "md:ml-64"}
         `}
       >
-<<<<<<< HEAD
-        {activeSection === "home" && (
-          <HomeSection
-            search={search}
-            setSearch={setSearch}
-            projects={projects}
-            renders={renders}
-            datasets={userDatasets}
-            uploads={uploads}
-            newProjectOpen={newProjectOpen}
-            setNewProjectOpen={setNewProjectOpen}
-            newProjectTab={newProjectTab}
-            setNewProjectTab={setNewProjectTab}
-            newProjectSearch={newProjectSearch}
-            setNewProjectSearch={setNewProjectSearch}
-          />
-        )}
-=======
         {/* HomeSection - with new project modal props */}
       {activeSection === "home" && (
         <HomeSection
@@ -150,7 +132,6 @@ export const DashboardContent: React.FC = () => {
           onNavigate={setActiveSection}
         />
       )}
->>>>>>> origin/inital_ui_1
 
         {activeSection === "templates" && (
           <MyTemplatesSection
