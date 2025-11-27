@@ -14,7 +14,6 @@ import {
   FiCheckSquare,
   FiSquare,
   FiFile,
-  FiFileText,
   FiVideo,
 } from "react-icons/fi";
 import { templatesWithTheirIds } from "../../../../data/TemplateIds";
@@ -75,7 +74,6 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<MainTab>("renders");
   const [currentFolder, setCurrentFolder] = useState<FolderType>("media");
-  const [searchQuery, setSearchQuery] = useState("");
   const [renderSearchQuery, setRenderSearchQuery] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [isSelectMode, setIsSelectMode] = useState(false);
@@ -314,7 +312,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     );
   };
 
-  const handleRenderClick = (render: RenderItem, e: React.MouseEvent) => {
+  const handleRenderClick = (render: RenderItem) => {
     if (isSelectMode) {
       toggleRenderSelection(render.id);
     } else {
@@ -330,7 +328,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     toggleRenderSelection(render.id);
   };
 
-  const handleMediaClick = (media: any, e: React.MouseEvent) => {
+  const handleMediaClick = (media: any) => {
     if (isFileSelectMode) {
       setSelectedUploads((prev) =>
         prev.includes(media.id)
@@ -354,7 +352,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     );
   };
 
-  const handleDatasetClick = (dataset: any, idx: number, e: React.MouseEvent) => {
+  const handleDatasetClick = (dataset: any, idx: number) => {
     if (isFileSelectMode) {
       setSelectedDatasets((prev) =>
         prev.includes(dataset.id || idx)
@@ -383,10 +381,6 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
     const previewableTypes = ['pdf', 'json', 'txt', 'csv', 'xlsx'];
     return previewableTypes.includes(extension || '') ||
            previewableTypes.includes(type || '');
-  };
-
-  const getFileExtension = (url: string) => {
-    return url.split('.').pop()?.toLowerCase() || '';
   };
 
   const formatDate = (dateString?: string) => {
@@ -583,7 +577,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   return (
                     <div
                       key={render.id}
-                      onClick={(e) => handleRenderClick(render, e)}
+                      onClick={() => handleRenderClick(render)}
                       onContextMenu={(e) => handleRenderRightClick(render, e)}
                       className={`relative group cursor-pointer rounded-2xl overflow-hidden border bg-white shadow-sm hover:shadow-lg transition-all duration-300 ${
                         isSelected
@@ -656,7 +650,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                   return (
                     <div
                       key={render.id}
-                      onClick={(e) => handleRenderClick(render, e)}
+                      onClick={() => handleRenderClick(render)}
                       onContextMenu={(e) => handleRenderRightClick(render, e)}
                       className={`flex items-center gap-4 p-3 rounded-xl bg-white border shadow-sm hover:shadow-md transition cursor-pointer ${
                         isSelected
@@ -1298,7 +1292,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       return (
                         <div
                           key={u.id}
-                          onClick={(e) => handleMediaClick(u, e)}
+                          onClick={() => handleMediaClick(u)}
                           onContextMenu={(e) => handleMediaRightClick(u, e)}
                           className={`relative rounded-xl border transition-all cursor-pointer bg-white hover:shadow-md overflow-hidden ${
                             selected
@@ -1401,7 +1395,7 @@ export const ProjectsSection: React.FC<ProjectsSectionProps> = ({
                       return (
                         <div
                           key={dataset.id || idx}
-                          onClick={(e) => handleDatasetClick(dataset, idx, e)}
+                          onClick={() => handleDatasetClick(dataset, idx)}
                           onContextMenu={(e) => handleDatasetRightClick(dataset, idx, e)}
                           className={`relative rounded-xl border transition-all cursor-pointer bg-white hover:shadow-md ${
                             isSelected

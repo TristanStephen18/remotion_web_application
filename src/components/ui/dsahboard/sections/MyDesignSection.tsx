@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { FiSearch, FiPlus, FiTrash2, FiX } from "react-icons/fi";
+import { FiSearch, FiTrash2, FiX } from "react-icons/fi";
 import { getTemplateRoute } from "../../../../utils/TemlplateNavigator";
 import { ChooseTemplateModal } from "../../modals/ChooseTemplateModal";
 import { useProjectHooks } from "../../../../hooks/dashboardhooks/ProjectHooks";

@@ -3,7 +3,6 @@ import {
   FiHome,
   FiFolder,
   FiGrid,
-  FiFilm,
   FiUser,
   FiLogOut,
   FiMenu,
@@ -43,12 +42,12 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
     window.location.href = "/login";
   };
 
-  const navItems = [
+  const navItems: Array<{ id: DashboardSection; label: string; icon: React.ReactNode }> = [
     { id: "home", label: "Home", icon: <FiHome /> },
     { id: "files", label: "Projects", icon: <FiFolder /> },
     { id: "templates", label: "My templates", icon: <FiGrid /> },
-    { id: "", label: "ViralMotion AI", icon: null },
-  ] as const;
+    // { id: "home", label: "ViralMotion AI", icon: null },
+  ];
 
   return (
     <>
@@ -124,7 +123,6 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
               </button>
             </div>
           )}
-
           {/* Divider */}
           <div className="border-b border-gray-100 mt-4"></div>
         </div>
@@ -247,6 +245,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
             <FiX size={20} />
           </button>
         </div>
+
         <nav className="flex flex-col p-4 space-y-2">
           {navItems.map((item) => {
             const isActive = active === item.id;
