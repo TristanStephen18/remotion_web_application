@@ -11,7 +11,8 @@ import { useUploadHooks } from "../../../hooks/dashboardhooks/UploadHooks";
 import { useRendersHooks } from "../../../hooks/dashboardhooks/RendersHooks";
 import { useProfileHooks } from "../../../hooks/datafetching/ProfileData";
 import { ProfilePage } from "../../../pages/user/Profile";
-import { MyTemplatesSection } from "../../ui/dsahboard/sections/MyDesignSection";
+import { TemplatesSection } from "../../ui/dsahboard/sections/TemplatesSection";
+import { useTemplateSectionHooks } from "../../../hooks/dashboardhooks/TemplatesSectionHooks";
 
 export const DashboardContent: React.FC = () => {
   const {
@@ -23,19 +24,19 @@ export const DashboardContent: React.FC = () => {
     handleDeleteDatasets,
   } = useDatasetsFetching();
 
-  const { search, setSearch, activeSection, setActiveSection } =
-    useHomeSectionHooks();
+  const {
+    search,
+    setSearch,
+    activeSection,
+    setActiveSection,
+    handleOpenPreview,
+  } = useHomeSectionHooks();
+
+  const { tab, setTab } = useTemplateSectionHooks();
 
   const {
-    loadingProjects,
     fetchProjects,
-    handleDeleteProjects,
-    hoveredId,
     projects,
-    selectedProjects,
-    setHoveredId,
-    setSelectedProjects,
-    toggleProjectSelection,
   } = useProjectHooks();
 
   const {
@@ -104,16 +105,15 @@ export const DashboardContent: React.FC = () => {
         )}
 
         {activeSection === "templates" && (
-          <MyTemplatesSection
-            clearSelection={() => setSelectedProjects([])}
-            hoveredId={hoveredId}
-            loadingProjects={loadingProjects}
-            onDeleteSelected={handleDeleteProjects}
-            projects={projects}
-            selectedProjects={selectedProjects}
-            setHoveredId={setHoveredId}
-            toggleProjectSelection={toggleProjectSelection}
-          />
+          <div className="w-full px-2 sm:px-6 lg:px-4 py-2">
+            <TemplatesSection
+              onTry={handleOpenPreview}
+              search={search}
+              setSearch={setSearch}
+              setTab={setTab}
+              tab={tab}
+            />
+          </div>
         )}
 
         {activeSection === "files" && (
