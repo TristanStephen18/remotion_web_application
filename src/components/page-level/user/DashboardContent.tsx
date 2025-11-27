@@ -36,6 +36,12 @@ export const DashboardContent: React.FC = () => {
     setHoveredId,
     setSelectedProjects,
     toggleProjectSelection,
+    newProjectOpen,
+    setNewProjectOpen,
+    newProjectTab,
+    setNewProjectTab,
+    newProjectSearch,
+    setNewProjectSearch,
   } = useProjectHooks();
 
   const {
@@ -100,6 +106,12 @@ export const DashboardContent: React.FC = () => {
             renders={renders}
             datasets={userDatasets}
             uploads={uploads}
+            newProjectOpen={newProjectOpen}
+            setNewProjectOpen={setNewProjectOpen}
+            newProjectTab={newProjectTab}
+            setNewProjectTab={setNewProjectTab}
+            newProjectSearch={newProjectSearch}
+            setNewProjectSearch={setNewProjectSearch}
           />
         )}
 

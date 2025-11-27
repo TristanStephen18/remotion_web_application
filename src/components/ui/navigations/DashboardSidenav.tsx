@@ -50,6 +50,12 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
   return (
     <>
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 flex items-center justify-between px-4 py-3 z-50">
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="text-gray-600 hover:text-gray-900"
+        >
+          <FiMenu size={22} />
+        </button>
         <div className="flex items-center gap-2">
           <span className="logo__dot"></span>
           <div className="flex flex-col leading-tight">
@@ -61,12 +67,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
             </span>
           </div>
         </div>
-        <button
-          onClick={() => setMobileOpen(true)}
-          className="text-gray-600 hover:text-gray-900"
-        >
-          <FiMenu size={22} />
-        </button>
+        <div className="w-[22px]"></div>
       </div>
 
       {/* SIDEBAR (desktop) */}

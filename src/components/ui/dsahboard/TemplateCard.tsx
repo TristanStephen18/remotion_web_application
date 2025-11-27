@@ -16,34 +16,34 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
 
   return (
     <div
-      className="relative group bg-white/90 backdrop-blur-xl border border-white/40 rounded-2xl 
+      className="relative group bg-white/90 backdrop-blur-xl border border-white/40 rounded-xl sm:rounded-2xl
       shadow-[0_6px_16px_rgba(17,25,40,0.08)] hover:shadow-[0_12px_30px_rgba(80,63,205,0.18)]
       overflow-hidden transition-all duration-500 hover:-translate-y-2 cursor-pointer
-      w-full sm:w-auto flex flex-col"
+      w-full flex flex-col"
     >
       {/* Futuristic glow layer */}
-      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ring-2 ring-offset-2 ring-indigo-400/50" />
+      <div className="absolute inset-0 rounded-xl sm:rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ring-2 ring-offset-2 ring-indigo-400/50" />
       {/* Video Preview */}
-      <div className="relative w-full h-36 sm:h-40 overflow-hidden rounded-t-2xl">
-<img
-          alt={`${name} preview`} 
+      <div className="relative w-full h-24 sm:h-40 overflow-hidden rounded-t-xl sm:rounded-t-2xl">
+        <img
+          alt={`${name} preview`}
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-          src={`${label}`} 
+          src={`${label}`}
         />
 
         <div className="absolute inset-0 bg-gradient-to-t from-gray-900/50 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-        <div className="absolute bottom-2 left-2 text-[10px] font-semibold tracking-wider uppercase px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-sm">
+        <div className="absolute bottom-1 sm:bottom-2 left-1 sm:left-2 text-[8px] sm:text-[10px] font-semibold tracking-wider uppercase px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-white/20 backdrop-blur-md text-white border border-white/30 shadow-sm">
           Preview
         </div>
       </div>
 
-      <div className="relative p-4 z-10 flex flex-col justify-between h-[140px] sm:h-[150px]">
+      <div className="relative p-2 sm:p-4 z-10 flex flex-col justify-between h-[100px] sm:h-[150px]">
         <div>
-          <h3 className="text-gray-900 font-semibold text-sm sm:text-base tracking-tight mb-1 group-hover:text-indigo-600 transition-colors duration-300">
+          <h3 className="text-gray-900 font-semibold text-[11px] sm:text-base tracking-tight mb-0.5 sm:mb-1 group-hover:text-indigo-600 transition-colors duration-300 line-clamp-1 sm:line-clamp-none">
             {name}
           </h3>
-          <p className="text-gray-500 text-xs sm:text-sm leading-snug line-clamp-2">
+          <p className="text-gray-500 text-[10px] sm:text-sm leading-snug line-clamp-2">
             {description}
           </p>
         </div>
@@ -51,9 +51,9 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         {/* Hover-Only Button */}
         <button
           onClick={() => onTry(name, description)}
-          className="mt-3 opacity-100 sm:opacity-0 sm:translate-y-3 sm:group-hover:opacity-100 sm:group-hover:translate-y-0 
-          transition-all duration-500 ease-out relative inline-flex items-center justify-center w-full py-2 
-          font-semibold text-xs sm:text-sm rounded-full text-white overflow-hidden 
+          className="mt-1.5 sm:mt-3 opacity-100 sm:opacity-0 sm:translate-y-3 sm:group-hover:opacity-100 sm:group-hover:translate-y-0
+          transition-all duration-500 ease-out relative inline-flex items-center justify-center w-full py-1.5 sm:py-2
+          font-semibold text-[10px] sm:text-sm rounded-full text-white overflow-hidden
           bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-sky-500
           shadow-[0_4px_15px_rgba(99,102,241,0.3)]
           before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/30 before:to-transparent before:opacity-0 sm:group-hover:before:opacity-40
@@ -63,7 +63,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         </button>
       </div>
 
-      <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/20" />
+      <div className="absolute inset-0 rounded-xl sm:rounded-2xl pointer-events-none border border-white/20" />
     </div>
   );
 };
