@@ -28,6 +28,8 @@ import { FactCardsBatchRendering } from "./pages/batchrendering/FactCardsTemplat
 import { KpiFlipBatchRendering } from "./pages/batchrendering/KpilipCards.tsx";
 import RequireAuth from "./pages/auth/AuthChecker.tsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword.tsx";
+import DynamicLayerEditor from "./components/editors/templates/DynamicLayerEditor.tsx";
+
 
 function App() {
   return (
@@ -277,6 +279,7 @@ function App() {
             </RequireAuth>
           }
         />
+        <Route path="/editor/dynamic/" element={<DynamicLayerEditor />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
