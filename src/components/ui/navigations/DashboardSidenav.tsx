@@ -8,14 +8,18 @@ import {
   FiMenu,
   FiX,
 } from "react-icons/fi";
+
 import "../../../assets/Logo.css";
+import { LuSparkles } from "react-icons/lu"
 
 export type DashboardSection =
   | "home"
   | "templates"
   | "files"
   | "renders"
-  | "profile";
+  | "profile"
+  | "tools";
+  
 
 interface DashboardSidebarNavProps {
   userPfp: string | null;
@@ -43,11 +47,12 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
   };
 
   const navItems: Array<{ id: DashboardSection; label: string; icon: React.ReactNode }> = [
-    { id: "home", label: "Home", icon: <FiHome /> },
-    { id: "files", label: "Projects", icon: <FiFolder /> },
-    { id: "templates", label: "My templates", icon: <FiGrid /> },
-    // { id: "home", label: "ViralMotion AI", icon: null },
-  ];
+  { id: "home", label: "Home", icon: <FiHome /> },
+  { id: "files", label: "Projects", icon: <FiFolder /> },
+  { id: "templates", label: "My templates", icon: <FiGrid /> },
+  { id: "tools", label: "Tools", icon: <LuSparkles /> },
+  // { id: "home", label: "ViralMotion AI", icon: null },
+];
 
   return (
     <>

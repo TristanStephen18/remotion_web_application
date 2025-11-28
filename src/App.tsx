@@ -36,6 +36,7 @@ import { DynamicTextEditor } from "./components/editors/RetroNeonText/Holder.tsx
 import RequireAuth from "./pages/auth/AuthChecker.tsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword.tsx";
 import GoogleLoading from "./pages/auth/GoogleLoading.tsx";
+import { AIToolsPanel } from "./components/ui/dsahboard/sections/tools/AIToolsPanel.tsx";
 
 function App() {
   return (
@@ -408,10 +409,7 @@ function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/loading"
-          element={<GoogleLoading/>}
-        />
+        <Route path="/loading" element={<GoogleLoading />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -429,6 +427,14 @@ function App() {
         />
         <Route path="/tester" element={<QuoteGenerator />} />
         <Route path="/qtester" element={<QuoteTester />} />
+        <Route
+          path="/tools/ai-image"
+          element={
+            <RequireAuth>
+              <AIToolsPanel />
+            </RequireAuth>
+          }
+        />
         {/* <Route path="/testpage" element={<QuoteTemplateEditor2 />} /> */}
       </Routes>
       {/* 👇 Must be rendered globally */}
@@ -447,7 +453,6 @@ function App() {
           },
         }}
       />
-
     </BrowserRouter>
   );
 }
