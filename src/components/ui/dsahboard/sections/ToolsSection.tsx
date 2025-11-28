@@ -58,20 +58,19 @@ const ToolCard: React.FC<ToolCardProps> = ({
           {description}
         </p>
 
-        {/* Button */}
+        {/* Button - ENHANCED FOR MOBILE */}
         <button
           onClick={onGetStarted}
-          className="relative inline-flex items-center justify-center w-full py-2 sm:py-2.5
-          font-semibold text-xs sm:text-sm rounded-full text-white overflow-hidden
-          bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-sky-500
-          shadow-[0_4px_15px_rgba(99,102,241,0.3)]
-          hover:shadow-[0_0_25px_rgba(99,102,241,0.45)] 
-          active:scale-[0.97] transition-all duration-300
-          group-hover:scale-[1.02]"
+          className="relative inline-flex items-center justify-center w-full py-2.5 sm:py-3
+          font-semibold text-xs sm:text-sm rounded-lg text-white overflow-hidden
+          bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-sky-600
+          hover:from-fuchsia-700 hover:via-indigo-700 hover:to-sky-700
+          shadow-lg hover:shadow-xl
+          active:scale-[0.97] transition-all duration-300"
         >
           <span className="relative z-10 flex items-center gap-2">
             Get Started
-            <FiArrowRight className="text-sm group-hover:translate-x-1 transition-transform duration-300" />
+            <FiArrowRight className="text-sm" />
           </span>
         </button>
       </div>
@@ -88,7 +87,6 @@ export const ToolsSection: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>("tools");
 
   // Reset to main tools grid when component mounts
-  // This ensures when user clicks "Tools" in sidenav, they see the main grid
   useEffect(() => {
     setActiveView("tools");
   }, []);
@@ -139,7 +137,7 @@ export const ToolsSection: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header Section - Fixed spacing from top */}
+      {/* Header Section */}
       <div className="pt-2 mb-4">
         <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
           ✨ Tools
@@ -149,7 +147,7 @@ export const ToolsSection: React.FC = () => {
         </p>
       </div>
 
-      {/* Tools Grid - Matching template grid spacing */}
+      {/* Tools Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {tools.map((tool, index) => (
           <ToolCard
@@ -163,7 +161,7 @@ export const ToolsSection: React.FC = () => {
         ))}
       </div>
 
-      {/* Coming Soon Section - More compact */}
+      {/* Coming Soon Section */}
       <div className="mt-8 p-5 sm:p-6 rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm">
         <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
           More Tools Coming Soon

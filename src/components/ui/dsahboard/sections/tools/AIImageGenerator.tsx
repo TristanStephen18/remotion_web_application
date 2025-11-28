@@ -51,13 +51,18 @@ export const AIImageGenerator: React.FC = () => {
               <select
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
-                className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg border border-gray-300 bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ 
+                  border: '1.5px solid #9CA3AF',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none'
+                }}
               >
                 <option value="Seedream 3">Seedream 3 • Recommended</option>
                 <option value="DALL-E 3">DALL-E 3</option>
                 <option value="Midjourney">Midjourney</option>
               </select>
-              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
             </div>
           </div>
 
@@ -70,14 +75,19 @@ export const AIImageGenerator: React.FC = () => {
               <select
                 value={aspectRatio}
                 onChange={(e) => setAspectRatio(e.target.value as "9:16" | "16:9" | "1:1" | "4:5")}
-                className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg border border-gray-300 bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
+                style={{ 
+                  border: '1.5px solid #9CA3AF',
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none'
+                }}
               >
                 <option value="9:16">9:16</option>
                 <option value="16:9">16:9</option>
                 <option value="1:1">1:1</option>
                 <option value="4:5">4:5</option>
               </select>
-              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={14} />
+              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
             </div>
           </div>
         </div>
@@ -105,9 +115,10 @@ export const AIImageGenerator: React.FC = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe the image you want to create..."
                 rows={4}
-                className="w-full px-3 py-2.5 pb-12 sm:pb-14 rounded-lg border border-gray-300 bg-white text-xs sm:text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none resize-none"
+                className="w-full px-3 py-2.5 pb-12 sm:pb-14 rounded-lg bg-white text-xs sm:text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                style={{ border: '1.5px solid #9CA3AF' }}
               />
-              <button className="absolute bottom-2.5 sm:bottom-3 right-2.5 sm:right-3 px-2.5 sm:px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 text-[10px] sm:text-xs font-medium text-gray-700 transition">
+              <button className="absolute bottom-2.5 sm:bottom-3 right-2.5 sm:right-3 px-2.5 sm:px-3 py-1.5 rounded-md bg-gray-200 hover:bg-gray-300 text-[10px] sm:text-xs font-medium text-gray-700 transition">
                 Enhance Prompt
               </button>
             </div>
@@ -120,7 +131,7 @@ export const AIImageGenerator: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim()}
-            className="w-full py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-sm active:scale-[0.98]"
+            className="w-full py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg active:scale-[0.98]"
           >
             Generate Image
           </button>
