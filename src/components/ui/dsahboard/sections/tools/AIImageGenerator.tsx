@@ -58,9 +58,8 @@ export const AIImageGenerator: React.FC = () => {
                   MozAppearance: 'none'
                 }}
               >
-                <option value="Seedream 3">Seedream 3 • Recommended</option>
+                <option value="Seedream 3">Seedream 4 • Recommended</option>
                 <option value="DALL-E 3">DALL-E 3</option>
-                <option value="Midjourney">Midjourney</option>
               </select>
               <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
             </div>

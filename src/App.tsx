@@ -7,11 +7,11 @@ import SignupPage from "./pages/auth/SignUp";
 import Dashboard from "./pages/user/D2.tsx";
 
 import { FactCardsEditor } from "./components/editors/FactCardsTemplate/Holder.tsx";
-import { QuoteTemplateEditor } from "./components/editors/QuoteTemplate/Holder.tsx";
+// import { QuoteTemplateEditor } from "./components/editors/QuoteTemplate/Holder.tsx";
 import { BarGraphEditor } from "./components/editors/BarGraph/Holder.tsx";
 import { SplitScreenEditor } from "./components/editors/SplitScreen/Holder.tsx";
 import { KpiFlipCardEditor } from "./components/editors/KpiFlipCards/Holder.tsx";
-import { KenBurnsEditor } from "./components/editors/KenBurnsCarousel/Holder.tsx";
+// import { KenBurnsEditor } from "./components/editors/KenBurnsCarousel/Holder.tsx";
 import { FakeTextConversationEditor } from "./components/editors/FakeTextConversation/Holder.tsx";
 import { RedditVideoEditor } from "./components/editors/RedditTemplate/Holder.tsx";
 import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/Holder.tsx";
@@ -37,12 +37,13 @@ import RequireAuth from "./pages/auth/AuthChecker.tsx";
 import ForgotPasswordPage from "./pages/auth/ForgotPassword.tsx";
 import GoogleLoading from "./pages/auth/GoogleLoading.tsx";
 import { AIToolsPanel } from "./components/ui/dsahboard/sections/tools/AIToolsPanel.tsx";
+import DynamicLayerEditor from "./components/editors/templates/DynamicLayerEditor.tsx";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route
+        {/* <Route
           path="/template/quotetemplate"
           element={
             <RequireAuth>
@@ -57,7 +58,7 @@ function App() {
               <QuoteTemplateEditor />
             </RequireAuth>
           }
-        />
+        /> */}
         <Route
           path="/template/quotetemplate/mode/batchrendering"
           element={
@@ -226,15 +227,15 @@ function App() {
             </RequireAuth>
           }
         />
-        <Route
+        {/* <Route
           path="/template/kenburnscarousel"
           element={
             <RequireAuth>
               <KenBurnsEditor />
             </RequireAuth>
           }
-        />
-        <Route
+        /> */}
+        {/* <Route
           path="/project/:id/kenburnscarousel"
           element={
             <RequireAuth>
@@ -249,7 +250,7 @@ function App() {
               <KenBurnsEditor />
             </RequireAuth>
           }
-        />
+        /> */}
         <Route
           path="/template/kenburnscarousel/mode/batchrendering"
           element={

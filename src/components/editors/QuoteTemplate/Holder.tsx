@@ -8697,870 +8697,873 @@
 // };
 
 
-import React, { useState, useRef, useEffect, useCallback, type JSX } from "react";
-import { QuoteSpotlightPreview } from "../../layout/EditorPreviews/QuoteTemplatePreview";
-import { TypographySectionQuote } from "./sidenav_sections/Typo";
-import { defaultpanelwidth } from "../../../data/DefaultValues";
-import { quoteSpotlightDurationCalculator } from "../../../utils/QuoteSpotlightHelpers";
-import { ExportModal } from "../../ui/modals/ExportModal";
-// import { TopNavWithoutBatchrendering } from "../../navigations/single_editors/withoutswitchmodesbutton";
+// import React, { useState, useRef, useEffect, useCallback, type JSX } from "react";
+// import { QuoteSpotlightPreview } from "../../layout/EditorPreviews/QuoteTemplatePreview";
+// import { TypographySectionQuote } from "./sidenav_sections/Typo";
+// import { defaultpanelwidth } from "../../../data/DefaultValues";
+// import { quoteSpotlightDurationCalculator } from "../../../utils/QuoteSpotlightHelpers";
+// import { ExportModal } from "../../ui/modals/ExportModal";
+// // import { TopNavWithoutBatchrendering } from "../../navigations/single_editors/withoutswitchmodesbutton";
+// // import { useProjectSave } from "../../../hooks/SaveProject";
+// import { useParams } from "react-router-dom";
+// import { TopNavWithSave } from "../../navigations/single_editors/WithSave";
+// import { ExportModal } from "../../ui/modals/ExportModal";
+// import { SaveProjectModal } from "../../ui/modals/SaveModal";
+// import { LoadingOverlay } from "../../ui/modals/LoadingProjectModal";
 // import { useProjectSave } from "../../../hooks/SaveProject";
-import { useParams } from "react-router-dom";
-import { TopNavWithSave } from "../../navigations/single_editors/WithSave";
-import { ExportModal } from "../../ui/modals/ExportModal";
-import { SaveProjectModal } from "../../ui/modals/SaveModal";
-import { LoadingOverlay } from "../../ui/modals/LoadingProjectModal";
-import { useProjectSave } from "../../../hooks/SaveProject";
-import { backendPrefix } from "../../../config";
-// import { renderVideo } from "../../../utils/VideoRenderer";
-import { useProjectSave2 } from "../../../hooks/saveProjectVersion2";
-import { renderVideoUsingLambda } from "../../../utils/lambdarendering";
+// import { backendPrefix } from "../../../config";
+// // import { renderVideo } from "../../../utils/VideoRenderer";
+// import { useProjectSave2 } from "../../../hooks/saveProjectVersion2";
+// import { renderVideoUsingLambda } from "../../../utils/lambdarendering";
+// import { SubtitlesIcon } from "lucide-react";
+// import { QuoteEditor } from "./sidenav_sections/Text";
+// import { BackgroundSecTrial } from "../Global/sidenav_sections/Backgrounds";
 
-// ============================================
-// SIDEBAR MENU ITEM COMPONENT
-// ============================================
-interface SidebarMenuItemProps {
-  icon: React.ReactNode;
-  label: string;
-  isActive: boolean;
-  onClick: () => void;
-}
+// // ============================================
+// // SIDEBAR MENU ITEM COMPONENT
+// // ============================================
+// interface SidebarMenuItemProps {
+//   icon: React.ReactNode;
+//   label: string;
+//   isActive: boolean;
+//   onClick: () => void;
+// }
 
-const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({ icon, label, isActive, onClick }) => {
-  const [isHovered, setIsHovered] = useState(false);
+// const SidebarMenuItem: React.FC<SidebarMenuItemProps> = ({ icon, label, isActive, onClick }) => {
+//   const [isHovered, setIsHovered] = useState(false);
 
-  return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: "12px",
-        padding: "12px 16px",
-        background: isActive ? "#f0f4ff" : isHovered ? "#f8fafc" : "transparent",
-        border: "none",
-        borderLeft: isActive ? "3px solid #6366f1" : "3px solid transparent",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-        textAlign: "left",
-      }}
-    >
-      <span style={{ color: isActive ? "#6366f1" : "#64748b", display: "flex", alignItems: "center" }}>
-        {icon}
-      </span>
-      <span
-        style={{
-          color: isActive ? "#6366f1" : "#475569",
-          fontSize: "13px",
-          fontWeight: isActive ? 600 : 500,
-        }}
-      >
-        {label}
-      </span>
-    </button>
-  );
-};
+//   return (
+//     <button
+//       onClick={onClick}
+//       onMouseEnter={() => setIsHovered(true)}
+//       onMouseLeave={() => setIsHovered(false)}
+//       style={{
+//         width: "100%",
+//         display: "flex",
+//         alignItems: "center",
+//         gap: "12px",
+//         padding: "12px 16px",
+//         background: isActive ? "#f0f4ff" : isHovered ? "#f8fafc" : "transparent",
+//         border: "none",
+//         borderLeft: isActive ? "3px solid #6366f1" : "3px solid transparent",
+//         cursor: "pointer",
+//         transition: "all 0.15s ease",
+//         textAlign: "left",
+//       }}
+//     >
+//       <span style={{ color: isActive ? "#6366f1" : "#64748b", display: "flex", alignItems: "center" }}>
+//         {icon}
+//       </span>
+//       <span
+//         style={{
+//           color: isActive ? "#6366f1" : "#475569",
+//           fontSize: "13px",
+//           fontWeight: isActive ? 600 : 500,
+//         }}
+//       >
+//         {label}
+//       </span>
+//     </button>
+//   );
+// };
 
-// ============================================
-// MAIN EDITOR COMPONENT
-// ============================================
-export const QuoteTemplateEditor: React.FC = () => {
-  const { id } = useParams();
-  const { isUploading, uploadedUrl, uploadFile } = useFileUpload({ type: "image" });
+// // ============================================
+// // MAIN EDITOR COMPONENT
+// // ============================================
+// export const QuoteTemplateEditor: React.FC = () => {
+//   const { id } = useParams();
+//   const { isUploading, uploadedUrl, uploadFile } = useFileUpload({ type: "image" });
 
-  const playerRef = useRef<any>(null);
+//   const playerRef = useRef<any>(null);
 
-  const [currentTime, setCurrentTime] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [previewSize, setPreviewSize] = useState(1);
-  const [templateName, setTemplateName] = useState("🎬 Quote Spotlight Template");
-  const [quote, setQuote] = useState("Hello World");
-  const [author, setAuthor] = useState("Steve Job");
-  const [backgroundImage, setBackgroundImage] = useState(
-    `https://res.cloudinary.com/dnxc1lw18/image/upload/v1760979566/bg11_deliyh.jpg`
-  );
-  const [backgroundSource, setBackgroundSource] = useState<"upload" | "default">("default");
-  const [fontFamily, setFontFamily] = useState("Arial, sans-serif");
-  const [fontColor, setFontColor] = useState("white");
-  const [fontSize, setFontSize] = useState(1);
-  const [showSafeMargins, setShowSafeMargins] = useState(true);
-  const [previewBg, setPreviewBg] = useState<"dark" | "light" | "grey">("dark");
-  const [activeSection, setActiveSection] = useState<"media" | "text" | "subtitles" | "audio" | "video" | "tools">("media");
-  const [collapsed, setCollapsed] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
-  const [exportUrl, setExportUrl] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
-  const [duration, setDuration] = useState(9);
-  const [isLoading, setIsLoading] = useState(false);
+//   const [currentTime, setCurrentTime] = useState(0);
+//   const [isPlaying, setIsPlaying] = useState(false);
+//   const [isGenerating, setIsGenerating] = useState(false);
+//   const [previewSize, setPreviewSize] = useState(1);
+//   const [templateName, setTemplateName] = useState("🎬 Quote Spotlight Template");
+//   const [quote, setQuote] = useState("Hello World");
+//   const [author, setAuthor] = useState("Steve Job");
+//   const [backgroundImage, setBackgroundImage] = useState(
+//     `https://res.cloudinary.com/dnxc1lw18/image/upload/v1760979566/bg11_deliyh.jpg`
+//   );
+//   const [backgroundSource, setBackgroundSource] = useState<"upload" | "default">("default");
+//   const [fontFamily, setFontFamily] = useState("Arial, sans-serif");
+//   const [fontColor, setFontColor] = useState("white");
+//   const [fontSize, setFontSize] = useState(1);
+//   const [showSafeMargins, setShowSafeMargins] = useState(true);
+//   const [previewBg, setPreviewBg] = useState<"dark" | "light" | "grey">("dark");
+//   const [activeSection, setActiveSection] = useState<"media" | "text" | "subtitles" | "audio" | "video" | "tools">("media");
+//   const [collapsed, setCollapsed] = useState(false);
+//   const [isExporting, setIsExporting] = useState(false);
+//   const [exportUrl, setExportUrl] = useState<string | null>(null);
+//   const [showModal, setShowModal] = useState(false);
+//   const [duration, setDuration] = useState(9);
+//   const [isLoading, setIsLoading] = useState(false);
 
-  const {
-    userUploads,
-    loadingUploads,
-    fetchUserUploads,
-    onlineImages,
-    loadingOnline,
-    fetchOnlineImages,
-    searchQuery,
-    setSearchQuery,
-  } = useBackgroundImages();
+//   const {
+//     userUploads,
+//     loadingUploads,
+//     fetchUserUploads,
+//     onlineImages,
+//     loadingOnline,
+//     fetchOnlineImages,
+//     searchQuery,
+//     setSearchQuery,
+//   } = useBackgroundImages();
 
-  useEffect(() => {
-    fetchUserUploads();
-    fetchOnlineImages("gradient");
-  }, []);
-  // 🔹 Drag handlers
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      const newWidth =
-        e.clientX - (panelRef.current?.getBoundingClientRect().left || 0);
-      if (newWidth > 200 && newWidth < 600) {
-        setPanelWidth(newWidth);
-      }
-    };
+//   useEffect(() => {
+//     fetchUserUploads();
+//     fetchOnlineImages("gradient");
+//   }, []);
+//   // 🔹 Drag handlers
+//   useEffect(() => {
+//     const handleMouseMove = (e: MouseEvent) => {
+//       if (!isResizing) return;
+//       const newWidth =
+//         e.clientX - (panelRef.current?.getBoundingClientRect().left || 0);
+//       if (newWidth > 200 && newWidth < 600) {
+//         setPanelWidth(newWidth);
+//       }
+//     };
 
-  const {
-    userUploads,
-    loadingUploads,
-    fetchUserUploads,
-    onlineImages,
-    loadingOnline,
-    fetchOnlineImages,
-    searchQuery,
-    setSearchQuery,
-  } = useBackgroundImages();
+//   const {
+//     userUploads,
+//     loadingUploads,
+//     fetchUserUploads,
+//     onlineImages,
+//     loadingOnline,
+//     fetchOnlineImages,
+//     searchQuery,
+//     setSearchQuery,
+//   } = useBackgroundImages();
 
-  useEffect(() => {
-    fetchUserUploads();
-    fetchOnlineImages("history");
-  }, []);
+//   useEffect(() => {
+//     fetchUserUploads();
+//     fetchOnlineImages("history");
+//   }, []);
 
-  useEffect(() => {
-    if (id) {
-      setIsLoading(true);
-      fetch(`${backendPrefix}/projects/${id}`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      })
-        .then((res) => {
-          if (!res.ok) throw new Error("Failed to load project");
-          return res.json();
-        })
-        .then((data) => {
-          setTemplateName(data.title);
-          setQuote(data.props.quote);
-          setAuthor(data.props.author);
-          setBackgroundImage(data.props.imageurl);
-          setFontFamily(data.props.fontfamily ?? "Cormorant Garamond, serif");
-          setFontColor(data.props.fontcolor ?? "white");
-          setFontSize(data.props.fontsize ?? 1);
-          setDuration(data.props.duration);
-        })
-        .catch((err) => console.error("❌ Project load failed:", err))
-        .finally(() => setIsLoading(false));
-    }
-  }, [id]);
+//   useEffect(() => {
+//     if (id) {
+//       setIsLoading(true);
+//       fetch(`${backendPrefix}/projects/${id}`, {
+//         headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+//       })
+//         .then((res) => {
+//           if (!res.ok) throw new Error("Failed to load project");
+//           return res.json();
+//         })
+//         .then((data) => {
+//           setTemplateName(data.title);
+//           setQuote(data.props.quote);
+//           setAuthor(data.props.author);
+//           setBackgroundImage(data.props.imageurl);
+//           setFontFamily(data.props.fontfamily ?? "Cormorant Garamond, serif");
+//           setFontColor(data.props.fontcolor ?? "white");
+//           setFontSize(data.props.fontsize ?? 1);
+//           setDuration(data.props.duration);
+//         })
+//         .catch((err) => console.error("❌ Project load failed:", err))
+//         .finally(() => setIsLoading(false));
+//     }
+//   }, [id]);
 
-  const cycleBg = () => {
-    if (previewBg === "dark") setPreviewBg("light");
-    else if (previewBg === "light") setPreviewBg("grey");
-    else setPreviewBg("dark");
-  };
+//   const cycleBg = () => {
+//     if (previewBg === "dark") setPreviewBg("light");
+//     else if (previewBg === "light") setPreviewBg("grey");
+//     else setPreviewBg("dark");
+//   };
 
-  const handleSeek = useCallback((time: number) => {
-    setCurrentTime(time);
-    playerRef.current?.seekToTime(time);
-  }, []);
+//   const handleSeek = useCallback((time: number) => {
+//     setCurrentTime(time);
+//     playerRef.current?.seekToTime(time);
+//   }, []);
 
-  const handlePlayPause = useCallback(() => {
-    if (isPlaying) {
-      playerRef.current?.pause();
-    } else {
-      playerRef.current?.play();
-    }
-  }, [isPlaying]);
+//   const handlePlayPause = useCallback(() => {
+//     if (isPlaying) {
+//       playerRef.current?.pause();
+//     } else {
+//       playerRef.current?.play();
+//     }
+//   }, [isPlaying]);
 
-  const handleStop = useCallback(() => {
-    playerRef.current?.pause();
-    playerRef.current?.seekToTime(0);
-    setCurrentTime(0);
-    setIsPlaying(false);
-  }, []);
+//   const handleStop = useCallback(() => {
+//     playerRef.current?.pause();
+//     playerRef.current?.seekToTime(0);
+//     setCurrentTime(0);
+//     setIsPlaying(false);
+//   }, []);
 
-  const handleFrameUpdate = useCallback((frame: number) => {
-    const time = frame / FPS;
-    setCurrentTime(time);
-  }, []);
+//   const handleFrameUpdate = useCallback((frame: number) => {
+//     const time = frame / FPS;
+//     setCurrentTime(time);
+//   }, []);
 
-  const handlePlayingChange = useCallback((playing: boolean) => {
-    setIsPlaying(playing);
-  }, []);
+//   const handlePlayingChange = useCallback((playing: boolean) => {
+//     setIsPlaying(playing);
+//   }, []);
 
-  const handleAISuggestion = async () => {
-    setIsGenerating(true);
-    try {
-      const response = await fetch(`${backendPrefix}/api/generate-quote`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+//   const handleAISuggestion = async () => {
+//     setIsGenerating(true);
+//     try {
+//       const response = await fetch(`${backendPrefix}/api/generate-quote`, {
+//         method: "POST",
+//         headers: { "Content-Type": "application/json" },
+//       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-      }
+//       if (!response.ok) {
+//         const errorText = await response.text();
+//         throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+//       }
 
-      const data = await response.json();
-      setAuthor(data.author);
-      setQuote(data.quote);
-      setDuration(quoteSpotlightDurationCalculator(data.quote));
-    } catch (error: any) {
-      console.error("error generating ai suggestion");
-      toast.error(error.message);
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+//       const data = await response.json();
+//       setAuthor(data.author);
+//       setQuote(data.quote);
+//       setDuration(quoteSpotlightDurationCalculator(data.quote));
+//     } catch (error: any) {
+//       console.error("error generating ai suggestion");
+//       toast.error(error.message);
+//     } finally {
+//       setIsGenerating(false);
+//     }
+//   };
 
-  useEffect(() => {
-    if (uploadedUrl) {
-      setBackgroundImage(uploadedUrl);
-      setBackgroundSource("upload");
-      fetchUserUploads();
-    }
-  }, [uploadedUrl]);
+//   useEffect(() => {
+//     if (uploadedUrl) {
+//       setBackgroundImage(uploadedUrl);
+//       setBackgroundSource("upload");
+//       fetchUserUploads();
+//     }
+//   }, [uploadedUrl]);
 
-  const handleExport = async (format: string) => {
-    setIsExporting(true);
+//   const handleExport = async (format: string) => {
+//     setIsExporting(true);
 
-    const props = {
-      quote,
-      author,
-      fontColor,
-      fontSize,
-      fontFamily,
-      backgroundImage,
-    };
+//     const props = {
+//       quote,
+//       author,
+//       fontColor,
+//       fontSize,
+//       fontFamily,
+//       backgroundImage,
+//     };
 
-    const exportResponse = await renderVideoUsingLambda(props, "QuoteComposition", format);
+//     const exportResponse = await renderVideoUsingLambda(props, "QuoteComposition", format);
 
-    if(exportResponse === "error"){
-      toast.error("There was an error exporting your video")
-    }else{
-      setExportUrl(exportResponse);
-    }
-    setShowModal(true);
-    setIsExporting(false);
+//     if(exportResponse === "error"){
+//       toast.error("There was an error exporting your video")
+//     }else{
+//       setExportUrl(exportResponse);
+//     }
+//     setShowModal(true);
+//     setIsExporting(false);
 
-    // try {
-    //   const response = await fetch(
-    //     `${backendPrefix}/generatevideo/render-video`,
-    //     {
-    //       method: "POST",
-    //       headers: { "Content-Type": "application/json" },
-    //       body: JSON.stringify({
-    //         props: {
-    //           quote,
-    //           author,
-    //           fontColor,
-    //           fontSize,
-    //           fontFamily,
-    //           backgroundImage,
-    //         },
-    //         compositionId: "QuoteComposition",
-    //         format: format,
-    //       }),
-    //     }
-    //   );
+//     // try {
+//     //   const response = await fetch(
+//     //     `${backendPrefix}/generatevideo/render-video`,
+//     //     {
+//     //       method: "POST",
+//     //       headers: { "Content-Type": "application/json" },
+//     //       body: JSON.stringify({
+//     //         props: {
+//     //           quote,
+//     //           author,
+//     //           fontColor,
+//     //           fontSize,
+//     //           fontFamily,
+//     //           backgroundImage,
+//     //         },
+//     //         compositionId: "QuoteComposition",
+//     //         format: format,
+//     //       }),
+//     //     }
+//     //   );
 
-    //   if (!response.ok) {
-    //     const errorText = await response.text();
-    //     throw new Error(
-    //       `HTTP error! status: ${response.status}, message: ${errorText}`
-    //     );
-    //   }
+//     //   if (!response.ok) {
+//     //     const errorText = await response.text();
+//     //     throw new Error(
+//     //       `HTTP error! status: ${response.status}, message: ${errorText}`
+//     //     );
+//     //   }
 
-    //   const data = await response.json();
-    //   const renderUrl = data.url;
-    //   if (renderUrl) {
-    //     const saveResponse = await fetch(`${backendPrefix}/renders`, {
-    //       method: "POST",
-    //       headers: {
-    //         "Content-Type": "application/json",
-    //         Authorization: `Bearer ${localStorage.getItem("token")}`,
-    //       },
-    //       body: JSON.stringify({
-    //         templateId: 1,
-    //         outputUrl: renderUrl,
-    //         type: format,
-    //       }),
-    //     });
+//     //   const data = await response.json();
+//     //   const renderUrl = data.url;
+//     //   if (renderUrl) {
+//     //     const saveResponse = await fetch(`${backendPrefix}/renders`, {
+//     //       method: "POST",
+//     //       headers: {
+//     //         "Content-Type": "application/json",
+//     //         Authorization: `Bearer ${localStorage.getItem("token")}`,
+//     //       },
+//     //       body: JSON.stringify({
+//     //         templateId: 1,
+//     //         outputUrl: renderUrl,
+//     //         type: format,
+//     //       }),
+//     //     });
 
-    //     if (!saveResponse.ok) {
-    //       throw new Error(
-    //         `Failed to save upload: ${
-    //           saveResponse.status
-    //         } ${await saveResponse.text()}`
-    //       );
-    //     }
+//     //     if (!saveResponse.ok) {
+//     //       throw new Error(
+//     //         `Failed to save upload: ${
+//     //           saveResponse.status
+//     //         } ${await saveResponse.text()}`
+//     //       );
+//     //     }
 
-    //     const saveData = await saveResponse.json();
-    //     console.log("✅ Render saved to DB:", saveData);
-    //   }
-    //   setExportUrl(data.url);
-    //   setShowModal(true);
-    // } catch (error) {
-    //   console.error("Export failed:", error);
-    //   alert(`Export failed: ${error || "Please try again."}`);
-    // } finally {
-    //   setIsExporting(false);
-    // }
-  };
+//     //     const saveData = await saveResponse.json();
+//     //     console.log("✅ Render saved to DB:", saveData);
+//     //   }
+//     //   setExportUrl(data.url);
+//     //   setShowModal(true);
+//     // } catch (error) {
+//     //   console.error("Export failed:", error);
+//     //   alert(`Export failed: ${error || "Please try again."}`);
+//     // } finally {
+//     //   setIsExporting(false);
+//     // }
+//   };
 
-  const [messageIndex, setMessageIndex] = useState(0);
-  const messages = [
-    "⏳ Preparing your template...",
-    "🙇 Sorry for the wait, still working on it...",
-    "🚀 Almost there, thanks for your patience!",
-  ];
+//   const [messageIndex, setMessageIndex] = useState(0);
+//   const messages = [
+//     "⏳ Preparing your template...",
+//     "🙇 Sorry for the wait, still working on it...",
+//     "🚀 Almost there, thanks for your patience!",
+//   ];
 
-  useEffect(() => {
-    if (!isLoading) return;
-    const interval = setInterval(() => {
-      setMessageIndex((prev) => (prev + 1) % messages.length);
-    }, 10000);
-    return () => clearInterval(interval);
-  }, [isLoading]);
+//   useEffect(() => {
+//     if (!isLoading) return;
+//     const interval = setInterval(() => {
+//       setMessageIndex((prev) => (prev + 1) % messages.length);
+//     }, 10000);
+//     return () => clearInterval(interval);
+//   }, [isLoading]);
 
-  const {
-    setProjectId,
-    isSaving,
-    showSaveModal,
-    setShowSaveModal,
-    handleSave,
-    saveNewProject,
-    lastSavedProps,
-  } = useProjectSave2({
-    templateId: 1,
-    buildProps: () => ({
-      quote,
-      author,
-      imageurl: backgroundImage,
-      fontsize: fontSize,
-      fontcolor: fontColor,
-      fontfamily: fontFamily,
-      duration,
-    }),
-    compositionId: "QuoteComposition"
-  });
+//   const {
+//     setProjectId,
+//     isSaving,
+//     showSaveModal,
+//     setShowSaveModal,
+//     handleSave,
+//     saveNewProject,
+//     lastSavedProps,
+//   } = useProjectSave2({
+//     templateId: 1,
+//     buildProps: () => ({
+//       quote,
+//       author,
+//       imageurl: backgroundImage,
+//       fontsize: fontSize,
+//       fontcolor: fontColor,
+//       fontfamily: fontFamily,
+//       duration,
+//     }),
+//     compositionId: "QuoteComposition"
+//   });
 
-  useEffect(() => {
-    fetchUserUploads();
-    fetchOnlineImages("history");
-  }, []);
+//   useEffect(() => {
+//     fetchUserUploads();
+//     fetchOnlineImages("history");
+//   }, []);
 
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        background: "#fafafa",
-        fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
-      }}
-    >
-      {isLoading && <LoadingOverlay message={messages[messageIndex]} />}
-      <SaveProjectModal open={showSaveModal} onClose={() => setShowSaveModal(false)} onSave={saveNewProject} />
-      {showModal && (
-        <ExportModal
-          showExport={showModal}
-          setShowExport={setShowModal}
-          isExporting={isExporting}
-          exportUrl={exportUrl}
-          onExport={handleExport}
-        />
-      )}
+//   return (
+//     <div
+//       style={{
+//         display: "flex",
+//         flexDirection: "column",
+//         height: "100vh",
+//         background: "#fafafa",
+//         fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+//       }}
+//     >
+//       {isLoading && <LoadingOverlay message={messages[messageIndex]} />}
+//       <SaveProjectModal open={showSaveModal} onClose={() => setShowSaveModal(false)} onSave={saveNewProject} />
+//       {showModal && (
+//         <ExportModal
+//           showExport={showModal}
+//           setShowExport={setShowModal}
+//           isExporting={isExporting}
+//           exportUrl={exportUrl}
+//           onExport={handleExport}
+//         />
+//       )}
 
-      <TopNavWithSave
-        templateName={templateName}
-        onSave={handleSave}
-        onExport={handleExport}
-        setTemplateName={setTemplateName}
-        onOpenExport={() => setShowModal(true)}
-        template={templateName}
-        isSaving={isSaving}
-      />
+//       <TopNavWithSave
+//         templateName={templateName}
+//         onSave={handleSave}
+//         onExport={handleExport}
+//         setTemplateName={setTemplateName}
+//         onOpenExport={() => setShowModal(true)}
+//         template={templateName}
+//         isSaving={isSaving}
+//       />
 
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
-        <div
-          style={{ display: "flex", flexDirection: "column", flex: 1, background: "#fafafa", overflow: "hidden" }}
-        >
-          <div style={{ display: "flex", flexDirection: "row", flex: 1, overflow: "hidden" }}>
-            {/* Left Sidebar with Menu Items */}
-            <div
-              style={{
-                width: "240px",
-                minWidth: "240px",
-                background: "#ffffff",
-                borderRight: "1px solid #e2e8f0",
-                display: "flex",
-                flexDirection: "column",
-                overflowY: "auto",
-              }}
-            >
-              <div
-                style={{
-                  padding: "16px",
-                  borderBottom: "1px solid #e2e8f0",
-                }}
-              >
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: "14px",
-                    fontWeight: 600,
-                    color: "#0f172a",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Editor
-                </h2>
-              </div>
-              <div style={{ flex: 1 }}>
-                <SidebarMenuItem
-                  icon={<ImageIcon />}
-                  label="Media"
-                  isActive={activeSection === "media"}
-                  onClick={() => setActiveSection("media")}
-                />
-                <SidebarMenuItem
-                  icon={<TextIcon />}
-                  label="Text"
-                  isActive={activeSection === "text"}
-                  onClick={() => setActiveSection("text")}
-                />
-                <SidebarMenuItem
-                  icon={<SubtitlesIcon />}
-                  label="Subtitles"
-                  isActive={activeSection === "subtitles"}
-                  onClick={() => setActiveSection("subtitles")}
-                />
-                <SidebarMenuItem
-                  icon={<AudioIcon />}
-                  label="Audio"
-                  isActive={activeSection === "audio"}
-                  onClick={() => setActiveSection("audio")}
-                />
-                <SidebarMenuItem
-                  icon={<VideoIcon />}
-                  label="Video"
-                  isActive={activeSection === "video"}
-                  onClick={() => setActiveSection("video")}
-                />
-                <SidebarMenuItem
-                  icon={<ToolsIcon />}
-                  label="Tools"
-                  isActive={activeSection === "tools"}
-                  onClick={() => setActiveSection("tools")}
-                />
-              </div>
-            </div>
+//       <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+//         <div
+//           style={{ display: "flex", flexDirection: "column", flex: 1, background: "#fafafa", overflow: "hidden" }}
+//         >
+//           <div style={{ display: "flex", flexDirection: "row", flex: 1, overflow: "hidden" }}>
+//             {/* Left Sidebar with Menu Items */}
+//             <div
+//               style={{
+//                 width: "240px",
+//                 minWidth: "240px",
+//                 background: "#ffffff",
+//                 borderRight: "1px solid #e2e8f0",
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 overflowY: "auto",
+//               }}
+//             >
+//               <div
+//                 style={{
+//                   padding: "16px",
+//                   borderBottom: "1px solid #e2e8f0",
+//                 }}
+//               >
+//                 <h2
+//                   style={{
+//                     margin: 0,
+//                     fontSize: "14px",
+//                     fontWeight: 600,
+//                     color: "#0f172a",
+//                     textTransform: "uppercase",
+//                     letterSpacing: "0.5px",
+//                   }}
+//                 >
+//                   Editor
+//                 </h2>
+//               </div>
+//               <div style={{ flex: 1 }}>
+//                 <SidebarMenuItem
+//                   icon={<ImageIcon />}
+//                   label="Media"
+//                   isActive={activeSection === "media"}
+//                   onClick={() => setActiveSection("media")}
+//                 />
+//                 <SidebarMenuItem
+//                   icon={<TextIcon />}
+//                   label="Text"
+//                   isActive={activeSection === "text"}
+//                   onClick={() => setActiveSection("text")}
+//                 />
+//                 <SidebarMenuItem
+//                   icon={<SubtitlesIcon />}
+//                   label="Subtitles"
+//                   isActive={activeSection === "subtitles"}
+//                   onClick={() => setActiveSection("subtitles")}
+//                 />
+//                 <SidebarMenuItem
+//                   icon={<AudioIcon />}
+//                   label="Audio"
+//                   isActive={activeSection === "audio"}
+//                   onClick={() => setActiveSection("audio")}
+//                 />
+//                 <SidebarMenuItem
+//                   icon={<VideoIcon />}
+//                   label="Video"
+//                   isActive={activeSection === "video"}
+//                   onClick={() => setActiveSection("video")}
+//                 />
+//                 <SidebarMenuItem
+//                   icon={<ToolsIcon />}
+//                   label="Tools"
+//                   isActive={activeSection === "tools"}
+//                   onClick={() => setActiveSection("tools")}
+//                 />
+//               </div>
+//             </div>
 
-            {/* Properties Panel - 800px wide */}
-            <div
-              style={{
-                width: `${PROPERTIES_PANEL_WIDTH}px`,
-                minWidth: `${PROPERTIES_PANEL_WIDTH}px`,
-                padding: "16px",
-                overflowY: "auto",
-                background: "#fafafa",
-                borderRight: "1px solid #e2e8f0",
-                display: "flex",
-                flexDirection: "column",
-                gap: "16px",
-              }}
-            >
-              {/* Media Section */}
-              {activeSection === "media" && (
-                <>
-                  <SidebarPanel title="Media Upload" icon={<UploadIcon />}>
-                    <div
-                      style={{
-                        background: "#ffffff",
-                        border: "2px dashed #cbd5e1",
-                        borderRadius: "8px",
-                        padding: "24px",
-                        textAlign: "center",
-                        transition: "all 0.2s ease",
-                        cursor: "pointer",
-                      }}
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.style.borderColor = "#6366f1";
-                        e.currentTarget.style.background = "#f8fafc";
-                      }}
-                      onDragLeave={(e) => {
-                        e.currentTarget.style.borderColor = "#cbd5e1";
-                        e.currentTarget.style.background = "#ffffff";
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.currentTarget.style.borderColor = "#cbd5e1";
-                        e.currentTarget.style.background = "#ffffff";
-                        if (e.dataTransfer.files?.[0]) {
-                          uploadFile(e.dataTransfer.files[0]);
-                          setBackgroundSource("upload");
-                        }
-                      }}
-                    >
-                      {isUploading ? (
-                        <div style={{ color: "#6366f1" }}>
-                          <div
-                            style={{
-                              width: "32px",
-                              height: "32px",
-                              border: "3px solid #e2e8f0",
-                              borderTopColor: "#6366f1",
-                              borderRadius: "50%",
-                              animation: "spin 1s linear infinite",
-                              margin: "0 auto 12px",
-                            }}
-                          />
-                          Uploading...
-                        </div>
-                      ) : (
-                        <>
-                          <div style={{ color: "#94a3b8", marginBottom: "12px" }}>
-                            <svg
-                              width="32"
-                              height="32"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="1.5"
-                              style={{ margin: "0 auto" }}
-                            >
-                              <path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242" />
-                              <path d="M12 12v9" />
-                              <path d="M8 17l4-5 4 5" />
-                            </svg>
-                          </div>
-                          <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 12px" }}>
-                            Drag & drop or click to upload
-                          </p>
-                          <input
-                            type="file"
-                            accept="image/*,video/*"
-                            onChange={(e) => {
-                              if (e.target.files?.[0]) {
-                                uploadFile(e.target.files[0]);
-                                setBackgroundSource("upload");
-                              }
-                            }}
-                            style={{ display: "none" }}
-                            id="file-upload"
-                          />
-                          <label
-                            htmlFor="file-upload"
-                            style={{
-                              display: "inline-block",
-                              background: "linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)",
-                              color: "#fff",
-                              padding: "8px 20px",
-                              borderRadius: "6px",
-                              cursor: "pointer",
-                              fontSize: "12px",
-                              fontWeight: 600,
-                              transition: "transform 0.1s ease",
-                            }}
-                          >
-                            Choose File
-                          </label>
-                        </>
-                      )}
-                    </div>
-                  </SidebarPanel>
-                  <BackgroundSecTrial
-                    backgroundImage={backgroundImage}
-                    backgroundSource={backgroundSource}
-                    handleFileUpload={uploadFile}
-                    isUploading={isUploading}
-                    setBackgroundImage={setBackgroundImage}
-                    setBackgroundSource={setBackgroundSource}
-                    fetchOnlineImages={fetchOnlineImages}
-                    loadingOnline={loadingOnline}
-                    loadingUploads={loadingUploads}
-                    onlineImages={onlineImages}
-                    searchQuery={searchQuery}
-                    setSearchQuery={setSearchQuery}
-                    userUploads={userUploads}
-                  />
-                </>
-              )}
+//             {/* Properties Panel - 800px wide */}
+//             <div
+//               style={{
+//                 width: `${PROPERTIES_PANEL_WIDTH}px`,
+//                 minWidth: `${PROPERTIES_PANEL_WIDTH}px`,
+//                 padding: "16px",
+//                 overflowY: "auto",
+//                 background: "#fafafa",
+//                 borderRight: "1px solid #e2e8f0",
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 gap: "16px",
+//               }}
+//             >
+//               {/* Media Section */}
+//               {activeSection === "media" && (
+//                 <>
+//                   <SidebarPanel title="Media Upload" icon={<UploadIcon />}>
+//                     <div
+//                       style={{
+//                         background: "#ffffff",
+//                         border: "2px dashed #cbd5e1",
+//                         borderRadius: "8px",
+//                         padding: "24px",
+//                         textAlign: "center",
+//                         transition: "all 0.2s ease",
+//                         cursor: "pointer",
+//                       }}
+//                       onDragOver={(e) => {
+//                         e.preventDefault();
+//                         e.currentTarget.style.borderColor = "#6366f1";
+//                         e.currentTarget.style.background = "#f8fafc";
+//                       }}
+//                       onDragLeave={(e) => {
+//                         e.currentTarget.style.borderColor = "#cbd5e1";
+//                         e.currentTarget.style.background = "#ffffff";
+//                       }}
+//                       onDrop={(e) => {
+//                         e.preventDefault();
+//                         e.currentTarget.style.borderColor = "#cbd5e1";
+//                         e.currentTarget.style.background = "#ffffff";
+//                         if (e.dataTransfer.files?.[0]) {
+//                           uploadFile(e.dataTransfer.files[0]);
+//                           setBackgroundSource("upload");
+//                         }
+//                       }}
+//                     >
+//                       {isUploading ? (
+//                         <div style={{ color: "#6366f1" }}>
+//                           <div
+//                             style={{
+//                               width: "32px",
+//                               height: "32px",
+//                               border: "3px solid #e2e8f0",
+//                               borderTopColor: "#6366f1",
+//                               borderRadius: "50%",
+//                               animation: "spin 1s linear infinite",
+//                               margin: "0 auto 12px",
+//                             }}
+//                           />
+//                           Uploading...
+//                         </div>
+//                       ) : (
+//                         <>
+//                           <div style={{ color: "#94a3b8", marginBottom: "12px" }}>
+//                             <svg
+//                               width="32"
+//                               height="32"
+//                               viewBox="0 0 24 24"
+//                               fill="none"
+//                               stroke="currentColor"
+//                               strokeWidth="1.5"
+//                               style={{ margin: "0 auto" }}
+//                             >
+//                               <path d="M4 14.899A7 7 0 1115.71 8h1.79a4.5 4.5 0 012.5 8.242" />
+//                               <path d="M12 12v9" />
+//                               <path d="M8 17l4-5 4 5" />
+//                             </svg>
+//                           </div>
+//                           <p style={{ color: "#64748b", fontSize: "12px", margin: "0 0 12px" }}>
+//                             Drag & drop or click to upload
+//                           </p>
+//                           <input
+//                             type="file"
+//                             accept="image/*,video/*"
+//                             onChange={(e) => {
+//                               if (e.target.files?.[0]) {
+//                                 uploadFile(e.target.files[0]);
+//                                 setBackgroundSource("upload");
+//                               }
+//                             }}
+//                             style={{ display: "none" }}
+//                             id="file-upload"
+//                           />
+//                           <label
+//                             htmlFor="file-upload"
+//                             style={{
+//                               display: "inline-block",
+//                               background: "linear-gradient(180deg, #6366f1 0%, #4f46e5 100%)",
+//                               color: "#fff",
+//                               padding: "8px 20px",
+//                               borderRadius: "6px",
+//                               cursor: "pointer",
+//                               fontSize: "12px",
+//                               fontWeight: 600,
+//                               transition: "transform 0.1s ease",
+//                             }}
+//                           >
+//                             Choose File
+//                           </label>
+//                         </>
+//                       )}
+//                     </div>
+//                   </SidebarPanel>
+//                   <BackgroundSecTrial
+//                     backgroundImage={backgroundImage}
+//                     backgroundSource={backgroundSource}
+//                     handleFileUpload={uploadFile}
+//                     isUploading={isUploading}
+//                     setBackgroundImage={setBackgroundImage}
+//                     setBackgroundSource={setBackgroundSource}
+//                     fetchOnlineImages={fetchOnlineImages}
+//                     loadingOnline={loadingOnline}
+//                     loadingUploads={loadingUploads}
+//                     onlineImages={onlineImages}
+//                     searchQuery={searchQuery}
+//                     setSearchQuery={setSearchQuery}
+//                     userUploads={userUploads}
+//                   />
+//                 </>
+//               )}
 
-              {/* Text Section */}
-              {activeSection === "text" && (
-                <QuoteEditor
-                  quote={quote}
-                  author={author}
-                  setQuote={setQuote}
-                  setAuthor={setAuthor}
-                  handleAISuggestion={handleAISuggestion}
-                  isGenerating={isGenerating}
-                  fontFamily={fontFamily}
-                  setFontFamily={setFontFamily}
-                  fontColor={fontColor}
-                  setFontColor={setFontColor}
-                  fontSize={fontSize}
-                  setFontSize={setFontSize}
-                />
-              )}
+//               {/* Text Section */}
+//               {activeSection === "text" && (
+//                 <QuoteEditor
+//                   quote={quote}
+//                   author={author}
+//                   setQuote={setQuote}
+//                   setAuthor={setAuthor}
+//                   handleAISuggestion={handleAISuggestion}
+//                   isGenerating={isGenerating}
+//                   fontFamily={fontFamily}
+//                   setFontFamily={setFontFamily}
+//                   fontColor={fontColor}
+//                   setFontColor={setFontColor}
+//                   fontSize={fontSize}
+//                   setFontSize={setFontSize}
+//                 />
+//               )}
 
-              {/* Subtitles Section */}
-              {activeSection === "subtitles" && (
-                <SidebarPanel title="Subtitles" icon={<SubtitlesIcon />}>
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "24px",
-                      color: "#64748b",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        background: "#f1f5f9",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto 16px",
-                      }}
-                    >
-                      <SubtitlesIcon />
-                    </div>
-                    <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
-                      Subtitle Tools
-                    </p>
-                    <p style={{ fontSize: "12px", margin: 0 }}>
-                      Add auto-generated or custom subtitles
-                    </p>
-                  </div>
-                </SidebarPanel>
-              )}
+//               {/* Subtitles Section */}
+//               {activeSection === "subtitles" && (
+//                 <SidebarPanel title="Subtitles" icon={<SubtitlesIcon />}>
+//                   <div
+//                     style={{
+//                       textAlign: "center",
+//                       padding: "24px",
+//                       color: "#64748b",
+//                     }}
+//                   >
+//                     <div
+//                       style={{
+//                         width: "48px",
+//                         height: "48px",
+//                         background: "#f1f5f9",
+//                         borderRadius: "12px",
+//                         display: "flex",
+//                         alignItems: "center",
+//                         justifyContent: "center",
+//                         margin: "0 auto 16px",
+//                       }}
+//                     >
+//                       <SubtitlesIcon />
+//                     </div>
+//                     <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
+//                       Subtitle Tools
+//                     </p>
+//                     <p style={{ fontSize: "12px", margin: 0 }}>
+//                       Add auto-generated or custom subtitles
+//                     </p>
+//                   </div>
+//                 </SidebarPanel>
+//               )}
 
-              {/* Audio Section */}
-              {activeSection === "audio" && (
-                <SidebarPanel title="Audio Settings" icon={<AudioIcon />}>
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "24px",
-                      color: "#64748b",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        background: "#fef3c7",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto 16px",
-                      }}
-                    >
-                      <AudioIcon />
-                    </div>
-                    <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
-                      Audio Controls
-                    </p>
-                    <p style={{ fontSize: "12px", margin: 0 }}>
-                      Upload background music or voiceover
-                    </p>
-                  </div>
-                </SidebarPanel>
-              )}
+//               {/* Audio Section */}
+//               {activeSection === "audio" && (
+//                 <SidebarPanel title="Audio Settings" icon={<AudioIcon />}>
+//                   <div
+//                     style={{
+//                       textAlign: "center",
+//                       padding: "24px",
+//                       color: "#64748b",
+//                     }}
+//                   >
+//                     <div
+//                       style={{
+//                         width: "48px",
+//                         height: "48px",
+//                         background: "#fef3c7",
+//                         borderRadius: "12px",
+//                         display: "flex",
+//                         alignItems: "center",
+//                         justifyContent: "center",
+//                         margin: "0 auto 16px",
+//                       }}
+//                     >
+//                       <AudioIcon />
+//                     </div>
+//                     <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
+//                       Audio Controls
+//                     </p>
+//                     <p style={{ fontSize: "12px", margin: 0 }}>
+//                       Upload background music or voiceover
+//                     </p>
+//                   </div>
+//                 </SidebarPanel>
+//               )}
 
-              {/* Video Section */}
-              {activeSection === "video" && (
-                <SidebarPanel title="Video Settings" icon={<VideoIcon />}>
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "24px",
-                      color: "#64748b",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        background: "#dbeafe",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto 16px",
-                      }}
-                    >
-                      <VideoIcon />
-                    </div>
-                    <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
-                      Video Controls
-                    </p>
-                    <p style={{ fontSize: "12px", margin: 0 }}>
-                      Adjust video properties and effects
-                    </p>
-                  </div>
-                </SidebarPanel>
-              )}
+//               {/* Video Section */}
+//               {activeSection === "video" && (
+//                 <SidebarPanel title="Video Settings" icon={<VideoIcon />}>
+//                   <div
+//                     style={{
+//                       textAlign: "center",
+//                       padding: "24px",
+//                       color: "#64748b",
+//                     }}
+//                   >
+//                     <div
+//                       style={{
+//                         width: "48px",
+//                         height: "48px",
+//                         background: "#dbeafe",
+//                         borderRadius: "12px",
+//                         display: "flex",
+//                         alignItems: "center",
+//                         justifyContent: "center",
+//                         margin: "0 auto 16px",
+//                       }}
+//                     >
+//                       <VideoIcon />
+//                     </div>
+//                     <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
+//                       Video Controls
+//                     </p>
+//                     <p style={{ fontSize: "12px", margin: 0 }}>
+//                       Adjust video properties and effects
+//                     </p>
+//                   </div>
+//                 </SidebarPanel>
+//               )}
 
-              {/* Tools Section */}
-              {activeSection === "tools" && (
-                <SidebarPanel title="Additional Tools" icon={<ToolsIcon />}>
-                  <div
-                    style={{
-                      textAlign: "center",
-                      padding: "24px",
-                      color: "#64748b",
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: "48px",
-                        height: "48px",
-                        background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
-                        borderRadius: "12px",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        margin: "0 auto 16px",
-                      }}
-                    >
-                      <SparkleIcon />
-                    </div>
-                    <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
-                      AI & Advanced Tools
-                    </p>
-                    <p style={{ fontSize: "12px", margin: 0 }}>
-                      Coming soon - AI generation, filters, and more
-                    </p>
-                  </div>
-                </SidebarPanel>
-              )}
-            </div>
+//               {/* Tools Section */}
+//               {activeSection === "tools" && (
+//                 <SidebarPanel title="Additional Tools" icon={<ToolsIcon />}>
+//                   <div
+//                     style={{
+//                       textAlign: "center",
+//                       padding: "24px",
+//                       color: "#64748b",
+//                     }}
+//                   >
+//                     <div
+//                       style={{
+//                         width: "48px",
+//                         height: "48px",
+//                         background: "linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)",
+//                         borderRadius: "12px",
+//                         display: "flex",
+//                         alignItems: "center",
+//                         justifyContent: "center",
+//                         margin: "0 auto 16px",
+//                       }}
+//                     >
+//                       <SparkleIcon />
+//                     </div>
+//                     <p style={{ fontSize: "13px", margin: "0 0 8px", color: "#0f172a" }}>
+//                       AI & Advanced Tools
+//                     </p>
+//                     <p style={{ fontSize: "12px", margin: 0 }}>
+//                       Coming soon - AI generation, filters, and more
+//                     </p>
+//                   </div>
+//                 </SidebarPanel>
+//               )}
+//             </div>
 
-            {/* FIXED: Preview Area - Now flexible instead of fixed width */}
-            <div
-              style={{
-                flex: 1,
-                minWidth: "400px",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                overflow: "auto",
-                padding: "24px",
-                background: "#f1f5f9",
-                position: "relative",
-              }}
-            >
-              {/* Subtle grid pattern */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundImage: `
-                    linear-gradient(to right, #e2e8f020 1px, transparent 1px),
-                    linear-gradient(to bottom, #e2e8f020 1px, transparent 1px)
-                  `,
-                  backgroundSize: "20px 20px",
-                  opacity: 0.5,
-                }}
-              />
-              <div
-                style={{
-                  position: "relative",
-                  background: "#ffffff",
-                  borderRadius: "12px",
-                  overflow: "hidden",
-                  boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04)",
-                }}
-              >
-                <QuoteSpotlightPreview
-                  ref={playerRef}
-                  quote={quote}
-                  author={author}
-                  backgroundImage={backgroundImage}
-                  fontSize={fontSize}
-                  fontFamily={fontFamily}
-                  fontColor={fontColor}
-                  showSafeMargins={showSafeMargins}
-                  previewBg={previewBg}
-                  cycleBg={cycleBg}
-                  previewScale={previewSize}
-                  onPreviewScaleChange={setPreviewSize}
-                  onToggleSafeMargins={setShowSafeMargins}
-                  duration={duration}
-                  onFrameUpdate={handleFrameUpdate}
-                  onPlayingChange={handlePlayingChange}
-                  tracks={tracks}
-                />
-              </div>
-            </div>
-          </div>
+//             {/* FIXED: Preview Area - Now flexible instead of fixed width */}
+//             <div
+//               style={{
+//                 flex: 1,
+//                 minWidth: "400px",
+//                 display: "flex",
+//                 flexDirection: "column",
+//                 alignItems: "center",
+//                 justifyContent: "center",
+//                 overflow: "auto",
+//                 padding: "24px",
+//                 background: "#f1f5f9",
+//                 position: "relative",
+//               }}
+//             >
+//               {/* Subtle grid pattern */}
+//               <div
+//                 style={{
+//                   position: "absolute",
+//                   inset: 0,
+//                   backgroundImage: `
+//                     linear-gradient(to right, #e2e8f020 1px, transparent 1px),
+//                     linear-gradient(to bottom, #e2e8f020 1px, transparent 1px)
+//                   `,
+//                   backgroundSize: "20px 20px",
+//                   opacity: 0.5,
+//                 }}
+//               />
+//               <div
+//                 style={{
+//                   position: "relative",
+//                   background: "#ffffff",
+//                   borderRadius: "12px",
+//                   overflow: "hidden",
+//                   boxShadow: "0 8px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04)",
+//                 }}
+//               >
+//                 <QuoteSpotlightPreview
+//                   ref={playerRef}
+//                   quote={quote}
+//                   author={author}
+//                   backgroundImage={backgroundImage}
+//                   fontSize={fontSize}
+//                   fontFamily={fontFamily}
+//                   fontColor={fontColor}
+//                   showSafeMargins={showSafeMargins}
+//                   previewBg={previewBg}
+//                   cycleBg={cycleBg}
+//                   previewScale={previewSize}
+//                   onPreviewScaleChange={setPreviewSize}
+//                   onToggleSafeMargins={setShowSafeMargins}
+//                   duration={duration}
+//                   onFrameUpdate={handleFrameUpdate}
+//                   onPlayingChange={handlePlayingChange}
+//                   tracks={tracks}
+//                 />
+//               </div>
+//             </div>
+//           </div>
 
-          {/* Timeline */}
-          <InteractiveTimeline
-            duration={duration}
-            setDuration={setDuration}
-            quote={quote}
-            currentTime={currentTime}
-            isPlaying={isPlaying}
-            onSeek={handleSeek}
-            onPlayPause={handlePlayPause}
-            onStop={handleStop}
-            tracks={tracks}
-            setTracks={setTracks}
-          />
-        </div>
-      </div>
+//           {/* Timeline */}
+//           <InteractiveTimeline
+//             duration={duration}
+//             setDuration={setDuration}
+//             quote={quote}
+//             currentTime={currentTime}
+//             isPlaying={isPlaying}
+//             onSeek={handleSeek}
+//             onPlayPause={handlePlayPause}
+//             onStop={handleStop}
+//             tracks={tracks}
+//             setTracks={setTracks}
+//           />
+//         </div>
+//       </div>
 
-      {/* Global styles for animations */}
-      <style>{`
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        ::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: #cbd5e1;
-          border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8;
-        }
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-          -webkit-appearance: none;
-          margin: 0;
-        }
-        input[type=number] {
-          -moz-appearance: textfield;
-        }
-      `}</style>
-    </div>
-  );
-};
+//       {/* Global styles for animations */}
+//       <style>{`
+//         @keyframes spin {
+//           from { transform: rotate(0deg); }
+//           to { transform: rotate(360deg); }
+//         }
+//         ::-webkit-scrollbar {
+//           width: 8px;
+//           height: 8px;
+//         }
+//         ::-webkit-scrollbar-track {
+//           background: #f1f5f9;
+//         }
+//         ::-webkit-scrollbar-thumb {
+//           background: #cbd5e1;
+//           border-radius: 4px;
+//         }
+//         ::-webkit-scrollbar-thumb:hover {
+//           background: #94a3b8;
+//         }
+//         input::-webkit-outer-spin-button,
+//         input::-webkit-inner-spin-button {
+//           -webkit-appearance: none;
+//           margin: 0;
+//         }
+//         input[type=number] {
+//           -moz-appearance: textfield;
+//         }
+//       `}</style>
+//     </div>
+//   );
+// };

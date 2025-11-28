@@ -1,20 +1,27 @@
 import React, { useState } from "react";
 import { FiUploadCloud, FiX, FiDownload } from "react-icons/fi";
 import { LuImage } from "react-icons/lu";
+import { backendPrefix } from "../../../../../config";
 
 interface UploadedFile {
   name: string;
   size: number;
   preview: string;
-  status: "uploading" | "complete";
+  status: "uploading" | "processing" | "complete" | "error";
   progress: number;
+  processedUrl?: string;
+  error?: string;
 }
+
 
 export const BackgroundRemover: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
 
   const handleFileSelect = (file: File) => {
+    setOriginalFile(file);
+    
     const reader = new FileReader();
     reader.onload = (e) => {
       const newFile: UploadedFile = {
@@ -43,12 +50,75 @@ export const BackgroundRemover: React.FC = () => {
     e.preventDefault();
     setIsDragging(false);
     const file = e.dataTransfer.files[0];
-    if (file) handleFileSelect(file);
+    if (file && file.type.startsWith("image/")) {
+      handleFileSelect(file);
+    }
   };
 
-  const handleRemoveBackground = () => {
-    console.log("Removing background...");
-    // TODO: Call API to remove background
+  const handleRemoveBackground = async () => {
+    if (!originalFile) return;
+
+    setUploadedFile((prev) =>
+      prev ? { ...prev, status: "processing", progress: 0 } : null
+    );
+
+    const formData = new FormData();
+    formData.append("image", originalFile);
+
+    try {
+      const response = await fetch(`${backendPrefix}/api/picture/remove-background`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to remove background");
+      }
+
+      const data = await response.json();
+      
+      setUploadedFile((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "complete",
+              progress: 100,
+              processedUrl: data.url,
+            }
+          : null
+      );
+    } catch (error) {
+      console.error("Error removing background:", error);
+      setUploadedFile((prev) =>
+        prev
+          ? {
+              ...prev,
+              status: "error",
+              error: (error as Error).message,
+            }
+          : null
+      );
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!uploadedFile?.processedUrl) return;
+
+    try {
+      const response = await fetch(uploadedFile.processedUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `bg-removed-${uploadedFile.name}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error("Error downloading image:", error);
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -77,7 +147,7 @@ export const BackgroundRemover: React.FC = () => {
           type="file"
           id="file-upload"
           className="hidden"
-          accept="image/png,image/svg+xml,image/jpeg,image/jpg,image/gif,image/webp,video/mp4,video/webm"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
           onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
         />
         
@@ -94,7 +164,7 @@ export const BackgroundRemover: React.FC = () => {
           </h3>
           
           <p className="text-[11px] sm:text-sm text-gray-500 mb-3 sm:mb-4 px-4">
-            Supports: PNG, SVG, JPG, JPEG, GIF, WEBP, MP4, WEBM
+            Supports: PNG, JPG, JPEG, WEBP (Max 10MB)
           </p>
           
           <label
@@ -110,6 +180,7 @@ export const BackgroundRemover: React.FC = () => {
       {/* Uploaded File Info */}
       {uploadedFile && (
         <div className="space-y-3 sm:space-y-4">
+          {/* Uploading State */}
           {uploadedFile.status === "uploading" && (
             <div className="bg-white border border-gray-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
               <div className="flex items-center gap-3 sm:gap-4 mb-3">
@@ -139,7 +210,8 @@ export const BackgroundRemover: React.FC = () => {
             </div>
           )}
 
-          {uploadedFile.status === "complete" && (
+          {/* Ready to Process State */}
+          {uploadedFile.status === "complete" && !uploadedFile.processedUrl && (
             <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-green-200">
@@ -174,6 +246,121 @@ export const BackgroundRemover: React.FC = () => {
                   >
                     <FiDownload className="text-sm" />
                     Remove Background
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Processing State */}
+          {uploadedFile.status === "processing" && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-blue-200">
+                  {uploadedFile.preview ? (
+                    <img src={uploadedFile.preview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <LuImage className="w-full h-full text-gray-400 p-3" />
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-semibold text-blue-900 truncate">
+                    {uploadedFile.name}
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-blue-700">
+                    Removing background...
+                  </p>
+                  <div className="w-full bg-blue-200 rounded-full h-1.5 mt-2">
+                    <div className="bg-blue-600 h-1.5 rounded-full animate-pulse w-2/3" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Processed State */}
+          {uploadedFile.status === "complete" && uploadedFile.processedUrl && (
+            <div className="bg-green-50 border border-green-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-green-200">
+                  <img src={uploadedFile.processedUrl} alt="Processed" className="w-full h-full object-cover" />
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-green-900 truncate">
+                        Background Removed!
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-green-700">
+                        Ready to download
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setUploadedFile(null)}
+                      className="text-green-600 hover:text-green-700 flex-shrink-0"
+                    >
+                      <FiX size={18} />
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={handleDownload}
+                    className="w-full mt-3 sm:mt-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    <FiDownload className="text-sm" />
+                    Download Image
+                  </button>
+                </div>
+              </div>
+              
+              {/* Preview of processed image */}
+              <div className="mt-4 rounded-lg overflow-hidden border border-green-200">
+                <img 
+                  src={uploadedFile.processedUrl} 
+                  alt="Background removed" 
+                  className="w-full h-auto"
+                  style={{ backgroundColor: '#f0f0f0' }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {uploadedFile.status === "error" && (
+            <div className="bg-red-50 border border-red-200 rounded-lg sm:rounded-xl p-4 sm:p-6">
+              <div className="flex items-start gap-3 sm:gap-4">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-red-200">
+                  {uploadedFile.preview ? (
+                    <img src={uploadedFile.preview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <LuImage className="w-full h-full text-gray-400 p-3" />
+                  )}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-semibold text-red-900 truncate">
+                        Processing Failed
+                      </p>
+                      <p className="text-[10px] sm:text-xs text-red-700">
+                        {uploadedFile.error || "An error occurred"}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setUploadedFile(null)}
+                      className="text-red-600 hover:text-red-700 flex-shrink-0"
+                    >
+                      <FiX size={18} />
+                    </button>
+                  </div>
+                  
+                  <button
+                    onClick={handleRemoveBackground}
+                    className="w-full mt-3 sm:mt-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                  >
+                    Try Again
                   </button>
                 </div>
               </div>
