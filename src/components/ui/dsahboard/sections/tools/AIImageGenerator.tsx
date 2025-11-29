@@ -4,13 +4,20 @@ import { LuSparkles, LuImage } from "react-icons/lu";
 
 export const AIImageGenerator: React.FC = () => {
   const [model, setModel] = useState("Seedream 3");
-  const [aspectRatio, setAspectRatio] = useState<"9:16" | "16:9" | "1:1" | "4:5">("9:16");
+  const [aspectRatio, setAspectRatio] = useState<
+    "9:16" | "16:9" | "1:1" | "4:5"
+  >("9:16");
   const [prompt, setPrompt] = useState("");
 
   const recentGenerations: Array<{ url: string; aspectRatio: string }> = [];
 
   const handleGenerate = () => {
-    console.log("Generating image with prompt:", prompt, "Aspect ratio:", aspectRatio);
+    console.log(
+      "Generating image with prompt:",
+      prompt,
+      "Aspect ratio:",
+      aspectRatio
+    );
   };
 
   const getAspectRatioClass = (ratio: string) => {
@@ -34,7 +41,10 @@ export const AIImageGenerator: React.FC = () => {
   };
 
   const totalSlots = aspectRatio === "16:9" ? 6 : 9;
-  const placeholderCount = recentGenerations.length > 0 ? Math.max(0, totalSlots - recentGenerations.length) : 0;
+  const placeholderCount =
+    recentGenerations.length > 0
+      ? Math.max(0, totalSlots - recentGenerations.length)
+      : 0;
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8">
@@ -52,17 +62,20 @@ export const AIImageGenerator: React.FC = () => {
                 value={model}
                 onChange={(e) => setModel(e.target.value)}
                 className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                style={{ 
-                  border: '1.5px solid #9CA3AF',
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none'
+                style={{
+                  border: "1.5px solid #9CA3AF",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
                 }}
               >
                 <option value="Seedream 3">Seedream 3 • Recommended</option>
                 <option value="DALL-E 3">DALL-E 3</option>
                 <option value="Midjourney">Midjourney</option>
               </select>
-              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+              <FiChevronDown
+                className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                size={16}
+              />
             </div>
           </div>
 
@@ -74,12 +87,16 @@ export const AIImageGenerator: React.FC = () => {
             <div className="relative">
               <select
                 value={aspectRatio}
-                onChange={(e) => setAspectRatio(e.target.value as "9:16" | "16:9" | "1:1" | "4:5")}
+                onChange={(e) =>
+                  setAspectRatio(
+                    e.target.value as "9:16" | "16:9" | "1:1" | "4:5"
+                  )
+                }
                 className="w-full px-2.5 sm:px-3 py-2 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                style={{ 
-                  border: '1.5px solid #9CA3AF',
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none'
+                style={{
+                  border: "1.5px solid #9CA3AF",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
                 }}
               >
                 <option value="9:16">9:16</option>
@@ -87,7 +104,10 @@ export const AIImageGenerator: React.FC = () => {
                 <option value="1:1">1:1</option>
                 <option value="4:5">4:5</option>
               </select>
-              <FiChevronDown className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+              <FiChevronDown
+                className="absolute right-2 sm:right-2.5 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                size={16}
+              />
             </div>
           </div>
         </div>
@@ -116,7 +136,7 @@ export const AIImageGenerator: React.FC = () => {
                 placeholder="Describe the image you want to create..."
                 rows={4}
                 className="w-full px-3 py-2.5 pb-12 sm:pb-14 rounded-lg bg-white text-xs sm:text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                style={{ border: '1.5px solid #9CA3AF' }}
+                style={{ border: "1.5px solid #9CA3AF" }}
               />
               <button className="absolute bottom-2.5 sm:bottom-3 right-2.5 sm:right-3 px-2.5 sm:px-3 py-1.5 rounded-md bg-gray-200 hover:bg-gray-300 text-[10px] sm:text-xs font-medium text-gray-700 transition">
                 Enhance Prompt
@@ -125,13 +145,25 @@ export const AIImageGenerator: React.FC = () => {
           </div>
 
           {/* Keyboard Shortcut - Hidden on mobile */}
-          <p className="hidden sm:block text-xs text-gray-500">⌘+Enter to generate</p>
+          <p className="hidden sm:block text-xs text-gray-500">
+            ⌘+Enter to generate
+          </p>
 
           {/* Generate Button */}
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim()}
-            className="w-full py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg active:scale-[0.98]"
+            className="w-full py-2.5 sm:py-3 rounded-lg text-xs sm:text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed transition active:scale-[0.98]"
+            style={{
+              background: !prompt.trim()
+                ? "#9CA3AF"
+                : "linear-gradient(90deg, #ff5aa5 0%, #7c3aed 45%, #00c2d1 100%)",
+              boxShadow:
+                "0 8px 20px rgba(124, 58, 237, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) inset",
+              border: "none",
+              WebkitAppearance: "none",
+              MozAppearance: "none",
+            }}
           >
             Generate Image
           </button>
@@ -168,11 +200,15 @@ export const AIImageGenerator: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className={`grid ${getGridCols(aspectRatio)} gap-2 sm:gap-2.5`}>
+            <div
+              className={`grid ${getGridCols(aspectRatio)} gap-2 sm:gap-2.5`}
+            >
               {recentGenerations.map((item, idx) => (
                 <div
                   key={`gen-${idx}`}
-                  className={`${getAspectRatioClass(item.aspectRatio)} rounded-md sm:rounded-lg overflow-hidden border border-gray-200 hover:border-indigo-400 transition cursor-pointer shadow-sm active:scale-[0.98]`}
+                  className={`${getAspectRatioClass(
+                    item.aspectRatio
+                  )} rounded-md sm:rounded-lg overflow-hidden border border-gray-200 hover:border-indigo-400 transition cursor-pointer shadow-sm active:scale-[0.98]`}
                 >
                   <img
                     src={item.url}
@@ -181,11 +217,13 @@ export const AIImageGenerator: React.FC = () => {
                   />
                 </div>
               ))}
-              
+
               {Array.from({ length: placeholderCount }).map((_, idx) => (
                 <div
                   key={`placeholder-${idx}`}
-                  className={`${getAspectRatioClass(aspectRatio)} rounded-md sm:rounded-lg bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center transition hover:bg-gray-250 hover:border-gray-400`}
+                  className={`${getAspectRatioClass(
+                    aspectRatio
+                  )} rounded-md sm:rounded-lg bg-gray-200 border-2 border-dashed border-gray-300 flex items-center justify-center transition hover:bg-gray-250 hover:border-gray-400`}
                 >
                   <LuImage className="text-gray-400 text-lg sm:text-2xl" />
                 </div>

@@ -11,10 +11,15 @@ export const VEO3Generator: React.FC = () => {
 
   const handleGenerate = () => {
     if (!prompt.trim()) return;
-    
+
     setLoading(true);
-    console.log("Generating video with:", { model, duration, aspectRatio, prompt });
-    
+    console.log("Generating video with:", {
+      model,
+      duration,
+      aspectRatio,
+      prompt,
+    });
+
     setTimeout(() => {
       setLoading(false);
     }, 3000);
@@ -58,17 +63,20 @@ export const VEO3Generator: React.FC = () => {
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
                   className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                  style={{ 
-                    border: '1.5px solid #9CA3AF',
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'none'
+                  style={{
+                    border: "1.5px solid #9CA3AF",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
                   }}
                 >
                   <option value="VEO3 Standard">VEO3 Standard</option>
                   <option value="VEO3 Pro">VEO3 Pro</option>
                   <option value="VEO3 Ultra">VEO3 Ultra</option>
                 </select>
-                <FiChevronDown className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+                <FiChevronDown
+                  className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                  size={16}
+                />
                 {model === "VEO3 Standard" && (
                   <span className="absolute left-24 sm:left-32 top-1/2 -translate-y-1/2 text-[10px] sm:text-xs text-gray-500 pointer-events-none font-medium">
                     Popular
@@ -87,10 +95,10 @@ export const VEO3Generator: React.FC = () => {
                   value={duration}
                   onChange={(e) => setDuration(e.target.value)}
                   className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                  style={{ 
-                    border: '1.5px solid #9CA3AF',
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'none'
+                  style={{
+                    border: "1.5px solid #9CA3AF",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
                   }}
                 >
                   <option value="5s">5s</option>
@@ -99,7 +107,10 @@ export const VEO3Generator: React.FC = () => {
                   <option value="15s">15s</option>
                   <option value="30s">30s</option>
                 </select>
-                <FiChevronDown className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+                <FiChevronDown
+                  className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                  size={16}
+                />
               </div>
             </div>
 
@@ -113,10 +124,10 @@ export const VEO3Generator: React.FC = () => {
                   value={aspectRatio}
                   onChange={(e) => setAspectRatio(e.target.value)}
                   className="w-full px-2.5 sm:px-3 py-2 sm:py-2.5 pr-7 sm:pr-8 rounded-lg bg-white text-xs sm:text-sm appearance-none focus:ring-2 focus:ring-indigo-500 outline-none"
-                  style={{ 
-                    border: '1.5px solid #9CA3AF',
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'none'
+                  style={{
+                    border: "1.5px solid #9CA3AF",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
                   }}
                 >
                   <option value="16:9">16:9</option>
@@ -124,7 +135,10 @@ export const VEO3Generator: React.FC = () => {
                   <option value="1:1">1:1</option>
                   <option value="4:5">4:5</option>
                 </select>
-                <FiChevronDown className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none" size={16} />
+                <FiChevronDown
+                  className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 text-gray-600 pointer-events-none"
+                  size={16}
+                />
               </div>
             </div>
           </div>
@@ -135,8 +149,8 @@ export const VEO3Generator: React.FC = () => {
               onClick={() => console.log("Open Prompt Library")}
               className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-800 transition active:scale-[0.98]"
               style={{
-                border: '1.5px solid #9CA3AF',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                border: "1.5px solid #9CA3AF",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
               }}
             >
               <FiBookOpen className="text-sm sm:text-base text-gray-700" />
@@ -147,8 +161,8 @@ export const VEO3Generator: React.FC = () => {
               onClick={() => console.log("Open Prompt Docs")}
               className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-white hover:bg-gray-50 text-xs sm:text-sm font-medium text-gray-800 transition active:scale-[0.98]"
               style={{
-                border: '1.5px solid #9CA3AF',
-                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                border: "1.5px solid #9CA3AF",
+                boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
               }}
             >
               <HiOutlineDocumentText className="text-sm sm:text-base text-gray-700" />
@@ -160,7 +174,7 @@ export const VEO3Generator: React.FC = () => {
               disabled
               className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg bg-gray-100 text-xs sm:text-sm font-medium text-gray-500 cursor-not-allowed"
               style={{
-                border: '1.5px solid #D1D5DB'
+                border: "1.5px solid #D1D5DB",
               }}
             >
               <FiImage className="text-sm sm:text-base" />
@@ -181,7 +195,7 @@ export const VEO3Generator: React.FC = () => {
               placeholder="Describe the video you want to create..."
               rows={8}
               className="w-full px-3 sm:px-4 py-2.5 sm:py-3 rounded-lg bg-white text-xs sm:text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-              style={{ border: '1.5px solid #9CA3AF' }}
+              style={{ border: "1.5px solid #9CA3AF" }}
             />
           </div>
 
@@ -189,7 +203,19 @@ export const VEO3Generator: React.FC = () => {
           <button
             onClick={handleGenerate}
             disabled={!prompt.trim() || loading}
-            className="w-full py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 hover:from-indigo-600 hover:via-purple-600 hover:to-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed transition shadow-lg hover:shadow-xl flex items-center justify-center gap-2 relative active:scale-[0.98]"
+            className="w-full py-3 sm:py-3.5 rounded-lg text-xs sm:text-sm font-semibold text-white disabled:cursor-not-allowed transition flex items-center justify-center gap-2 relative active:scale-[0.98]"
+            style={{
+              background:
+                !prompt.trim() || loading
+                  ? "#9CA3AF"
+                  : "linear-gradient(90deg, #ff5aa5 0%, #7c3aed 45%, #00c2d1 100%)",
+              boxShadow:
+                "0 8px 20px rgba(124, 58, 237, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) inset",
+              opacity: !prompt.trim() || loading ? 0.6 : 1,
+              border: "none",
+              WebkitAppearance: "none",
+              MozAppearance: "none",
+            }}
           >
             {loading ? (
               <>
@@ -199,7 +225,9 @@ export const VEO3Generator: React.FC = () => {
             ) : (
               <>
                 <span>Generate Video</span>
-                <span className="hidden sm:block absolute right-3 sm:right-4 text-[10px] sm:text-xs text-white/80">⌘+Enter</span>
+                <span className="hidden sm:block absolute right-3 sm:right-4 text-[10px] sm:text-xs text-white/80">
+                  ⌘+Enter
+                </span>
               </>
             )}
           </button>
@@ -212,7 +240,8 @@ export const VEO3Generator: React.FC = () => {
                 Creating your video...
               </h3>
               <p className="text-xs sm:text-sm text-gray-600 px-4">
-                This may take a few moments. Please wait while we generate your video.
+                This may take a few moments. Please wait while we generate your
+                video.
               </p>
             </div>
           )}

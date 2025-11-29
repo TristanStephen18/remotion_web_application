@@ -36,13 +36,17 @@ const ToolCard: React.FC<ToolCardProps> = ({
       <div className="relative z-10 flex flex-col flex-1">
         {/* Icon & Badge */}
         <div className="flex items-start justify-between mb-3">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 
-            flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300">
+          <div
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 
+            flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform duration-300"
+          >
             <div className="text-xl sm:text-2xl">{icon}</div>
           </div>
           {badge && (
-            <span className="text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 sm:py-1 rounded-full 
-              bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-white shadow-md">
+            <span
+              className="text-[9px] sm:text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 sm:py-1 rounded-full 
+              bg-gradient-to-r from-fuchsia-500 to-indigo-500 text-white shadow-md"
+            >
               {badge}
             </span>
           )}
@@ -62,11 +66,17 @@ const ToolCard: React.FC<ToolCardProps> = ({
         <button
           onClick={onGetStarted}
           className="relative inline-flex items-center justify-center w-full py-2.5 sm:py-3
-          font-semibold text-xs sm:text-sm rounded-lg text-white overflow-hidden
-          bg-gradient-to-r from-fuchsia-600 via-indigo-600 to-sky-600
-          hover:from-fuchsia-700 hover:via-indigo-700 hover:to-sky-700
-          shadow-lg hover:shadow-xl
-          active:scale-[0.97] transition-all duration-300"
+  font-semibold text-xs sm:text-sm rounded-lg text-white overflow-hidden
+  active:scale-[0.97] transition-all duration-300"
+          style={{
+            background:
+              "linear-gradient(90deg, #ff5aa5 0%, #7c3aed 45%, #00c2d1 100%)",
+            boxShadow:
+              "0 8px 20px rgba(124, 58, 237, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) inset",
+            border: "none",
+            WebkitAppearance: "none",
+            MozAppearance: "none",
+          }}
         >
           <span className="relative z-10 flex items-center gap-2">
             Get Started
@@ -81,7 +91,11 @@ const ToolCard: React.FC<ToolCardProps> = ({
   );
 };
 
-type ActiveView = "tools" | "ai-tools" | "youtube-downloader" | "veo3-generator";
+type ActiveView =
+  | "tools"
+  | "ai-tools"
+  | "youtube-downloader"
+  | "veo3-generator";
 
 export const ToolsSection: React.FC = () => {
   const [activeView, setActiveView] = useState<ActiveView>("tools");
@@ -110,7 +124,8 @@ export const ToolsSection: React.FC = () => {
     {
       icon: <FiImage />,
       title: "AI Image & Background Remover",
-      description: "Generate stunning AI images and remove backgrounds instantly with advanced AI technology.",
+      description:
+        "Generate stunning AI images and remove backgrounds instantly with advanced AI technology.",
       badge: "Popular",
       action: () => {
         setActiveView("ai-tools");
@@ -119,7 +134,8 @@ export const ToolsSection: React.FC = () => {
     {
       icon: <FiVideo />,
       title: "Youtube Video Downloader",
-      description: "Download Youtube videos in high quality for your content creation needs.",
+      description:
+        "Download Youtube videos in high quality for your content creation needs.",
       action: () => {
         setActiveView("youtube-downloader");
       },
@@ -127,7 +143,8 @@ export const ToolsSection: React.FC = () => {
     {
       icon: <FiFilm />,
       title: "VEO3 Video Generator",
-      description: "Create professional videos with cutting-edge VEO3 AI technology.",
+      description:
+        "Create professional videos with cutting-edge VEO3 AI technology.",
       badge: "New",
       action: () => {
         setActiveView("veo3-generator");
@@ -143,7 +160,8 @@ export const ToolsSection: React.FC = () => {
           ✨ Tools
         </h2>
         <p className="text-sm text-gray-600">
-          Powerful AI tools to enhance your content creation workflow. Generate images, download videos, and create stunning content with ease.
+          Powerful AI tools to enhance your content creation workflow. Generate
+          images, download videos, and create stunning content with ease.
         </p>
       </div>
 
@@ -167,7 +185,8 @@ export const ToolsSection: React.FC = () => {
           More Tools Coming Soon
         </h3>
         <p className="text-xs sm:text-sm text-gray-600">
-          We're constantly building new AI-powered tools to help you create amazing content. Stay tuned!
+          We're constantly building new AI-powered tools to help you create
+          amazing content. Stay tuned!
         </p>
       </div>
     </div>

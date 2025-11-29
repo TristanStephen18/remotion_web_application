@@ -31,7 +31,13 @@ export const BackgroundRemover: React.FC = () => {
       const interval = setInterval(() => {
         progress += 10;
         setUploadedFile((prev) =>
-          prev ? { ...prev, progress, status: progress >= 100 ? "complete" : "uploading" } : null
+          prev
+            ? {
+                ...prev,
+                progress,
+                status: progress >= 100 ? "complete" : "uploading",
+              }
+            : null
         );
         if (progress >= 100) clearInterval(interval);
       }, 200);
@@ -78,25 +84,30 @@ export const BackgroundRemover: React.FC = () => {
           id="file-upload"
           className="hidden"
           accept="image/png,image/svg+xml,image/jpeg,image/jpg,image/gif,image/webp,video/mp4,video/webm"
-          onChange={(e) => e.target.files?.[0] && handleFileSelect(e.target.files[0])}
+          onChange={(e) =>
+            e.target.files?.[0] && handleFileSelect(e.target.files[0])
+          }
         />
-        
+
         <div className="flex flex-col items-center">
           <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-indigo-100 flex items-center justify-center mb-3 sm:mb-4">
             <FiUploadCloud className="text-indigo-600 text-2xl sm:text-3xl" />
           </div>
-          
+
           <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1 sm:mb-2">
             Drop your file here, or{" "}
-            <label htmlFor="file-upload" className="text-indigo-600 hover:text-indigo-700 cursor-pointer underline">
+            <label
+              htmlFor="file-upload"
+              className="text-indigo-600 hover:text-indigo-700 cursor-pointer underline"
+            >
               browse
             </label>
           </h3>
-          
+
           <p className="text-[11px] sm:text-sm text-gray-500 mb-3 sm:mb-4 px-4">
             Supports: PNG, SVG, JPG, JPEG, GIF, WEBP, MP4, WEBM
           </p>
-          
+
           <label
             htmlFor="file-upload"
             className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-2.5 bg-white border border-gray-300 rounded-lg text-xs sm:text-sm font-medium text-gray-700 hover:bg-gray-50 transition cursor-pointer active:scale-[0.98]"
@@ -115,7 +126,11 @@ export const BackgroundRemover: React.FC = () => {
               <div className="flex items-center gap-3 sm:gap-4 mb-3">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                   {uploadedFile.preview ? (
-                    <img src={uploadedFile.preview} alt="Preview" className="w-full h-full object-cover" />
+                    <img
+                      src={uploadedFile.preview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <LuImage className="w-full h-full text-gray-400 p-3" />
                   )}
@@ -129,7 +144,7 @@ export const BackgroundRemover: React.FC = () => {
                   </p>
                 </div>
               </div>
-              
+
               <div className="w-full bg-gray-200 rounded-full h-1.5 sm:h-2">
                 <div
                   className="bg-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-300"
@@ -144,12 +159,16 @@ export const BackgroundRemover: React.FC = () => {
               <div className="flex items-start gap-3 sm:gap-4">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-white flex-shrink-0 border border-green-200">
                   {uploadedFile.preview ? (
-                    <img src={uploadedFile.preview} alt="Preview" className="w-full h-full object-cover" />
+                    <img
+                      src={uploadedFile.preview}
+                      alt="Preview"
+                      className="w-full h-full object-cover"
+                    />
                   ) : (
                     <LuImage className="w-full h-full text-gray-400 p-3" />
                   )}
                 </div>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="flex-1 min-w-0">
@@ -167,10 +186,19 @@ export const BackgroundRemover: React.FC = () => {
                       <FiX size={18} />
                     </button>
                   </div>
-                  
+
                   <button
                     onClick={handleRemoveBackground}
-                    className="w-full mt-3 sm:mt-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 hover:opacity-90 transition shadow-sm flex items-center justify-center gap-2 active:scale-[0.98]"
+                    className="w-full mt-3 sm:mt-4 py-2 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white transition flex items-center justify-center gap-2 active:scale-[0.98]"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #ff5aa5 0%, #7c3aed 45%, #00c2d1 100%)",
+                      boxShadow:
+                        "0 8px 20px rgba(124, 58, 237, 0.18), 0 2px 6px rgba(0, 0, 0, 0.08) inset",
+                      border: "none",
+                      WebkitAppearance: "none",
+                      MozAppearance: "none",
+                    }}
                   >
                     <FiDownload className="text-sm" />
                     Remove Background
