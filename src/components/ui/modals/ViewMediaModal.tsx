@@ -40,6 +40,13 @@ export const ViewMediaModal: React.FC<ViewMediaModalProps> = ({
       return;
     }
 
+    const getVideoUrl = () => {
+      if (itemType === "project") {
+        return item.projectVidUrl;
+      }
+      return item.outputUrl;
+    };
+
     const videoUrl = getVideoUrl();
     if (!videoUrl) return;
 
@@ -52,7 +59,7 @@ export const ViewMediaModal: React.FC<ViewMediaModalProps> = ({
       setIsPortrait(aspectRatio <= 1); // Portrait or square
       setMediaLoaded(true);
     };
-
+    
     video.onerror = () => {
       // Fallback to provided aspect ratio or assume landscape
       if (item.aspectRatio) {
@@ -62,14 +69,14 @@ export const ViewMediaModal: React.FC<ViewMediaModalProps> = ({
       }
       setMediaLoaded(true);
     };
-
+    
     video.src = videoUrl;
-
+    
     return () => {
       video.src = '';
     };
-  }, [isOpen, item]);
-
+  }, [isOpen, item, itemType]);
+  
   if (!isOpen || !item) return null;
 
   const getVideoUrl = () => {
