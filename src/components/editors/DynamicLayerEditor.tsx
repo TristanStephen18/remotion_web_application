@@ -58,7 +58,7 @@ import { ImageEditor } from "../editor_components/ImageEditor";
 import { VideoEditor } from "../editor_components/VideoEditor";
 import { RemotionPreview, type RemotionPreviewHandle } from "../editor_components/RemotionPreview";
 import MediaLibrary from "../editor_components/MediaLibrary";
-import { getTemplate, type TemplateDefinition } from "../../utils/SimpleTemplateRegistry";
+import { getTemplate, type TemplateDefinition } from "../../utils/simpleTemplateRegistry";
 
 
 // Custom Icons
