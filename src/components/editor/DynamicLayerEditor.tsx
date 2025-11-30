@@ -416,18 +416,26 @@ const DynamicLayerEditor: React.FC = () => {
   useEffect(() => {
     const updateDimensions = () => {
       if (previewContainerRef.current) {
-        const rect = previewContainerRef.current.getBoundingClientRect();
-        setPreviewDimensions({ width: rect.width, height: rect.height });
+        const container = previewContainerRef.current;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        const aspectRatio = 9 / 16;
+        
+        let width = containerWidth * 0.8;
+        let height = width / aspectRatio;
+        
+        if (height > containerHeight * 0.8) {
+          height = containerHeight * 0.8;
+          width = height * aspectRatio;
+        }
+        
+        setPreviewDimensions({ width, height });
       }
     };
 
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
-    const timeout = setTimeout(updateDimensions, 100);
-    return () => {
-      window.removeEventListener("resize", updateDimensions);
-      clearTimeout(timeout);
-    };
+    return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
   // ============================================================================
@@ -1812,7 +1820,13 @@ const DynamicLayerEditor: React.FC = () => {
                 Save
               </button>
               <button
-                style={editorStyles.exportButton}
+                style={{
+                  ...editorStyles.exportButton,
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
                 onClick={() => setShowExportModal(true)}
                 onMouseOver={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
                 onMouseOut={(e) => (e.currentTarget.style.transform = "translateY(0)")}
@@ -1835,6 +1849,11 @@ const DynamicLayerEditor: React.FC = () => {
               fps={FPS}
               onFrameUpdate={handlePreviewFrameUpdate}
               onPlayingChange={(playing) => setIsPlaying(playing)}
+              // ✅ ADDED: Pass dynamic dimensions for responsiveness
+              containerWidth="100%"
+              containerHeight="100%"
+              phoneFrameWidth={`${previewDimensions.width}px`}
+              phoneFrameHeight={`${previewDimensions.height}px`}
             />
 
               {/* Enable overlay for Quote (ID 1), Typing (ID 2), etc. - Disable for Ken Burns (ID 8) */}
