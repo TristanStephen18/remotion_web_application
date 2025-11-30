@@ -12,9 +12,10 @@ import {
   Box,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { templateCategories } from "../../../data/DashboardCardsData"; 
+import { templateCategories } from "../../../data/DashboardCardsData";
 import { TemplateNavigator } from "../../../utils/TemplateNavigator";
 import { ModalTemplateCard } from "../dsahboard/TemplateCardModal";
+import { TEMPLATE_NAME_TO_ID } from "../../../utils/simpleTemplateRegistry";
 
 interface ChooseTemplateModalProps {
   open: boolean;
@@ -39,7 +40,9 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
   const displayedTemplates =
     newProjectTab === 0
       ? allTemplates
-      : templateCategories[categories[newProjectTab] as keyof typeof templateCategories];
+      : templateCategories[
+          categories[newProjectTab] as keyof typeof templateCategories
+        ];
 
   return (
     <Dialog
@@ -151,8 +154,15 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
                 description={template.description}
                 url={template.url}
                 onSelect={(label) => {
-                  const location = TemplateNavigator(label);
-                  window.open(location, "_blank");
+                  console.log(label);
+                  const templateId = TEMPLATE_NAME_TO_ID[label || ""];
+                  if (templateId) {
+                    const location = `/editor?template=${templateId}`;
+                    window.open(location, "_blank");
+                  } else {
+                    const location = TemplateNavigator(label || "user");
+                    window.open(location, "_blank");
+                  }
                   onClose();
                 }}
               />
