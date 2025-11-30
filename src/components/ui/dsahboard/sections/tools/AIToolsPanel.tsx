@@ -1,12 +1,38 @@
 import React, { useState } from "react";
 import { FiImage } from "react-icons/fi";
-import { AIImageGenerator } from "./AIImageGenerator";
 import { BackgroundRemover } from "./BackgroundRemover";
+import { AIImageGenerator } from "./AIImageGenerator";
+import { useAiImageAndBgRemoveHooks } from "../../../../../hooks/dashboardhooks/tools/aiimageandbgremover";
 
 type TabType = "ai-images" | "remove-bg";
 
 export const AIToolsPanel: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>("ai-images");
+
+  const {
+    pollinationsModel,
+    setPollinationsModel,
+    aspectRatio,
+    setAspectRatio,
+    prompt,
+    setPrompt,
+    imageLoading,
+    setImageLoading,
+    recentGenerations,
+    setRecentGenerations,
+    loading,
+    setLoading,
+    error,
+    setError,
+    currentImage,
+    setCurrentImage,
+    uploadedFile,
+    setUploadedFile,
+    isDragging,
+    setIsDragging,
+    originalFile,
+    setOriginalFile,
+  } = useAiImageAndBgRemoveHooks();
 
   return (
     <div className="space-y-6">
@@ -21,7 +47,8 @@ export const AIToolsPanel: React.FC = () => {
           </h2>
         </div>
         <p className="text-sm text-gray-600">
-          Generate stunning AI images and remove backgrounds instantly with advanced AI technology.
+          Generate stunning AI images and remove backgrounds instantly with
+          advanced AI technology.
         </p>
       </div>
 
@@ -53,7 +80,35 @@ export const AIToolsPanel: React.FC = () => {
 
       {/* Content Area - Responsive padding */}
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-        {activeTab === "ai-images" ? <AIImageGenerator /> : <BackgroundRemover />}
+        {activeTab === "ai-images" ? (
+          <AIImageGenerator
+            aspectRatio={aspectRatio}
+            currentImage={currentImage}
+            error={error}
+            imageLoading={imageLoading}
+            loading={loading}
+            pollinationsModel={pollinationsModel}
+            prompt={prompt}
+            recentGenerations={recentGenerations}
+            setAspectRatio={setAspectRatio}
+            setCurrentImage={setCurrentImage}
+            setError={setError}
+            setImageLoading={setImageLoading}
+            setLoading={setLoading}
+            setPollinationsModel={setPollinationsModel}
+            setPrompt={setPrompt}
+            setRecentGenerations={setRecentGenerations}
+          />
+        ) : (
+          <BackgroundRemover
+            isDragging={isDragging}
+            originalFile={originalFile}
+            setIsDragging={setIsDragging}
+            setOriginalFile={setOriginalFile}
+            setUploadedFile={setUploadedFile}
+            uploadedFile={uploadedFile}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,23 +1,26 @@
-import React, { useState } from "react";
+import React from "react";
 import { FiUploadCloud, FiX, FiDownload } from "react-icons/fi";
 import { LuImage } from "react-icons/lu";
 import { backendPrefix } from "../../../../../config";
+import type { UploadedFile } from "../../../../../models/imagegenandbgremove";
 
-interface UploadedFile {
-  name: string;
-  size: number;
-  preview: string;
-  status: "uploading" | "processing" | "complete" | "error";
-  progress: number;
-  processedUrl?: string;
-  error?: string;
+interface BackgroundRemoverInterface {
+  uploadedFile: UploadedFile | null;
+  setUploadedFile: React.Dispatch<React.SetStateAction<UploadedFile | null>>;
+  isDragging: boolean;
+  setIsDragging: React.Dispatch<React.SetStateAction<boolean>>;
+  originalFile: File | null;
+  setOriginalFile: React.Dispatch<React.SetStateAction<File | null>>;
 }
 
-
-export const BackgroundRemover: React.FC = () => {
-  const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
-  const [originalFile, setOriginalFile] = useState<File | null>(null);
+export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
+  uploadedFile,
+  setUploadedFile,
+  isDragging,
+  setIsDragging,
+  originalFile,
+  setOriginalFile
+}) => {
 
   const handleFileSelect = (file: File) => {
     setOriginalFile(file);
