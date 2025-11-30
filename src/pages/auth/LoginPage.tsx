@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
       toast.success("Log in successful. You will be redirected any second...");
 
       localStorage.setItem("token", data.token);
-      setTimeout(() => navigate("/dashboard"), 1000);
+      setTimeout(() => navigate("/initializing-login"), 1000);
     } catch (err) {
       setError("Login failed. Please try again.");
     } finally {

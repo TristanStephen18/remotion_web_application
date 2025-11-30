@@ -1,21 +1,13 @@
 import { useEffect } from "react";
-import toast from "react-hot-toast";
-import { loginWithGoogle } from "../../utils/LoginUsingGoogle";
 
-const GoogleLoading = () => {
+const LoginLoading = () => {
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
+    // Navigate to dashboard after 3 seconds
+    const timer = setTimeout(() => {
+      window.location.assign("/dashboard");
+    }, 3000);
 
-    if (!email) {
-      toast.error("No email found from Google login");
-      window.location.assign("/");
-      return;
-    } else {
-      loginWithGoogle(email);
-    }
-
-    console.log("Google email:", email);
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -181,4 +173,4 @@ const GoogleLoading = () => {
   );
 };
 
-export default GoogleLoading;
+export default LoginLoading;
