@@ -184,7 +184,6 @@ export const DashboardContent: React.FC = () => {
         {activeSection === "renders" && (
           <MyRendersSection
             renders={renders}
-            loading={loadingRenders}
             handleDeleteRenders={handleDeleteRenders}
             selectedRenders={selectedRenders}
             setSelectedRenders={setSelectedRenders}
