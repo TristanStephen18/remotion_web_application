@@ -16,7 +16,7 @@ export const TemplateNavigator = (template: string) => {
       case "Ken Burns Carousel":
         return leading + "/kenburnscarousel";
       case "Fake Text Conversation":
-        return leading + "/faketextconversation";
+        return leading + "/fakechat";
       case "Reddit Post Narration":
         return leading + "/redditvideo";
       case "Ai Story Narration":
@@ -37,6 +37,8 @@ export const TemplateNavigator = (template: string) => {
         return leading + "/neontube";
       case "Retro Neon Text":
         return leading + "/retroneon";
+      case "Photo Collage":
+        return leading + "/photocollage";
       default:
         return "/";
     }

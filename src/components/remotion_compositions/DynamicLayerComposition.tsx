@@ -1,6 +1,688 @@
-// ============================================================================
-// COMPLETE DynamicLayerComposition.tsx WITH VIDEO SUPPORT
-// ============================================================================
+// import React from "react";
+// import {
+//   AbsoluteFill,
+//   interpolate,
+//   spring,
+//   useCurrentFrame,
+//   useVideoConfig,
+//   Img,
+//   Audio,
+//   Video,
+//   Sequence,
+// } from "remotion";
+
+// // ============================================================================
+// // TYPES
+// // ============================================================================
+
+// export interface LayerBase {
+//   id: string;
+//   name: string;
+//   visible: boolean;
+//   locked: boolean;
+//   startFrame: number;
+//   endFrame: number;
+//   position: { x: number; y: number };
+//   size: { width: number; height: number };
+//   rotation: number;
+//   opacity: number;
+//   animation?: {
+//     entrance?: "fade" | "slideUp" | "slideDown" | "scale" | "zoomPunch" | "none";
+//     entranceDuration?: number;
+//   };
+// }
+
+// export interface TextLayer extends LayerBase {
+//   type: "text";
+//   content: string;
+//   fontFamily: string;
+//   fontSize: number;
+//   fontColor: string;
+//   fontWeight: string;
+//   fontStyle: string;
+//   textAlign: "left" | "center" | "right";
+//   lineHeight: number;
+//   letterSpacing?: number;
+//   textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
+//   textOutline?: boolean;
+//   outlineColor?: string;
+//   textShadow?: boolean;
+//   shadowColor?: string;
+//   shadowX?: number;
+//   shadowY?: number;
+//   shadowBlur?: number;
+// }
+
+// export interface ImageLayer extends LayerBase {
+//   type: "image";
+//   src: string;
+//   isBackground?: boolean;
+//   objectFit?: "cover" | "contain" | "fill";
+//   filter?: string;
+// }
+
+// export interface AudioLayer extends LayerBase {
+//   type: "audio";
+//   src: string;
+//   volume: number;
+//   loop?: boolean;
+//   fadeIn?: number;
+//   fadeOut?: number;
+// }
+
+// export interface VideoLayer extends LayerBase {
+//   type: "video";
+//   src: string;
+//   volume: number;
+//   loop?: boolean;
+//   playbackRate?: number;
+//   objectFit?: "cover" | "contain" | "fill";
+//   filter?: string;
+//   fadeIn?: number;
+//   fadeOut?: number;
+// }
+
+// export type ChatStyle = "imessage" | "whatsapp" | "instagram" | "messenger";
+
+// export interface ChatBubbleLayer extends LayerBase {
+//   type: "chat-bubble";
+//   message: string;
+//   isSender: boolean;
+//   chatStyle: ChatStyle;
+//   avatarUrl?: string;
+//   senderName?: string;
+//   isTyping?: boolean;
+// }
+
+// export type Layer = TextLayer | ImageLayer | AudioLayer | VideoLayer | ChatBubbleLayer;
+
+// // Type Guards
+// export const isChatBubbleLayer = (l: Layer): l is ChatBubbleLayer => l.type === "chat-bubble";
+// export const isTextLayer = (l: Layer): l is TextLayer => l.type === "text";
+// export const isImageLayer = (l: Layer): l is ImageLayer => l.type === "image";
+// export const isAudioLayer = (l: Layer): l is AudioLayer => l.type === "audio";
+// export const isVideoLayer = (l: Layer): l is VideoLayer => l.type === "video";
+
+// export interface DynamicCompositionProps {
+//   layers: Layer[];
+//   backgroundColor?: string;
+//   editingLayerId?: string | null;
+//   templateId?: number; 
+// }
+
+// // ============================================================================
+// // ICONS & UI ASSETS
+// // ============================================================================
+
+// const Icons = {
+//   // iMessage
+//   BackChevronBlue: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   VideoBlue: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   AppStore: () => <svg width="34" height="34" viewBox="0 0 24 24" fill="#8E8E93"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>,
+//   CameraGrey: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   MicGrey: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  
+//   // WhatsApp
+//   BackArrowWhite: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   VideoWhite: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   PhoneWhite: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" fill="white"/></svg>,
+//   PlusGrey: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+//   MicWhite: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+
+//   // Instagram
+//   BackArrowBlack: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   VideoBlack: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   PhoneBlack: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="black" strokeWidth="2" fill="none"/></svg>,
+//   ImageSquare: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  
+//   // Messenger
+//   PlusBlue: () => <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0084FF" /><path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+//   PhonePurple: () => <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" fill="#A855F7"/></svg>,
+//   VideoPurple: () => <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" fill="#A855F7"/></svg>,
+// };
+
+// // ============================================================================
+// // HELPER FUNCTIONS
+// // ============================================================================
+
+// const getEntranceAnimation = (layer: Layer, relativeFrame: number, fps: number) => {
+//   const animation = layer.animation?.entrance || "fade";
+//   const duration = layer.animation?.entranceDuration || 30;
+
+//   // FIX: Return empty string instead of "none" for transform to avoid CSS syntax errors
+//   // e.g. "rotate(45deg) none" is invalid CSS. "rotate(45deg) " is valid.
+//   if (animation === "none") return { opacity: 1, transform: "" };
+
+//   const progress = spring({
+//     frame: relativeFrame,
+//     fps,
+//     config: { damping: 15, stiffness: 80 },
+//     durationInFrames: duration,
+//   });
+
+//   const opacity = interpolate(relativeFrame, [0, duration * 0.5], [0, 1], { extrapolateRight: "clamp" });
+
+//   switch (animation) {
+//     case "slideUp": return { opacity, transform: `translateY(${interpolate(progress, [0, 1], [50, 0])}px)` };
+//     case "slideDown": return { opacity, transform: `translateY(${interpolate(progress, [0, 1], [-50, 0])}px)` };
+//     case "scale": return { opacity, transform: `scale(${interpolate(progress, [0, 1], [0.8, 1])})` };
+//     case "zoomPunch": return { opacity, transform: `scale(${interpolate(progress, [0, 1], [1.5, 1])})` };
+//     // FIX: Return empty string instead of "none"
+//     default: return { opacity, transform: "" };
+//   }
+// };
+
+// // ============================================================================
+// // CHAT INTERFACE OVERLAYS
+// // ============================================================================
+
+// const ChatInterface: React.FC<{ style: ChatStyle }> = ({ style }) => {
+  
+//   // Safe zone offsets for modern phones (Notch & Home Bar)
+//   const paddingTop = "60px";
+//   const paddingBottom = "40px";
+
+//   const overlayStyle: React.CSSProperties = {
+//     position: "absolute",
+//     left: 0,
+//     right: 0,
+//     zIndex: 100, 
+//     pointerEvents: "none", // Click-through
+//   };
+
+//   const headerStyle: React.CSSProperties = {
+//     ...overlayStyle,
+//     top: 0,
+//     height: "160px", 
+//     display: "flex",
+//     flexDirection: "column",
+//     justifyContent: "flex-end",
+//     padding: `0 20px 20px 20px`,
+//     background: style === "imessage" ? "rgba(242, 242, 247, 0.95)" // iOS System Grey
+//       : style === "whatsapp" ? "#008069" 
+//       : style === "instagram" ? "#ffffff"
+//       : "#ffffff",
+//     borderBottom: style === "imessage" || style === "instagram" ? "1px solid #E5E5EA" : "none",
+//     boxShadow: style === "whatsapp" || style === "messenger" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+//     backdropFilter: style === "imessage" ? "blur(20px)" : "none",
+//   };
+
+//   const footerStyle: React.CSSProperties = {
+//     ...overlayStyle,
+//     bottom: 0,
+//     height: "130px", // Accommodate home bar
+//     background: style === "whatsapp" ? "#ffffff" : "#ffffff",
+//     display: "flex",
+//     alignItems: "flex-start", // Align top so input grows down
+//     padding: "20px 15px",
+//     borderTop: style === "messenger" ? "none" : "1px solid #E5E5EA",
+//   };
+
+//   // --- HEADER CONTENT ---
+//   const renderHeader = () => {
+//     if (style === "imessage") {
+//       return (
+//         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: "5px" }}>
+//           <div style={{ display: "flex", alignItems: "center", color: "#007AFF", gap: '4px' }}>
+//             <Icons.BackChevronBlue />
+//             <span style={{ fontSize: "32px", fontWeight: "400", letterSpacing: "-0.5px" }}>24</span>
+//           </div>
+//           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10px" }}>
+//             <div style={{ width: "55px", height: "55px", borderRadius: "50%", background: "#ccc", marginBottom: "6px", overflow: "hidden" }}>
+//                 <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+//             </div>
+//             <span style={{ fontSize: "16px", fontWeight: "600", color: "black" }}>Sarah <span style={{color: '#8E8E93', fontWeight: '400'}}>&gt;</span></span>
+//           </div>
+//           <div style={{ display: "flex", justifyContent: "flex-end", width: "40px" }}>
+//             <Icons.VideoBlue />
+//           </div>
+//         </div>
+//       );
+//     }
+//     if (style === "whatsapp") {
+//       return (
+//         <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", paddingBottom: "10px", marginTop: paddingTop }}>
+//           <Icons.BackArrowWhite />
+//           <div style={{ width: "45px", height: "45px", borderRadius: "50%", background: "#ccc", overflow: "hidden" }}>
+//              <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+//           </div>
+//           <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+//             <span style={{ fontSize: "22px", fontWeight: "500", color: "white" }}>Sarah</span>
+//             <span style={{ fontSize: "15px", color: "rgba(255,255,255,0.8)" }}>online</span>
+//           </div>
+//           <div style={{ display: "flex", gap: "25px", color: "white" }}>
+//             <Icons.VideoWhite />
+//             <Icons.PhoneWhite />
+//           </div>
+//         </div>
+//       );
+//     }
+//     if (style === "instagram") {
+//         return (
+//             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingBottom: "10px", marginTop: paddingTop }}>
+//               <div style={{display: 'flex', alignItems: 'center', gap: '15px'}}>
+//                  <Icons.BackArrowBlack />
+//                  <div style={{ display: "flex", flexDirection: "column" }}>
+//                     <span style={{ fontSize: "20px", fontWeight: "600", color: "black" }}>sarah_smith</span>
+//                     <span style={{ fontSize: "14px", color: "#8E8E93" }}>Active now</span>
+//                  </div>
+//               </div>
+//               <div style={{ display: "flex", gap: "25px" }}>
+//                 <Icons.PhoneBlack />
+//                 <Icons.VideoBlack />
+//               </div>
+//             </div>
+//         );
+//     }
+//     // Messenger
+//     return (
+//         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingBottom: "10px", marginTop: paddingTop }}>
+//             <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
+//                 <Icons.BackChevronBlue />
+//                 <div style={{ width: "45px", height: "45px", borderRadius: "50%", background: "#ccc", overflow: "hidden" }}>
+//                     <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100" style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+//                 </div>
+//                 <div style={{ display: "flex", flexDirection: "column" }}>
+//                     <span style={{ fontSize: "20px", fontWeight: "700", color: "black" }}>Sarah Smith</span>
+//                     <span style={{ fontSize: "13px", color: "#8E8E93" }}>Active 2m ago</span>
+//                 </div>
+//             </div>
+//             <div style={{ display: "flex", gap: "25px" }}>
+//                 <Icons.PhonePurple />
+//                 <Icons.VideoPurple />
+//             </div>
+//         </div>
+//     );
+//   };
+
+//   // --- FOOTER CONTENT ---
+//   const renderFooter = () => {
+//     if (style === "imessage") {
+//       return (
+//         <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+//           <div style={{ padding: "8px", background: "#E9E9EB", borderRadius: "50%", marginRight: "12px" }}>
+//             <Icons.CameraGrey />
+//           </div>
+//           <div style={{ marginRight: "12px" }}>
+//             <Icons.AppStore />
+//           </div>
+//           <div style={{ 
+//             flex: 1, height: "42px", border: "1px solid #C7C7CC", borderRadius: "21px", 
+//             display: "flex", alignItems: "center", padding: "0 15px", color: "#C7C7CC", 
+//             fontSize: "19px", background: "white" 
+//           }}>
+//             iMessage
+//           </div>
+//           <div style={{ marginLeft: "12px" }}>
+//             <Icons.MicGrey />
+//           </div>
+//         </div>
+//       );
+//     }
+//     if (style === "whatsapp") {
+//         return (
+//             <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+//               <div style={{ paddingRight: '10px' }}><Icons.PlusGrey /></div>
+//               <div style={{ flex: 1, height: "45px", background: "white", borderRadius: "22px", display: "flex", alignItems: "center", padding: "0 15px", border: '1px solid #f0f0f0' }}>
+//                  <span style={{ fontSize: "20px", color: "#C7C7CC", flex: 1 }}>Message</span>
+//                  <div style={{display:'flex', gap:'15px'}}>
+//                     <Icons.CameraGrey />
+//                  </div>
+//               </div>
+//               <div style={{ width: "48px", height: "48px", background: "#00a884", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "10px", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
+//                  <Icons.MicWhite />
+//               </div>
+//             </div>
+//         )
+//     }
+//     if (style === "instagram") {
+//         return (
+//             <div style={{ width: "100%", height: "50px", background: "#efefef", borderRadius: "25px", display: "flex", alignItems: "center", padding: "0 10px 0 10px" }}>
+//                 <div style={{ width: "36px", height: "36px", background: "#0095f6", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginRight: "10px" }}>
+//                     <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+//                 </div>
+//                 <span style={{ fontSize: "18px", color: "#8E8E93", flex: 1 }}>Message...</span>
+//                 <div style={{ display: "flex", gap: "15px", marginRight: '10px' }}>
+//                     <Icons.MicGrey />
+//                     <Icons.ImageSquare />
+//                 </div>
+//             </div>
+//         )
+//     }
+//     // Messenger
+//     return (
+//         <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "18px" }}>
+//             <Icons.PlusBlue />
+//             <Icons.CameraGrey />
+//             <Icons.ImageSquare />
+//             <Icons.MicGrey />
+//             <div style={{ flex: 1, height: "42px", background: "#f0f0f0", borderRadius: "21px", display: "flex", alignItems: "center", padding: "0 15px" }}>
+//                 <span style={{ fontSize: "18px", color: "#8E8E93" }}>Aa</span>
+//                 <span style={{ marginLeft: "auto", fontSize: '20px' }}>😊</span>
+//             </div>
+//             <span style={{ color: "#0084FF", fontSize: "28px" }}>👍</span>
+//         </div>
+//     )
+//   };
+
+//   return (
+//     <>
+//       <div style={headerStyle}>{renderHeader()}</div>
+//       <div style={footerStyle}>{renderFooter()}</div>
+//     </>
+//   );
+// };
+
+// // ============================================================================
+// // CHAT BUBBLE COMPONENT
+// // ============================================================================
+
+// const ChatBubbleComponent: React.FC<{
+//   layer: ChatBubbleLayer;
+//   relativeFrame: number;
+//   fps: number;
+// }> = ({ layer, relativeFrame, fps }) => {
+//   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+  
+//   // FIX: Ensure rotation defaults to 0 to prevent "undefined" CSS
+//   const rotation = layer.rotation || 0;
+
+//   const containerStyle: React.CSSProperties = {
+//     position: "absolute",
+//     left: `${layer.position.x}%`, 
+//     top: `${layer.position.y}%`,
+//     width: `${layer.size.width}%`, 
+//     // FIX: Valid transform string construction
+//     transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
+//     opacity: layer.opacity * entrance.opacity,
+//     display: "flex",
+//     flexDirection: layer.isSender ? "row-reverse" : "row",
+//     alignItems: "flex-end",
+//     gap: "8px",
+//     fontFamily: layer.chatStyle === 'imessage' ? "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" : "Helvetica, Arial, sans-serif",
+//   };
+
+//   // Avatar Logic
+//   const showAvatar = !layer.isSender && layer.chatStyle !== 'whatsapp';
+//   const avatarStyle: React.CSSProperties = {
+//     width: "35px",
+//     height: "35px",
+//     borderRadius: "50%",
+//     objectFit: "cover",
+//     flexShrink: 0,
+//     marginBottom: "4px",
+//   };
+
+//   let bubbleStyle: React.CSSProperties = {
+//     maxWidth: "75%",
+//     padding: "10px 16px",
+//     fontSize: "34px", 
+//     lineHeight: "1.35",
+//     position: "relative",
+//     wordWrap: "break-word",
+//     whiteSpace: "pre-wrap",
+//   };
+
+//   // --- iMessage ---
+//   if (layer.chatStyle === "imessage") {
+//     bubbleStyle = {
+//       ...bubbleStyle,
+//       borderRadius: "24px",
+//       padding: "12px 18px",
+//       backgroundColor: layer.isSender ? "#007AFF" : "#E9E9EB",
+//       color: layer.isSender ? "#FFFFFF" : "#000000",
+//       background: layer.isSender ? "linear-gradient(180deg, #3593FF 0%, #007AFF 100%)" : "#E9E9EB",
+//       // Tail Logic
+//       borderBottomRightRadius: layer.isSender ? "4px" : "24px",
+//       borderBottomLeftRadius: layer.isSender ? "24px" : "4px",
+//     };
+//   } 
+//   // --- WhatsApp ---
+//   else if (layer.chatStyle === "whatsapp") {
+//     bubbleStyle = {
+//       ...bubbleStyle,
+//       borderRadius: "12px",
+//       padding: "8px 12px",
+//       backgroundColor: layer.isSender ? "#E7FFDB" : "#FFFFFF",
+//       color: "#111b21",
+//       fontSize: "30px",
+//       boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+//       borderTopLeftRadius: layer.isSender ? "12px" : "0px", 
+//       borderTopRightRadius: layer.isSender ? "0px" : "12px",
+//     };
+//   }
+//   // --- Instagram ---
+//   else if (layer.chatStyle === "instagram") {
+//     bubbleStyle = {
+//       ...bubbleStyle,
+//       borderRadius: "22px",
+//       padding: "14px 20px",
+//       backgroundColor: layer.isSender ? "#EFEFEF" : "#FFFFFF",
+//       border: layer.isSender ? "none" : "1px solid #dbdbdb",
+//       color: "#000000",
+//       // Instagram Sender is usually grey (unless themes applied), Receiver white with border
+//       background: layer.isSender ? "#EFEFEF" : "white",
+//     };
+//   }
+//   // --- Messenger ---
+//   else if (layer.chatStyle === "messenger") {
+//     bubbleStyle = {
+//       ...bubbleStyle,
+//       borderRadius: "22px",
+//       padding: "12px 18px",
+//       backgroundColor: layer.isSender ? "#0084FF" : "#E4E6EB",
+//       color: layer.isSender ? "#FFFFFF" : "#050505",
+//     };
+//   }
+
+//   return (
+//     <div style={containerStyle}>
+//       {showAvatar && layer.avatarUrl && (
+//         <img src={layer.avatarUrl} style={avatarStyle} alt="avatar" />
+//       )}
+      
+//       <div style={bubbleStyle}>
+//         {layer.isTyping ? (
+//            <div style={{ display: 'flex', gap: '6px', padding: '8px 4px', alignItems: 'center' }}>
+//               {[0, 1, 2].map(i => (
+//                 <div key={i} style={{
+//                   width: '10px', height: '10px', borderRadius: '50%', 
+//                   backgroundColor: layer.isSender ? 'rgba(255,255,255,0.7)' : '#8E8E93',
+//                   animation: `bounce 1.4s infinite ease-in-out both`, animationDelay: `${i * 0.16}s`
+//                 }} />
+//               ))}
+//               <style>{`@keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }`}</style>
+//            </div>
+//         ) : (
+//           <>
+//             {layer.message}
+//             {/* WhatsApp Metadata */}
+//             {layer.chatStyle === 'whatsapp' && (
+//               <div style={{ 
+//                 float: 'right', marginLeft: '12px', marginTop: '8px',
+//                 display: 'flex', alignItems: 'center', gap: '4px', height: '14px'
+//               }}>
+//                 <span style={{ fontSize: '14px', color: 'rgba(0,0,0,0.45)' }}>10:42</span>
+//                 {layer.isSender && (
+//                   <svg width="16" height="16" viewBox="0 0 16 11" fill="none">
+//                     <path d="M4 6L2 8" stroke="#53bdeb" strokeWidth="2" strokeLinecap="round"/>
+//                     <path d="M14 1L5 10L2 7" stroke="#53bdeb" strokeWidth="2" strokeLinecap="round"/>
+//                   </svg>
+//                 )}
+//               </div>
+//             )}
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ============================================================================
+// // OTHER LAYERS (Standard)
+// // ============================================================================
+
+// const TextLayerComponent: React.FC<{ layer: TextLayer; relativeFrame: number; fps: number; width: number; height: number }> = ({ layer, relativeFrame, fps, height }) => {
+//   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+//   const scaledFontSize = (layer.fontSize / 100) * height;
+//   const words = layer.content.split(" ");
+//   // FIX: Rotation Safety
+//   const rotation = layer.rotation || 0;
+
+//   return (
+//     <div style={{
+//       position: "absolute", left: `${layer.position.x - layer.size.width / 2}%`, top: `${layer.position.y - layer.size.height / 2}%`,
+//       width: `${layer.size.width}%`, minHeight: `${layer.size.height}%`, fontFamily: layer.fontFamily, fontSize: scaledFontSize,
+//       fontWeight: layer.fontWeight, fontStyle: layer.fontStyle, color: layer.fontColor, textAlign: layer.textAlign,
+//       lineHeight: layer.lineHeight, letterSpacing: layer.letterSpacing, textTransform: layer.textTransform,
+//       textShadow: layer.textShadow ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}` : "none",
+//       // FIX: Transform string construction
+//       transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+//       transformOrigin: "center center", display: "flex", alignItems: "center",
+//       justifyContent: layer.textAlign === "center" ? "center" : layer.textAlign === "right" ? "flex-end" : "flex-start", flexWrap: "wrap", gap: "0.3em",
+//     }}>
+//       {words.map((word, i) => (
+//         <span key={i} style={{ display: "inline-block", opacity: layer.opacity * entrance.opacity }}>{word}</span>
+//       ))}
+//     </div>
+//   );
+// };
+
+// const ImageLayerComponent: React.FC<{ layer: ImageLayer; relativeFrame: number; fps: number }> = ({ layer, relativeFrame, fps }) => {
+//   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+//   // FIX: Rotation Safety
+//   const rotation = layer.rotation || 0;
+
+//   if (layer.isBackground) {
+//     const bgOpacity = interpolate(relativeFrame, [0, 60], [0, 1], { extrapolateRight: "clamp" });
+//     return <AbsoluteFill style={{ opacity: bgOpacity * layer.opacity }}><Img src={layer.src} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} /></AbsoluteFill>;
+//   }
+//   return (
+//     <div style={{ 
+//         position: "absolute", 
+//         left: `${layer.position.x - layer.size.width / 2}%`, 
+//         top: `${layer.position.y - layer.size.height / 2}%`, 
+//         width: `${layer.size.width}%`, 
+//         height: `${layer.size.height}%`, 
+//         opacity: layer.opacity * entrance.opacity, 
+//         // FIX: Transform string construction
+//         transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+//         transformOrigin: "center center" 
+//     }}>
+//       <Img src={layer.src} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} />
+//     </div>
+//   );
+// };
+
+// const VideoLayerComponent: React.FC<{ layer: VideoLayer; relativeFrame: number; fps: number }> = ({ layer, relativeFrame, fps }) => {
+//   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+//   const duration = layer.endFrame - layer.startFrame;
+//   // FIX: Rotation Safety
+//   const rotation = layer.rotation || 0;
+
+//   let volume = layer.volume;
+//   if (layer.fadeIn) volume = interpolate(relativeFrame, [0, layer.fadeIn], [0, layer.volume], { extrapolateRight: "clamp" });
+//   if (layer.fadeOut) volume = interpolate(relativeFrame, [duration - layer.fadeOut, duration], [layer.volume, 0], { extrapolateLeft: "clamp" });
+//   return (
+//     <div style={{ 
+//         position: "absolute", 
+//         left: `${layer.position.x - layer.size.width / 2}%`, 
+//         top: `${layer.position.y - layer.size.height / 2}%`, 
+//         width: `${layer.size.width}%`, 
+//         height: `${layer.size.height}%`, 
+//         opacity: layer.opacity * entrance.opacity, 
+//         // FIX: Transform string construction
+//         transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+//         transformOrigin: "center center" 
+//     }}>
+//       <Video src={layer.src} volume={volume} loop={layer.loop} playbackRate={layer.playbackRate} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} />
+//     </div>
+//   );
+// };
+
+// // ============================================================================
+// // MAIN COMPOSITION
+// // ============================================================================
+
+// export const DynamicLayerComposition: React.FC<DynamicCompositionProps> = ({
+//   layers,
+//   backgroundColor = "#000",
+//   editingLayerId = null,
+//   templateId
+// }) => {
+//   const frame = useCurrentFrame();
+//   const { fps, width, height } = useVideoConfig();
+
+//   // Active Chat Style
+//   const firstChatLayer = layers.find(isChatBubbleLayer);
+//   const activeChatStyle = firstChatLayer ? firstChatLayer.chatStyle : null;
+
+//   // Background Logic
+//   const getChatBackground = (style: ChatStyle | null) => {
+//     if (!style) return backgroundColor;
+//     switch (style) {
+//       case "whatsapp": return "#EFE7DD";
+//       case "imessage": return "#ffffff"; 
+//       case "instagram": return "#ffffff";
+//       case "messenger": return "#ffffff";
+//       default: return backgroundColor;
+//     }
+//   };
+
+//   const currentBackground = (templateId === 20 || activeChatStyle) ? getChatBackground(activeChatStyle) : backgroundColor;
+
+//   // Render Layers
+//   const visibleLayers = layers
+//     .map((layer, index) => ({ layer, originalIndex: index }))
+//     .filter(({ layer }) => {
+//       if (!layer.visible) return false;
+//       if (layer.id === editingLayerId) return false;
+//       return frame >= layer.startFrame && frame <= layer.endFrame;
+//     })
+//     .sort((a, b) => {
+//       if (isImageLayer(a.layer) && a.layer.isBackground) return -1;
+//       if (isImageLayer(b.layer) && b.layer.isBackground) return 1;
+//       return a.originalIndex - b.originalIndex;
+//     });
+
+//   return (
+//     <AbsoluteFill style={{ backgroundColor: currentBackground }}>
+      
+//       {/* WhatsApp Background Pattern */}
+//       {activeChatStyle === 'whatsapp' && (
+//          <Img 
+//             src="https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png"
+//             style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.06, objectFit: 'cover' }}
+//          />
+//       )}
+
+//       {/* Render All Layers */}
+//       {visibleLayers.map(({ layer }) => {
+//         const relativeFrame = Math.max(0, frame - layer.startFrame);
+//         if (isImageLayer(layer)) return <ImageLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
+//         if (isTextLayer(layer)) return <TextLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} width={width} height={height} />;
+//         if (isVideoLayer(layer)) return <VideoLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
+//         if (isChatBubbleLayer(layer)) return <ChatBubbleComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
+//         return null;
+//       })}
+      
+//       {/* Interface Overlay (Top/Bottom Bars) */}
+//       {(templateId === 20 || activeChatStyle) && activeChatStyle && (
+//         <ChatInterface style={activeChatStyle} />
+//       )}
+
+//       {/* Audio Layers */}
+//       {layers.filter((l): l is AudioLayer => l.type === 'audio' && l.visible && l.id !== editingLayerId).map((layer) => (
+//           <Sequence key={layer.id} from={layer.startFrame} durationInFrames={layer.endFrame - layer.startFrame}>
+//             <Audio src={(layer as AudioLayer).src} volume={(layer as AudioLayer).volume} />
+//           </Sequence>
+//       ))}
+//     </AbsoluteFill>
+//   );
+// };
+
+// export default DynamicLayerComposition;
+
 
 import React from "react";
 import {
@@ -31,7 +713,7 @@ export interface LayerBase {
   rotation: number;
   opacity: number;
   animation?: {
-    entrance?: "fade" | "slideUp" | "slideDown" | "scale" | "none";
+    entrance?: "fade" | "slideUp" | "slideDown" | "scale" | "zoomPunch" | "none";
     entranceDuration?: number;
   };
 }
@@ -86,45 +768,76 @@ export interface VideoLayer extends LayerBase {
   fadeOut?: number;
 }
 
-export type Layer = TextLayer | ImageLayer | AudioLayer | VideoLayer;
+export type ChatStyle = "imessage" | "whatsapp" | "instagram" | "messenger";
 
-export function isTextLayer(layer: Layer): layer is TextLayer {
-  return layer.type === "text";
+export interface ChatBubbleLayer extends LayerBase {
+  type: "chat-bubble";
+  message: string;
+  isSender: boolean;
+  chatStyle: ChatStyle;
+  avatarUrl?: string;
+  senderName?: string;
+  isTyping?: boolean;
 }
 
-export function isImageLayer(layer: Layer): layer is ImageLayer {
-  return layer.type === "image";
-}
+export type Layer = TextLayer | ImageLayer | AudioLayer | VideoLayer | ChatBubbleLayer;
 
-export function isAudioLayer(layer: Layer): layer is AudioLayer {
-  return layer.type === "audio";
-}
-
-export function isVideoLayer(layer: Layer): layer is VideoLayer {
-  return layer.type === "video";
-}
+// Type Guards
+export const isChatBubbleLayer = (l: Layer): l is ChatBubbleLayer => l.type === "chat-bubble";
+export const isTextLayer = (l: Layer): l is TextLayer => l.type === "text";
+export const isImageLayer = (l: Layer): l is ImageLayer => l.type === "image";
+export const isAudioLayer = (l: Layer): l is AudioLayer => l.type === "audio";
+export const isVideoLayer = (l: Layer): l is VideoLayer => l.type === "video";
 
 export interface DynamicCompositionProps {
   layers: Layer[];
   backgroundColor?: string;
   editingLayerId?: string | null;
+  templateId?: number; 
 }
+
+// ============================================================================
+// ICONS & UI ASSETS (SCALED UP)
+// ============================================================================
+
+const Icons = {
+  // iMessage
+  BackChevronBlue: () => <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><path d="M15 19l-7-7 7-7" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  VideoBlue: () => <svg width="38" height="38" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  AppStore: () => <svg width="40" height="40" viewBox="0 0 24 24" fill="#8E8E93"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>,
+  CameraGrey: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="12" cy="13" r="4" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  MicGrey: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  
+  // WhatsApp
+  BackArrowWhite: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  VideoWhite: () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  PhoneWhite: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" fill="white"/></svg>,
+  PlusGrey: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#8E8E93" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+  MicWhite: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><path d="M19 10v2a7 7 0 01-14 0v-2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="12" y1="19" x2="12" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><line x1="8" y1="23" x2="16" y2="23" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+
+  // Instagram (SCALED UP)
+  BackArrowBlack: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M12 19l-7-7 7-7" stroke="black" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  VideoBlack: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  PhoneBlack: () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" stroke="black" strokeWidth="2" fill="none"/></svg>,
+  InfoBlack: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>,
+  ImageSquare: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>,
+  Sticker: () => <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="black" strokeWidth="2"><path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>,
+
+  // Messenger
+  PlusBlue: () => <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#0084FF" /><path d="M12 8v8M8 12h8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  PhonePurple: () => <svg width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" fill="#A855F7"/></svg>,
+  VideoPurple: () => <svg width="36" height="36" viewBox="0 0 24 24" fill="none"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" fill="#A855F7"/></svg>,
+};
 
 // ============================================================================
 // HELPER FUNCTIONS
 // ============================================================================
 
-const getEntranceAnimation = (
-  layer: Layer,
-  relativeFrame: number,
-  fps: number
-) => {
+const getEntranceAnimation = (layer: Layer, relativeFrame: number, fps: number) => {
   const animation = layer.animation?.entrance || "fade";
   const duration = layer.animation?.entranceDuration || 30;
 
-  if (animation === "none") {
-    return { opacity: 1, transform: "none" };
-  }
+  if (animation === "none") return { opacity: 1, transform: "" };
 
   const progress = spring({
     frame: relativeFrame,
@@ -133,279 +846,443 @@ const getEntranceAnimation = (
     durationInFrames: duration,
   });
 
-  const opacity = interpolate(relativeFrame, [0, duration * 0.5], [0, 1], {
-    extrapolateRight: "clamp",
-  });
+  const opacity = interpolate(relativeFrame, [0, duration * 0.5], [0, 1], { extrapolateRight: "clamp" });
 
   switch (animation) {
-    case "slideUp":
-      return {
-        opacity,
-        transform: `translateY(${interpolate(progress, [0, 1], [50, 0])}px)`,
-      };
-    case "slideDown":
-      return {
-        opacity,
-        transform: `translateY(${interpolate(progress, [0, 1], [-50, 0])}px)`,
-      };
-    case "scale":
-      return {
-        opacity,
-        transform: `scale(${interpolate(progress, [0, 1], [0.8, 1])})`,
-      };
-    case "fade":
-    default:
-      return {
-        opacity,
-        transform: "none",
-      };
+    case "slideUp": return { opacity, transform: `translateY(${interpolate(progress, [0, 1], [50, 0])}px)` };
+    case "slideDown": return { opacity, transform: `translateY(${interpolate(progress, [0, 1], [-50, 0])}px)` };
+    case "scale": return { opacity, transform: `scale(${interpolate(progress, [0, 1], [0.8, 1])})` };
+    case "zoomPunch": return { opacity, transform: `scale(${interpolate(progress, [0, 1], [1.5, 1])})` };
+    default: return { opacity, transform: "" };
   }
 };
 
-const buildTextShadow = (layer: TextLayer): string => {
-  if (!layer.textShadow) return "none";
-  
-  const x = layer.shadowX || 0;
-  const y = layer.shadowY || 0;
-  const blur = layer.shadowBlur || 0;
-  const color = layer.shadowColor || "#000000";
-  
-  return `${x}px ${y}px ${blur}px ${color}`;
-};
+// ============================================================================
+// CHAT INTERFACE OVERLAYS
+// ============================================================================
 
-const buildTextStroke = (layer: TextLayer): React.CSSProperties => {
-  if (!layer.textOutline) return {};
+const ChatInterface: React.FC<{ style: ChatStyle; name: string; avatar?: string }> = ({ style, name, avatar }) => {
   
-  const outlineColor = layer.outlineColor || "#000000";
-  
-  return {
-    WebkitTextStroke: `1px ${outlineColor}`,
-    paintOrder: "stroke fill",
+  // Safe zone offsets for modern phones (Notch & Home Bar)
+  const paddingTop = "60px";
+
+  const overlayStyle: React.CSSProperties = {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    zIndex: 100, 
+    pointerEvents: "none", // Click-through
   };
+
+  const headerStyle: React.CSSProperties = {
+    ...overlayStyle,
+    top: 0,
+    height: "170px", // Increased Height
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+    padding: `0 25px 25px 25px`, // Increased Padding
+    background: style === "imessage" ? "rgba(242, 242, 247, 0.95)" // iOS System Grey
+      : style === "whatsapp" ? "#008069" 
+      : style === "instagram" ? "#ffffff"
+      : "#ffffff",
+    borderBottom: style === "imessage" || style === "instagram" ? "1px solid #E5E5EA" : "none",
+    boxShadow: style === "whatsapp" || style === "messenger" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
+    backdropFilter: style === "imessage" ? "blur(20px)" : "none",
+  };
+
+  const footerStyle: React.CSSProperties = {
+    ...overlayStyle,
+    bottom: 0,
+    height: "150px", // Increased Height
+    background: style === "whatsapp" ? "#ffffff" : "#ffffff",
+    display: "flex",
+    alignItems: "flex-start", 
+    padding: "25px 20px", // Increased Padding
+    borderTop: style === "messenger" ? "none" : "1px solid #E5E5EA",
+  };
+
+  // --- HEADER CONTENT (BIGGER) ---
+  const renderHeader = () => {
+    const displayAvatar = avatar || "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100";
+
+    if (style === "imessage") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", marginBottom: "5px" }}>
+          <div style={{ display: "flex", alignItems: "center", color: "#007AFF", gap: '6px' }}>
+            <Icons.BackChevronBlue />
+            <span style={{ fontSize: "36px", fontWeight: "400", letterSpacing: "-0.5px" }}>24</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginTop: "10px" }}>
+            <div style={{ width: "65px", height: "65px", borderRadius: "50%", background: "#ccc", marginBottom: "8px", overflow: "hidden" }}>
+                <img src={displayAvatar} style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+            </div>
+            <span style={{ fontSize: "20px", fontWeight: "600", color: "black" }}>{name} <span style={{color: '#8E8E93', fontWeight: '400'}}>&gt;</span></span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "flex-end", width: "40px" }}>
+            <Icons.VideoBlue />
+          </div>
+        </div>
+      );
+    }
+    if (style === "whatsapp") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "100%", paddingBottom: "12px", marginTop: paddingTop }}>
+          <Icons.BackArrowWhite />
+          <div style={{ width: "55px", height: "55px", borderRadius: "50%", background: "#ccc", overflow: "hidden" }}>
+             <img src={displayAvatar} style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", flex: 1 }}>
+            <span style={{ fontSize: "26px", fontWeight: "500", color: "white" }}>{name}</span>
+            <span style={{ fontSize: "18px", color: "rgba(255,255,255,0.8)" }}>online</span>
+          </div>
+          <div style={{ display: "flex", gap: "28px", color: "white" }}>
+            <Icons.VideoWhite />
+            <Icons.PhoneWhite />
+          </div>
+        </div>
+      );
+    }
+    if (style === "instagram") {
+        return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingBottom: "12px", marginTop: paddingTop }}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '18px'}}>
+                 <Icons.BackArrowBlack />
+                 <div style={{ width: "52px", height: "52px", borderRadius: "50%", background: "#ccc", overflow: "hidden" }}>
+                     <img src={displayAvatar} style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+                  </div>
+                 <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "24px", fontWeight: "600", color: "black" }}>{name}</span>
+                    <span style={{ fontSize: "16px", color: "#8E8E93" }}>Active 2h ago</span>
+                 </div>
+              </div>
+              <div style={{ display: "flex", gap: "30px", alignItems: 'center' }}>
+                <Icons.PhoneBlack />
+                <Icons.VideoBlack />
+                <Icons.InfoBlack />
+              </div>
+            </div>
+        );
+    }
+    // Messenger
+    return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", paddingBottom: "12px", marginTop: paddingTop }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+                <Icons.BackChevronBlue />
+                <div style={{ width: "55px", height: "55px", borderRadius: "50%", background: "#ccc", overflow: "hidden" }}>
+                    <img src={displayAvatar} style={{ width: "100%", height: "100%", objectFit: "cover"}} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "24px", fontWeight: "700", color: "black" }}>{name}</span>
+                    <span style={{ fontSize: "16px", color: "#8E8E93" }}>Active 2m ago</span>
+                </div>
+            </div>
+            <div style={{ display: "flex", gap: "28px" }}>
+                <Icons.PhonePurple />
+                <Icons.VideoPurple />
+            </div>
+        </div>
+    );
+  };
+
+  // --- FOOTER CONTENT (BIGGER) ---
+  const renderFooter = () => {
+    if (style === "imessage") {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+          <div style={{ padding: "10px", background: "#E9E9EB", borderRadius: "50%", marginRight: "14px" }}>
+            <Icons.CameraGrey />
+          </div>
+          <div style={{ marginRight: "14px" }}>
+            <Icons.AppStore />
+          </div>
+          <div style={{ 
+            flex: 1, height: "50px", border: "1px solid #C7C7CC", borderRadius: "25px", 
+            display: "flex", alignItems: "center", padding: "0 18px", color: "#C7C7CC", 
+            fontSize: "22px", background: "white" 
+          }}>
+            iMessage
+          </div>
+          <div style={{ marginLeft: "14px" }}>
+            <Icons.MicGrey />
+          </div>
+        </div>
+      );
+    }
+    if (style === "whatsapp") {
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+              <div style={{ paddingRight: '12px' }}><Icons.PlusGrey /></div>
+              <div style={{ flex: 1, height: "52px", background: "white", borderRadius: "26px", display: "flex", alignItems: "center", padding: "0 18px", border: '1px solid #f0f0f0' }}>
+                 <span style={{ fontSize: "22px", color: "#C7C7CC", flex: 1 }}>Message</span>
+                 <div style={{display:'flex', gap:'18px'}}>
+                    <Icons.CameraGrey />
+                 </div>
+              </div>
+              <div style={{ width: "56px", height: "56px", background: "#00a884", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginLeft: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.2)" }}>
+                 <Icons.MicWhite />
+              </div>
+            </div>
+        )
+    }
+    if (style === "instagram") {
+        return (
+            <div style={{ width: "100%", height: "60px", background: "#f0f0f0", borderRadius: "30px", display: "flex", alignItems: "center", padding: "0 18px" }}>
+                <div style={{ width: "46px", height: "46px", background: "#3b82f6", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginRight: "14px" }}>
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/></svg>
+                </div>
+                <span style={{ fontSize: "22px", color: "#8E8E93", flex: 1, fontWeight: 400 }}>Message...</span>
+                <div style={{ display: "flex", gap: "20px", alignItems: 'center' }}>
+                    <Icons.MicGrey />
+                    <Icons.ImageSquare />
+                    <Icons.Sticker />
+                </div>
+            </div>
+        )
+    }
+    // Messenger
+    return (
+        <div style={{ display: "flex", alignItems: "center", width: "100%", gap: "20px" }}>
+            <Icons.PlusBlue />
+            <Icons.CameraGrey />
+            <Icons.ImageSquare />
+            <Icons.MicGrey />
+            <div style={{ flex: 1, height: "50px", background: "#f0f0f0", borderRadius: "25px", display: "flex", alignItems: "center", padding: "0 18px" }}>
+                <span style={{ fontSize: "22px", color: "#8E8E93" }}>Aa</span>
+                <span style={{ marginLeft: "auto", fontSize: '24px' }}>😊</span>
+            </div>
+            <span style={{ color: "#0084FF", fontSize: "32px" }}>👍</span>
+        </div>
+    )
+  };
+
+  return (
+    <>
+      <div style={headerStyle}>{renderHeader()}</div>
+      <div style={footerStyle}>{renderFooter()}</div>
+    </>
+  );
 };
 
 // ============================================================================
-// TEXT LAYER COMPONENT
+// CHAT BUBBLE COMPONENT
 // ============================================================================
 
-const TextLayerComponent: React.FC<{
-  layer: TextLayer;
+const ChatBubbleComponent: React.FC<{
+  layer: ChatBubbleLayer;
   relativeFrame: number;
   fps: number;
-  width: number;
-  height: number;
-}> = ({ layer, relativeFrame, fps, height }) => {
+}> = ({ layer, relativeFrame, fps }) => {
+  const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+  
+  const rotation = layer.rotation || 0;
+
+  const containerStyle: React.CSSProperties = {
+    position: "absolute",
+    left: `${layer.position.x}%`, 
+    top: `${layer.position.y}%`,
+    width: `${layer.size.width}%`, 
+    transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
+    opacity: layer.opacity * entrance.opacity,
+    display: "flex",
+    flexDirection: layer.isSender ? "row-reverse" : "row",
+    alignItems: "flex-end",
+    gap: "10px",
+    padding: "0 35px", // Moved Inward: Added padding to ensure bubbles don't touch edges
+    fontFamily: layer.chatStyle === 'imessage' ? "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif" : "Helvetica, Arial, sans-serif",
+    boxSizing: 'border-box' // Important for padding
+  };
+
+  // Avatar Logic
+  const showAvatar = !layer.isSender && (layer.chatStyle === 'messenger' || layer.chatStyle === 'instagram');
+  const avatarStyle: React.CSSProperties = {
+    width: "45px", // Increased size
+    height: "45px",
+    borderRadius: "50%",
+    objectFit: "cover",
+    flexShrink: 0,
+    marginBottom: "4px",
+  };
+
+  let bubbleStyle: React.CSSProperties = {
+    maxWidth: "70%", // Decreased Width: Keeps bubbles away from edges
+    padding: "12px 20px",
+    fontSize: "34px", 
+    lineHeight: "1.35",
+    position: "relative",
+    wordWrap: "break-word",
+    whiteSpace: "pre-wrap",
+  };
+
+  // --- iMessage ---
+  if (layer.chatStyle === "imessage") {
+    bubbleStyle = {
+      ...bubbleStyle,
+      borderRadius: "26px",
+      padding: "14px 22px",
+      backgroundColor: layer.isSender ? "#007AFF" : "#E9E9EB",
+      color: layer.isSender ? "#FFFFFF" : "#000000",
+      background: layer.isSender ? "linear-gradient(180deg, #3593FF 0%, #007AFF 100%)" : "#E9E9EB",
+      borderBottomRightRadius: layer.isSender ? "4px" : "26px",
+      borderBottomLeftRadius: layer.isSender ? "26px" : "4px",
+    };
+  } 
+  // --- WhatsApp ---
+  else if (layer.chatStyle === "whatsapp") {
+    bubbleStyle = {
+      ...bubbleStyle,
+      borderRadius: "14px",
+      padding: "10px 16px",
+      backgroundColor: layer.isSender ? "#E7FFDB" : "#FFFFFF",
+      color: "#111b21",
+      fontSize: "32px",
+      boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+      borderTopLeftRadius: layer.isSender ? "14px" : "0px", 
+      borderTopRightRadius: layer.isSender ? "0px" : "14px",
+    };
+  }
+  // --- Instagram ---
+  else if (layer.chatStyle === "instagram") {
+    bubbleStyle = {
+      ...bubbleStyle,
+      borderRadius: "32px", // Rounder
+      padding: "18px 24px",
+      backgroundColor: layer.isSender ? "#EFEFEF" : "#FFFFFF",
+      border: layer.isSender ? "none" : "1px solid #dbdbdb",
+      color: "#000000",
+    };
+  }
+  // --- Messenger ---
+  else if (layer.chatStyle === "messenger") {
+    bubbleStyle = {
+      ...bubbleStyle,
+      borderRadius: "26px",
+      padding: "14px 22px",
+      backgroundColor: layer.isSender ? "#0084FF" : "#E4E6EB",
+      color: layer.isSender ? "#FFFFFF" : "#050505",
+    };
+  }
+
+  return (
+    <div style={containerStyle}>
+      {showAvatar && layer.avatarUrl && (
+        <img src={layer.avatarUrl} style={avatarStyle} alt="avatar" />
+      )}
+      
+      <div style={bubbleStyle}>
+        {layer.isTyping ? (
+           <div style={{ display: 'flex', gap: '8px', padding: '10px 6px', alignItems: 'center' }}>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{
+                  width: '12px', height: '12px', borderRadius: '50%', 
+                  backgroundColor: layer.isSender && layer.chatStyle !== 'instagram' ? 'rgba(255,255,255,0.7)' : '#8E8E93',
+                  animation: `typingBounce 1.4s infinite ease-in-out both`, animationDelay: `${i * 0.16}s`
+                }} />
+              ))}
+              <style>{`
+                @keyframes typingBounce { 
+                  0%, 80%, 100% { transform: scale(0.6); opacity: 0.6; } 
+                  40% { transform: scale(1); opacity: 1; } 
+                }
+              `}</style>
+           </div>
+        ) : (
+          <>
+            {layer.message}
+            {/* WhatsApp Metadata */}
+            {layer.chatStyle === 'whatsapp' && (
+              <div style={{ 
+                float: 'right', marginLeft: '12px', marginTop: '10px',
+                display: 'flex', alignItems: 'center', gap: '6px', height: '16px'
+              }}>
+                <span style={{ fontSize: '16px', color: 'rgba(0,0,0,0.45)' }}>10:42</span>
+                {layer.isSender && (
+                  <svg width="18" height="18" viewBox="0 0 16 11" fill="none">
+                    <path d="M4 6L2 8" stroke="#53bdeb" strokeWidth="2" strokeLinecap="round"/>
+                    <path d="M14 1L5 10L2 7" stroke="#53bdeb" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================================
+// OTHER LAYERS (Standard)
+// ============================================================================
+
+const TextLayerComponent: React.FC<{ layer: TextLayer; relativeFrame: number; fps: number; width: number; height: number }> = ({ layer, relativeFrame, fps, height }) => {
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
   const scaledFontSize = (layer.fontSize / 100) * height;
   const words = layer.content.split(" ");
-  const wordDelay = 3;
-  const textShadowStyle = buildTextShadow(layer);
-  const textStrokeStyle = buildTextStroke(layer);
+  const rotation = layer.rotation || 0;
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${layer.position.x - layer.size.width / 2}%`,
-        top: `${layer.position.y - layer.size.height / 2}%`,
-        width: `${layer.size.width}%`,
-        minHeight: `${layer.size.height}%`,
-        fontFamily: layer.fontFamily,
-        fontSize: scaledFontSize,
-        fontWeight: layer.fontWeight,
-        fontStyle: layer.fontStyle,
-        color: layer.fontColor,
-        textAlign: layer.textAlign,
-        lineHeight: layer.lineHeight,
-        letterSpacing: layer.letterSpacing || 0,
-        textTransform: layer.textTransform || "none",
-        textShadow: textShadowStyle,
-        ...textStrokeStyle,
-        transform: `rotate(${layer.rotation}deg) ${entrance.transform}`,
-        transformOrigin: "center center",
-        display: "flex",
-        alignItems: "center",
-        justifyContent:
-          layer.textAlign === "center"
-            ? "center"
-            : layer.textAlign === "right"
-            ? "flex-end"
-            : "flex-start",
-        flexWrap: "wrap",
-        gap: "0.3em",
-      }}
-    >
-      {words.map((word, i) => {
-        const wordOpacity = interpolate(
-          relativeFrame - i * wordDelay,
-          [0, 20],
-          [0, 1],
-          { extrapolateRight: "clamp", extrapolateLeft: "clamp" }
-        );
-        return (
-          <span
-            key={i}
-            style={{
-              display: "inline-block",
-              opacity: wordOpacity * layer.opacity * entrance.opacity,
-            }}
-          >
-            {word}
-          </span>
-        );
-      })}
+    <div style={{
+      position: "absolute", left: `${layer.position.x - layer.size.width / 2}%`, top: `${layer.position.y - layer.size.height / 2}%`,
+      width: `${layer.size.width}%`, minHeight: `${layer.size.height}%`, fontFamily: layer.fontFamily, fontSize: scaledFontSize,
+      fontWeight: layer.fontWeight, fontStyle: layer.fontStyle, color: layer.fontColor, textAlign: layer.textAlign,
+      lineHeight: layer.lineHeight, letterSpacing: layer.letterSpacing, textTransform: layer.textTransform,
+      textShadow: layer.textShadow ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}` : "none",
+      transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+      transformOrigin: "center center", display: "flex", alignItems: "center",
+      justifyContent: layer.textAlign === "center" ? "center" : layer.textAlign === "right" ? "flex-end" : "flex-start", flexWrap: "wrap", gap: "0.3em",
+    }}>
+      {words.map((word, i) => (
+        <span key={i} style={{ display: "inline-block", opacity: layer.opacity * entrance.opacity }}>{word}</span>
+      ))}
     </div>
   );
 };
 
-// ============================================================================
-// IMAGE LAYER COMPONENT
-// ============================================================================
-
-const ImageLayerComponent: React.FC<{
-  layer: ImageLayer;
-  relativeFrame: number;
-  fps: number;
-}> = ({ layer, relativeFrame, fps }) => {
+const ImageLayerComponent: React.FC<{ layer: ImageLayer; relativeFrame: number; fps: number }> = ({ layer, relativeFrame, fps }) => {
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+  const rotation = layer.rotation || 0;
 
   if (layer.isBackground) {
-    const bgOpacity = interpolate(relativeFrame, [0, 60], [0, 1], {
-      extrapolateRight: "clamp",
-    });
-
-    return (
-      <AbsoluteFill style={{ opacity: bgOpacity * layer.opacity }}>
-        <Img
-          src={layer.src}
-          style={{
-            width: "100%",
-            height: "100%",
-            objectFit: layer.objectFit || "cover",
-            filter: layer.filter || "brightness(0.6)",
-          }}
-        />
-      </AbsoluteFill>
-    );
+    const bgOpacity = interpolate(relativeFrame, [0, 60], [0, 1], { extrapolateRight: "clamp" });
+    return <AbsoluteFill style={{ opacity: bgOpacity * layer.opacity }}><Img src={layer.src} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} /></AbsoluteFill>;
   }
-
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${layer.position.x - layer.size.width / 2}%`,
-        top: `${layer.position.y - layer.size.height / 2}%`,
-        width: `${layer.size.width}%`,
-        height: `${layer.size.height}%`,
-        opacity: layer.opacity * entrance.opacity,
-        transform: `rotate(${layer.rotation}deg) ${entrance.transform}`,
-        transformOrigin: "center center",
-      }}
-    >
-      <Img
-        src={layer.src}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: layer.objectFit || "contain",
-          filter: layer.filter || "none",
-        }}
-      />
+    <div style={{ 
+        position: "absolute", 
+        left: `${layer.position.x - layer.size.width / 2}%`, 
+        top: `${layer.position.y - layer.size.height / 2}%`, 
+        width: `${layer.size.width}%`, 
+        height: `${layer.size.height}%`, 
+        opacity: layer.opacity * entrance.opacity, 
+        transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+        transformOrigin: "center center" 
+    }}>
+      <Img src={layer.src} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} />
     </div>
   );
 };
 
-// ============================================================================
-// AUDIO LAYER COMPONENT
-// ============================================================================
-
-const AudioLayerComponent: React.FC<{
-  layer: AudioLayer;
-  relativeFrame: number;
-  fps: number;
-}> = ({ layer, relativeFrame }) => {
-  const duration = layer.endFrame - layer.startFrame;
-  
-  let volume = layer.volume;
-  
-  if (layer.fadeIn && relativeFrame < layer.fadeIn) {
-    volume = interpolate(relativeFrame, [0, layer.fadeIn], [0, layer.volume], {
-      extrapolateRight: "clamp",
-    });
-  }
-  
-  if (layer.fadeOut && relativeFrame > duration - layer.fadeOut) {
-    volume = interpolate(
-      relativeFrame,
-      [duration - layer.fadeOut, duration],
-      [layer.volume, 0],
-      { extrapolateLeft: "clamp" }
-    );
-  }
-
-  return (
-    <Audio
-      src={layer.src}
-      volume={volume}
-      loop={layer.loop}
-    />
-  );
-};
-
-// ============================================================================
-// VIDEO LAYER COMPONENT
-// ============================================================================
-
-const VideoLayerComponent: React.FC<{
-  layer: VideoLayer;
-  relativeFrame: number;
-  fps: number;
-}> = ({ layer, relativeFrame, fps }) => {
+const VideoLayerComponent: React.FC<{ layer: VideoLayer; relativeFrame: number; fps: number }> = ({ layer, relativeFrame, fps }) => {
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
   const duration = layer.endFrame - layer.startFrame;
-  
-  let volume = layer.volume;
-  
-  if (layer.fadeIn && relativeFrame < layer.fadeIn) {
-    volume = interpolate(relativeFrame, [0, layer.fadeIn], [0, layer.volume], {
-      extrapolateRight: "clamp",
-    });
-  }
-  
-  if (layer.fadeOut && relativeFrame > duration - layer.fadeOut) {
-    volume = interpolate(
-      relativeFrame,
-      [duration - layer.fadeOut, duration],
-      [layer.volume, 0],
-      { extrapolateLeft: "clamp" }
-    );
-  }
+  const rotation = layer.rotation || 0;
 
+  let volume = layer.volume;
+  if (layer.fadeIn) volume = interpolate(relativeFrame, [0, layer.fadeIn], [0, layer.volume], { extrapolateRight: "clamp" });
+  if (layer.fadeOut) volume = interpolate(relativeFrame, [duration - layer.fadeOut, duration], [layer.volume, 0], { extrapolateLeft: "clamp" });
   return (
-    <div
-      style={{
-        position: "absolute",
-        left: `${layer.position.x - layer.size.width / 2}%`,
-        top: `${layer.position.y - layer.size.height / 2}%`,
-        width: `${layer.size.width}%`,
-        height: `${layer.size.height}%`,
-        opacity: layer.opacity * entrance.opacity,
-        transform: `rotate(${layer.rotation}deg) ${entrance.transform}`,
-        transformOrigin: "center center",
-      }}
-    >
-      <Video
-        src={layer.src}
-        volume={volume}
-        loop={layer.loop}
-        playbackRate={layer.playbackRate || 1}
-        style={{
-          width: "100%",
-          height: "100%",
-          objectFit: layer.objectFit || "contain",
-          filter: layer.filter || "none",
-        }}
-      />
+    <div style={{ 
+        position: "absolute", 
+        left: `${layer.position.x - layer.size.width / 2}%`, 
+        top: `${layer.position.y - layer.size.height / 2}%`, 
+        width: `${layer.size.width}%`, 
+        height: `${layer.size.height}%`, 
+        opacity: layer.opacity * entrance.opacity, 
+        transform: `rotate(${rotation}deg) ${entrance.transform}`, 
+        transformOrigin: "center center" 
+    }}>
+      <Video src={layer.src} volume={volume} loop={layer.loop} playbackRate={layer.playbackRate} style={{ width: "100%", height: "100%", objectFit: layer.objectFit, filter: layer.filter }} />
     </div>
   );
 };
@@ -418,10 +1295,32 @@ export const DynamicLayerComposition: React.FC<DynamicCompositionProps> = ({
   layers,
   backgroundColor = "#000",
   editingLayerId = null,
+  templateId
 }) => {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
 
+  // Active Chat State Finding
+  const firstChatLayer = layers.find(isChatBubbleLayer);
+  const activeChatStyle = firstChatLayer ? firstChatLayer.chatStyle : null;
+  const chatName = firstChatLayer?.senderName || "User";
+  const chatAvatar = firstChatLayer?.avatarUrl;
+
+  // Background Logic
+  const getChatBackground = (style: ChatStyle | null) => {
+    if (!style) return backgroundColor;
+    switch (style) {
+      case "whatsapp": return "#EFE7DD";
+      case "imessage": return "#ffffff"; 
+      case "instagram": return "#ffffff";
+      case "messenger": return "#ffffff";
+      default: return backgroundColor;
+    }
+  };
+
+  const currentBackground = (templateId === 9 || activeChatStyle) ? getChatBackground(activeChatStyle) : backgroundColor;
+
+  // Render Layers
   const visibleLayers = layers
     .map((layer, index) => ({ layer, originalIndex: index }))
     .filter(({ layer }) => {
@@ -432,69 +1331,41 @@ export const DynamicLayerComposition: React.FC<DynamicCompositionProps> = ({
     .sort((a, b) => {
       if (isImageLayer(a.layer) && a.layer.isBackground) return -1;
       if (isImageLayer(b.layer) && b.layer.isBackground) return 1;
-      return b.originalIndex - a.originalIndex;
+      return a.originalIndex - b.originalIndex;
     });
 
   return (
-    <AbsoluteFill style={{ backgroundColor }}>
+    <AbsoluteFill style={{ backgroundColor: currentBackground }}>
+      
+      {/* WhatsApp Background Pattern */}
+      {activeChatStyle === 'whatsapp' && (
+         <Img 
+            src="https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png"
+            style={{ position: 'absolute', width: '100%', height: '100%', opacity: 0.06, objectFit: 'cover' }}
+         />
+      )}
+
+      {/* Render All Layers */}
       {visibleLayers.map(({ layer }) => {
         const relativeFrame = Math.max(0, frame - layer.startFrame);
-
-        if (isImageLayer(layer)) {
-          return (
-            <ImageLayerComponent
-              key={layer.id}
-              layer={layer}
-              relativeFrame={relativeFrame}
-              fps={fps}
-            />
-          );
-        }
-
-        if (isTextLayer(layer)) {
-          return (
-            <TextLayerComponent
-              key={layer.id}
-              layer={layer}
-              relativeFrame={relativeFrame}
-              fps={fps}
-              width={width}
-              height={height}
-            />
-          );
-        }
-
-        if (isVideoLayer(layer)) {
-          return (
-            <VideoLayerComponent
-              key={layer.id}
-              layer={layer}
-              relativeFrame={relativeFrame}
-              fps={fps}
-            />
-          );
-        }
-
+        if (isImageLayer(layer)) return <ImageLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
+        if (isTextLayer(layer)) return <TextLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} width={width} height={height} />;
+        if (isVideoLayer(layer)) return <VideoLayerComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
+        if (isChatBubbleLayer(layer)) return <ChatBubbleComponent key={layer.id} layer={layer} relativeFrame={relativeFrame} fps={fps} />;
         return null;
       })}
       
-      {layers
-        .filter((layer): layer is AudioLayer => 
-          isAudioLayer(layer) && layer.visible && layer.id !== editingLayerId
-        )
-        .map((layer) => (
-          <Sequence
-            key={layer.id}
-            from={layer.startFrame}
-            durationInFrames={layer.endFrame - layer.startFrame}
-          >
-            <AudioLayerComponent
-              layer={layer}
-              relativeFrame={Math.max(0, frame - layer.startFrame)}
-              fps={fps}
-            />
+      {/* Interface Overlay (Top/Bottom Bars) */}
+      {(templateId === 9 || activeChatStyle) && activeChatStyle && (
+        <ChatInterface style={activeChatStyle} name={chatName} avatar={chatAvatar} />
+      )}
+
+      {/* Audio Layers */}
+      {layers.filter((l): l is AudioLayer => l.type === 'audio' && l.visible && l.id !== editingLayerId).map((layer) => (
+          <Sequence key={layer.id} from={layer.startFrame} durationInFrames={layer.endFrame - layer.startFrame}>
+            <Audio src={(layer as AudioLayer).src} volume={(layer as AudioLayer).volume} />
           </Sequence>
-        ))}
+      ))}
     </AbsoluteFill>
   );
 };

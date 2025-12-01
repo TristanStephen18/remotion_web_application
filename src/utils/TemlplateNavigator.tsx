@@ -20,7 +20,7 @@ export const getTemplateRoute = (templateId: number, projectId: number) => {
     case 8: // Ken Burns Carousel
       return `/project/${projectId}/kenburnscarousel`;
     case 9: // Fake Text Conversation
-      return `/project/${projectId}/faketextconversation`;
+      return `/project/${projectId}/fakechat`;
     case 10: // Reddit Narration
       return `/project/${projectId}/redditvideo`;
     case 11: // Story Narration
@@ -39,6 +39,10 @@ export const getTemplateRoute = (templateId: number, projectId: number) => {
       return `/project/${projectId}/neontube`;
     case 18: // Retro Neon
       return `/project/${projectId}/retroneon`;
+    case 19: 
+      return `/project/${projectId}/photocollage`;
+    case 30: 
+      return `/project/${projectId}/watchshowcase`;
     default:
       return `/project/${projectId}/unknown`;
   }

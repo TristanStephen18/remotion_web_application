@@ -12,7 +12,7 @@ import { BarGraphEditor } from "./components/editors/BarGraph/Holder.tsx";
 import { SplitScreenEditor } from "./components/editors/SplitScreen/Holder.tsx";
 import { KpiFlipCardEditor } from "./components/editors/KpiFlipCards/Holder.tsx";
 // import { KenBurnsEditor } from "./components/editors/KenBurnsCarousel/Holder.tsx";
-import { FakeTextConversationEditor } from "./components/editors/FakeTextConversation/Holder.tsx";
+import { ThemeProvider } from './context/ThemeContext';
 import { RedditVideoEditor } from "./components/editors/RedditTemplate/Holder.tsx";
 import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/Holder.tsx";
 import { CurveLineTrendEditor } from "./components/editors/CurveLineTrend/Holder.tsx";
@@ -44,6 +44,7 @@ import LoginLoading from "./pages/auth/LoginLoader.tsx";
 function App() {
   return (
     <BrowserRouter>
+    <ThemeProvider>
       <Routes>
         {/* <Route
           path="/template/quotetemplate"
@@ -286,7 +287,7 @@ function App() {
           }
         />
 
-        <Route
+        {/* <Route
           path="/template/faketextconversation"
           element={
             <RequireAuth>
@@ -301,7 +302,7 @@ function App() {
               <FakeTextConversationEditor />
             </RequireAuth>
           }
-        />
+        /> */}
         <Route
           path="/template/redditvideo"
           element={
@@ -450,6 +451,7 @@ function App() {
         />
         {/* <Route path="/testpage" element={<QuoteTemplateEditor2 />} /> */}
       </Routes>
+      </ThemeProvider>
       {/* 👇 Must be rendered globally */}
       <Toaster
         position="top-right"

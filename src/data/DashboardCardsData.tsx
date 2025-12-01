@@ -88,6 +88,18 @@ export const templateCategories = {
       url: "https://res.cloudinary.com/dcu9xuof0/image/upload/v1763458547/ba1676dd-5925-4702-bc2a-5168da46fae3_vpg5p3.gif"
     },
 
+    {
+      name: "Photo Collage",
+      description: "Display images in a Collage type animation",
+      url: "https://res.cloudinary.com/dcu9xuof0/image/upload/v1763458547/ba1676dd-5925-4702-bc2a-5168da46fae3_vpg5p3.gif"
+    },
+
+  {
+      name: "Dancing People",
+      description: "Display images in a Collage type animation",
+      url: "https://res.cloudinary.com/dcu9xuof0/image/upload/v1763458547/ba1676dd-5925-4702-bc2a-5168da46fae3_vpg5p3.gif"
+    },
+
   ],
   Voiceovers: [
     {
@@ -144,6 +156,9 @@ export function templateUrlFinder (template: string){
       case "Neon Lights Text":
         return "https://res.cloudinary.com/dcu9xuof0/video/upload/v1763462298/NeonTubeFlicker_jqasxn.mp4";
       case "Retro Neon Text":
+        return "https://res.cloudinary.com/dcu9xuof0/video/upload/v1763465127/RetroNeonText_MatrixRain_ugi1zb.mp4";
+     
+      case "Dancing People":
         return "https://res.cloudinary.com/dcu9xuof0/video/upload/v1763465127/RetroNeonText_MatrixRain_ugi1zb.mp4";
     default:
       return "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794242/QuoteSpotlight_jn0iya.mp4";

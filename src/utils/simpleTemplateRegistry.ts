@@ -1,6 +1,7 @@
 import React from 'react';
-import type { Layer } from '../components/remotion_compositions/DynamicLayerComposition';
+import type { Layer, VideoLayer, ImageLayer } from '../components/remotion_compositions/DynamicLayerComposition';
 import { DynamicLayerComposition } from '../components/remotion_compositions/DynamicLayerComposition';
+import { generateId } from '../utils/layerHelper';
 
 export interface TemplateDefinition {
   id: number;
@@ -11,15 +12,22 @@ export interface TemplateDefinition {
   thumbnailUrl?: string;
   composition: React.FC<any>;
   compositionId: string;
-  createDefaultLayers: () => Layer[];
+  // Updated to accept layout and sequence
+  createDefaultLayers: (layout?: 'layout1' | 'layout2', sequence?: MediaItem[]) => Layer[];
   layersToProps: (layers: Layer[]) => any;
   calculateDuration?: (layers: Layer[]) => number;
 }
 
+// Define the MediaItem type for the sequence
+export interface MediaItem {
+  id: string;
+  type: 'video' | 'image';
+  src: string;
+  duration: number; // duration in seconds
+}
+
 export const TEMPLATES: Record<number, TemplateDefinition> = {
-  // ========================================
-  // TEMPLATE 1: QUOTE SPOTLIGHT
-  // ========================================
+  // ... [Keep Templates 1, 2, 6 as they were] ...
   1: {
     id: 1,
     name: 'quotetemplate',
@@ -121,9 +129,6 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
 
-  // ========================================
-  // TEMPLATE 2: TYPING ANIMATION
-  // ========================================
   2: {
     id: 2,
     name: 'typinganimation',
@@ -178,9 +183,6 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
 
-  // ========================================
-  // TEMPLATE 6: SPLIT SCREEN
-  // ========================================
   6: {
     id: 6,
     name: 'splitscreen',
@@ -252,45 +254,108 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
   },
 
   // ========================================
-  // TEMPLATE 8: BLURRED BACKGROUND VIDEO
+  // TEMPLATE 8: BLURRED BACKGROUND STYLE (Updated)
   // ========================================
   8: {
     id: 8,
     name: 'kenburnscarousel',
-    displayName: 'Blurred Background Video',
-    description: 'Vertical video with auto-generated blurred background',
+    displayName: 'Blurred Background Style',
+    description: 'Slideshow center with blurred background',
     category: 'Media',
     thumbnailUrl: '/template_previews/KenBurnsCarousel.mp4',
     composition: DynamicLayerComposition,
     compositionId: 'DynamicLayerComposition',
-    createDefaultLayers: () => [
-      {
-        id: 'video-1',
-        type: 'video',
-        name: 'Video Clip 1',
+    createDefaultLayers: (layout = 'layout1', sequence = []) => {
+      const FPS = 30;
+      const TRANSITION_DURATION = 15; // frames for slide transition
+
+      // Default sequence if none is provided
+      const defaultSequence: MediaItem[] = sequence.length > 0 ? sequence : [
+        {
+          id: generateId(),
+          type: 'video',
+          src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+          duration: 5
+        },
+        {
+          id: generateId(),
+          type: 'image',
+          src: 'https://images.unsplash.com/photo-1516961642265-531546e84af2?w=600&q=80',
+          duration: 5
+        }
+      ];
+
+      // 1. Background Layer (uses the first item's source, muted, blurred)
+      const bgLayer: VideoLayer | ImageLayer = {
+        id: 'bg-layer',
+        type: defaultSequence[0].type,
+        name: 'Background Blur',
         startFrame: 0,
-        endFrame: 150,
+        endFrame: 0, // Will be updated
         visible: true,
-        locked: false,
-        src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4', 
+        locked: true,
+        src: defaultSequence[0].src,
         objectFit: 'cover',
         position: { x: 50, y: 50 },
-        size: { width: 50, height: 70 },
+        size: { width: 100, height: 100 },
         rotation: 0,
         opacity: 1,
-        volume: 1,
-        playbackRate: 1,
-        loop: false,
-        animation: { entrance: 'fade', entranceDuration: 30 },
-      },
-    ] as Layer[],
+        filter: 'blur(30px) brightness(0.6)',
+        animation: { entrance: 'none', entranceDuration: 0 },
+        ...(defaultSequence[0].type === 'video' ? { volume: 0, playbackRate: 1, loop: true } : {})
+      } as any;
+
+      const foregroundLayers: Layer[] = [];
+      let currentStartFrame = 0;
+
+      // Define layout properties
+      const layoutProps = layout === 'layout1'
+        ? { width: 100, height: 100, objectFit: 'contain' as const } // Layout 1: Full Center
+        : { width: 80, height: 60, objectFit: 'cover' as const };    // Layout 2: Small Square
+
+      // 2. Generate Foreground Layers from Sequence
+      defaultSequence.forEach((item, index) => {
+        const durationInFrames = item.duration * FPS;
+        const endFrame = currentStartFrame + durationInFrames;
+        
+        // Apply slide transition to all but the first layer
+        const animation = index === 0 ? { entrance: 'fade' as const, entranceDuration: 30 } : { entrance: 'slideUp' as const, entranceDuration: TRANSITION_DURATION };
+
+        const layer: VideoLayer | ImageLayer = {
+          id: item.id,
+          type: item.type,
+          name: `Slide ${index + 1}`,
+          startFrame: currentStartFrame,
+          endFrame: endFrame,
+          visible: true,
+          locked: false,
+          src: item.src,
+          objectFit: layoutProps.objectFit,
+          position: { x: 50, y: 50 },
+          size: { width: layoutProps.width, height: layoutProps.height },
+          rotation: 0,
+          opacity: 1,
+          filter: '',
+          animation: animation,
+          ...(item.type === 'video' ? { volume: 1, playbackRate: 1, loop: false } : {})
+        } as any;
+
+        foregroundLayers.push(layer);
+        // Overlap for transition
+        currentStartFrame = endFrame - (index < defaultSequence.length - 1 ? TRANSITION_DURATION : 0);
+      });
+
+      // Update background layer duration
+      const totalDuration = Math.max(...foregroundLayers.map(l => l.endFrame));
+      bgLayer.endFrame = totalDuration;
+
+      return [bgLayer, ...foregroundLayers];
+    },
     layersToProps: (layers) => ({ layers, templateId: 8 }),
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
 
-  // ========================================
-  // TEMPLATE 19: PHOTO COLLAGE (6 PHOTOS + SLIDESHOW)
-  // ========================================
+  // ... [Keep Templates 19, 9, 30 as they were] ...
   19: {
     id: 19,
     name: 'photocollage',
@@ -302,7 +367,6 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     compositionId: 'DynamicLayerComposition',
 
     createDefaultLayers: () => {
-      // Define images once to reuse in both collage and slideshow
       const images = [
         'https://images.unsplash.com/photo-1516961642265-531546e84af2?w=600&q=80',
         'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=600&q=80',
@@ -312,15 +376,10 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600&q=80'
       ];
 
-      const COLLAGE_END_FRAME = 120; // 4 seconds of collage
-      const SLIDE_DURATION = 60;     // 2 seconds per slide
+      const COLLAGE_END_FRAME = 120;
+      const SLIDE_DURATION = 60;
 
       return [
-        // ============================
-        // PART 1: THE COLLAGE (Frames 0-120)
-        // ============================
-        
-        // --- TOP ROW (3 Images) ---
         {
           id: 'col-1', type: 'image', name: 'Collage 1 (Top L)',
           startFrame: 0, endFrame: COLLAGE_END_FRAME,
@@ -345,13 +404,11 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           animation: { entrance: 'slideDown', entranceDuration: 20 },
           visible: true, locked: false, opacity: 1, rotation: 0
         },
-
-        // --- CENTER TITLE ---
         {
           id: 'collage-title', type: 'text', name: 'Center Title',
           startFrame: 0, endFrame: COLLAGE_END_FRAME,
           content: 'MY MEMORIES',
-          fontFamily: 'Anton, sans-serif', // ✅ Bold Font
+          fontFamily: 'Anton, sans-serif',
           fontSize: 8,
           fontColor: '#ffffff',
           fontWeight: '900',
@@ -359,15 +416,13 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           lineHeight: 1,
           textTransform: 'uppercase',
           textShadow: true,
-          shadowColor: 'rgba(0,0,0,1)', // ✅ Strong Shadow
+          shadowColor: 'rgba(0,0,0,1)',
           shadowBlur: 20,
           position: { x: 50, y: 50 }, size: { width: 100, height: 33.33 },
           animation: { entrance: 'zoomPunch', entranceDuration: 25 },
           visible: true, locked: false, opacity: 1, rotation: 0,
           textOutline: true, outlineColor: 'black'
         },
-
-        // --- BOTTOM ROW (3 Images) ---
         {
           id: 'col-4', type: 'image', name: 'Collage 4 (Bot L)',
           startFrame: 0, endFrame: COLLAGE_END_FRAME,
@@ -392,10 +447,6 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           animation: { entrance: 'slideUp', entranceDuration: 20 },
           visible: true, locked: false, opacity: 1, rotation: 0
         },
-
-        // ============================
-        // PART 2: SLIDESHOW (Frames 120+)
-        // ============================
         {
           id: 'slide-1', type: 'image', name: 'Slide 1',
           startFrame: COLLAGE_END_FRAME, endFrame: COLLAGE_END_FRAME + SLIDE_DURATION,
@@ -450,6 +501,205 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     layersToProps: (layers) => ({ layers }),
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
+
+  9: {
+    id: 9,
+    name: 'fakechat',
+    displayName: 'Fake Text Conversation',
+    description: 'Realistic messaging conversations (IG, iMessage, WhatsApp)',
+    category: 'Social',
+    thumbnailUrl: '', 
+    composition: DynamicLayerComposition,
+    compositionId: 'DynamicLayerComposition',
+    createDefaultLayers: () => [
+      {
+        id: 'chat-bg',
+        type: 'image',
+        name: 'Wallpaper',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: true,
+        src: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=600&q=80',
+        isBackground: true,
+        objectFit: 'cover',
+        position: { x: 50, y: 50 },
+        size: { width: 100, height: 100 },
+        rotation: 0,
+        opacity: 1,
+      },
+      {
+        id: 'msg-1',
+        type: 'chat-bubble',
+        name: 'Them: Hello',
+        startFrame: 10,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        message: "Hey! Did you see the new update?",
+        isSender: false,
+        chatStyle: 'instagram',
+        senderName: 'Sarah_Smith',
+        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+        position: { x: 50, y: 20 },
+        size: { width: 100, height: 10 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'slideUp', entranceDuration: 20 },
+      },
+      {
+        id: 'msg-2',
+        type: 'chat-bubble',
+        name: 'Typing...',
+        startFrame: 40,
+        endFrame: 70, // Short duration for typing
+        visible: true,
+        locked: false,
+        message: "",
+        isSender: true,
+        isTyping: true,
+        chatStyle: 'instagram',
+        senderName: 'Sarah_Smith',
+        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+        position: { x: 50, y: 32 },
+        size: { width: 100, height: 10 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'slideUp', entranceDuration: 15 },
+      },
+      {
+        id: 'msg-3',
+        type: 'chat-bubble',
+        name: 'Me: Reply',
+        startFrame: 70,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        message: "Yeah, it looks exactly like the real thing now! 🔥",
+        isSender: true,
+        chatStyle: 'instagram',
+        senderName: 'Sarah_Smith',
+        avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
+        position: { x: 50, y: 32 },
+        size: { width: 100, height: 10 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'slideUp', entranceDuration: 20 },
+      }
+    ] as any[], 
+    layersToProps: (layers) => ({ layers, templateId: 9 }),
+    calculateDuration: (layers) => 300,
+  },
+
+  30: {
+    id: 30,
+    name: 'watchshowcase',
+    displayName: 'Viral POV Showcase',
+    description: 'POV text top, Product bottom - Viral Style',
+    category: 'Showcase',
+    thumbnailUrl: '',
+    composition: DynamicLayerComposition,
+    compositionId: 'DynamicLayerComposition',
+    createDefaultLayers: () => [
+      {
+        id: 'watch-bg',
+        type: 'video',
+        name: 'Background Video',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: true,
+        src: 'https://res.cloudinary.com/djnyytyd0/video/upload/v1764558376/the_way_they_got_so_much_aura_so_tuff_song_ilyTOMMY_-_pretty_ho3_..._sar5qk.mp4', 
+        position: { x: 50, y: 50 },
+        size: { width: 100, height: 100 },
+        rotation: 0,
+        opacity: 1,
+        volume: 0,
+        objectFit: 'cover',
+        filter: 'brightness(0.8)', 
+      },
+      {
+        id: 'watch-caption',
+        type: 'text',
+        name: 'POV Caption',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        content: "POV: You're dancing while your BPC-157 kicks in and you feel invincible 🧪💃",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        fontSize: 3.2, 
+        fontColor: '#FFFFFF',
+        fontWeight: '700', 
+        textAlign: 'center',
+        lineHeight: 1.2,
+        textShadow: true,
+        shadowColor: 'rgba(0,0,0,1)',
+        shadowBlur: 8,
+        shadowY: 2,
+        position: { x: 50, y: 15 },
+        size: { width: 90, height: 20 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'slideDown', entranceDuration: 20 },
+      },
+      {
+        id: 'watch-name',
+        type: 'text',
+        name: 'Product Name',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        content: 'Montres\nBreguet',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+        fontSize: 2.5, 
+        fontColor: '#FFFFFF',
+        fontWeight: '600',
+        textAlign: 'center',
+        lineHeight: 1.1,
+        textShadow: true,
+        shadowColor: 'rgba(0,0,0,0.8)',
+        shadowBlur: 4,
+        position: { x: 25, y: 66 }, 
+        size: { width: 40, height: 15 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'fade', entranceDuration: 30 },
+      },
+      {
+        id: 'watch-image',
+        type: 'image',
+        name: 'Product Image',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        src: 'https://res.cloudinary.com/djnyytyd0/image/upload/v1764558518/Audemars_Piguet_wtijtf.png',
+        objectFit: 'contain',
+        position: { x: 25, y: 85 }, 
+        size: { width: 28, height: 25 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: 'slideUp', entranceDuration: 30 },
+      },
+      {
+        id: 'watch-audio',
+        type: 'audio',
+        name: 'Background Music',
+        startFrame: 0,
+        endFrame: 300,
+        visible: true,
+        locked: false,
+        src: 'https://commondatastorage.googleapis.com/codeskulptor-assets/Epoq-Lepidoptera.ogg',
+        volume: 0.6,
+        loop: true,
+        fadeIn: 30,
+      }
+    ] as Layer[],
+    layersToProps: (layers) => ({ layers, templateId: 30 }),
+    calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
+  },
 };
 
 // Helper functions
@@ -465,16 +715,16 @@ export const getTemplatesByCategory = (category: string): TemplateDefinition[] =
   return Object.values(TEMPLATES).filter(t => t.category === category);
 };
 
-// Map template names to IDs
 export const TEMPLATE_NAME_TO_ID: Record<string, number> = {
   'Quote Spotlight': 1,
   'Typing Animation': 2,
   'Split Screen': 6,
   'Blurred Background Video': 8,
   'Photo Collage': 19,
+  'Fake Text Conversation' : 9,
+  'Dancing People':  30
 };
 
-// Reverse mapping
 export const TEMPLATE_ID_TO_NAME: Record<number, string> = Object.fromEntries(
   Object.entries(TEMPLATE_NAME_TO_ID).map(([name, id]) => [id, name])
 );
