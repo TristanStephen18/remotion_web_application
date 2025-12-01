@@ -1,3 +1,4 @@
+// src/components/ui/dashboard/sections/tools/AIImageGenerator.tsx
 import React from "react";
 import {
   Sparkles,
