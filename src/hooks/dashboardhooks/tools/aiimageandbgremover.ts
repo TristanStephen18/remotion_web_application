@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { Generation, UploadedFile } from "../../../models/imagegenandbgremove";
+import type { Generation } from "../../../models/imagegenandbgremove";
+import type { UploadedFile } from "../../../models/brremover";
 
 export function useAiImageAndBgRemoveHooks ()  {
     //aiimagegeneratorhooks
@@ -16,9 +17,9 @@ export function useAiImageAndBgRemoveHooks ()  {
       const [currentImage, setCurrentImage] = useState<string | null>(null);
 
       //bgremovehooks
-      const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
+      const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[] | []>([]);
         const [isDragging, setIsDragging] = useState(false);
-        const [originalFile, setOriginalFile] = useState<File | null>(null);
+        const [originalFile, setOriginalFile] = useState<Map<string, File>>(new Map());
 
       return {
         pollinationsModel,
@@ -37,8 +38,8 @@ export function useAiImageAndBgRemoveHooks ()  {
         setError, 
         currentImage,
         setCurrentImage,
-        uploadedFile,
-        setUploadedFile,
+        uploadedFiles,
+        setUploadedFiles,
         isDragging,
         setIsDragging,
         originalFile,

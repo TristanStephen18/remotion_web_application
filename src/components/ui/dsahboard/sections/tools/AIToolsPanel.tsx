@@ -26,8 +26,8 @@ export const AIToolsPanel: React.FC = () => {
     setError,
     currentImage,
     setCurrentImage,
-    uploadedFile,
-    setUploadedFile,
+    uploadedFiles,
+    setUploadedFiles,
     isDragging,
     setIsDragging,
     originalFile,
@@ -102,11 +102,11 @@ export const AIToolsPanel: React.FC = () => {
         ) : (
           <BackgroundRemover
             isDragging={isDragging}
-            originalFile={originalFile}
             setIsDragging={setIsDragging}
-            setOriginalFile={setOriginalFile}
-            setUploadedFile={setUploadedFile}
-            uploadedFile={uploadedFile}
+            setUploadedFiles={setUploadedFiles}
+            uploadedFiles={uploadedFiles}
+            originalFiles={originalFile}
+            setOriginalFiles={setOriginalFile}
           />
         )}
       </div>
