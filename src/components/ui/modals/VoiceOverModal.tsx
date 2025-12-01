@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { backendPrefix } from "../../../config";
 
 interface VoiceoverModalProps {
   isOpen: boolean;
@@ -41,7 +42,7 @@ export const VoiceoverModal: React.FC<VoiceoverModalProps> = ({
     try {
       console.log("🎤 Generating voiceover...", { text: text.substring(0, 50), voice: selectedVoice, speed });
       
-      const response = await fetch("/openai/generate-voiceover", {
+      const response = await fetch(`${backendPrefix}/sound/generate-voiceover`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
