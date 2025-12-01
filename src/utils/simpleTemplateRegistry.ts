@@ -588,7 +588,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
       }
     ] as any[], 
     layersToProps: (layers) => ({ layers, templateId: 9 }),
-    calculateDuration: (layers) => 300,
+    calculateDuration: () => 300,
   },
 
   30: {

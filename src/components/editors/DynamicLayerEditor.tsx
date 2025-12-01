@@ -971,7 +971,6 @@ import {
   isImageLayer,
   isAudioLayer,
   isVideoLayer,
-  isChatBubbleLayer,
 } from "../remotion_compositions/DynamicLayerComposition";
 
 // Hooks
@@ -1263,11 +1262,11 @@ const DynamicLayerEditor: React.FC = () => {
     toast.success(`Switched to ${type === 'split' ? 'Split Screen' : 'Picture-in-Picture'}`);
   }, [layers, pushState]);
 
-  const handleSlotReplace = useCallback((layerId: string) => {
-    const layer = layers.find(l => l.id === layerId);
-    if (layer) { activeSlotId.current = layerId; if (layoutFileRef.current) layoutFileRef.current.click(); }
-    else toast.error("Layer not found.");
-  }, [layers]);
+  // const handleSlotReplace = useCallback((layerId: string) => {
+  //   const layer = layers.find(l => l.id === layerId);
+  //   if (layer) { activeSlotId.current = layerId; if (layoutFileRef.current) layoutFileRef.current.click(); }
+  //   else toast.error("Layer not found.");
+  // }, [layers]);
   const handleLayoutFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && activeSlotId.current) {
@@ -1492,7 +1491,7 @@ const DynamicLayerEditor: React.FC = () => {
        const processed: Layer[] = [];
        const contentLayers = currentLayers.filter(l => !(l as any).isBackground);
 
-       contentLayers.forEach((layer, index) => { 
+       contentLayers.forEach((layer) => { 
           if (layer.type !== 'video' && layer.type !== 'image') {
               processed.push(layer);
               return;
