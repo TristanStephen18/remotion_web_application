@@ -43,7 +43,7 @@ class VEO3Service {
       formData.append("referenceType", data.referenceType || 'ASSET'); 
 
       const response = await axios.post(
-        `${backendPrefix}/api/veo3/generate`,
+        `${backendPrefix}/api/veo3-video-generation/generate`,
         formData,
         { headers }
       );
@@ -51,7 +51,7 @@ class VEO3Service {
     }
 
     const response = await axios.post(
-      `${backendPrefix}/api/veo3/generate`,
+      `${backendPrefix}/api/veo3-video-generation/generate`,
       {
         prompt: data.prompt,
         model: data.model,
@@ -66,7 +66,7 @@ class VEO3Service {
   async getGenerations(limit = 20, offset = 0) {
     const token = localStorage.getItem("token");
     const response = await axios.get(
-      `${backendPrefix}/api/veo3/generations?limit=${limit}&offset=${offset}`,
+      `${backendPrefix}/api/veo3-video-generation/generations?limit=${limit}&offset=${offset}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
@@ -75,7 +75,7 @@ class VEO3Service {
   async deleteGeneration(id: string) {
     const token = localStorage.getItem("token");
     const response = await axios.delete(
-      `${backendPrefix}/api/veo3/generations/${id}`,
+      `${backendPrefix}/api/veo3-video-generation/generations/${id}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
     return response.data;
