@@ -8,17 +8,67 @@ import type { ElementPosition, ElementPositions } from "../remotion_compositions
 export type SelectableElement = "quote" | "author" | "quoteMark" | "image" | null;
 
 type DragMode = "move" | "rotate" | "resize" | null;
+type ResizeDirection = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w" | null;
+
+// Extended position with size
+export interface ElementPositionWithSize extends ElementPosition {
+  width: number;  // percentage width
+  height: number; // percentage height
+}
+
+export interface ElementPositionsWithSize {
+  [key: string]: ElementPositionWithSize;
+}
 
 export interface PreviewOverlayProps {
-  positions: ElementPositions;
+  positions: ElementPositionsWithSize;
   onPositionChange: (
     element: keyof ElementPositions,
-    position: Partial<ElementPosition>
+    position: Partial<ElementPositionWithSize>
   ) => void;
   selectedElement: SelectableElement;
   onSelectElement: (element: SelectableElement) => void;
   containerWidth: number;
   containerHeight: number;
+  compositionWidth?: number;   // NEW: actual composition dimensions
+  compositionHeight?: number;  // NEW: actual composition dimensions
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Calculate the actual rendered dimensions of the player within the container
+ * The player maintains aspect ratio, so it might not fill the entire container
+ */
+function calculateRenderedDimensions(
+  containerWidth: number,
+  containerHeight: number,
+  compositionWidth: number,
+  compositionHeight: number
+): { width: number; height: number; offsetX: number; offsetY: number } {
+  const containerAspect = containerWidth / containerHeight;
+  const compositionAspect = compositionWidth / compositionHeight;
+
+  let renderedWidth: number;
+  let renderedHeight: number;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (containerAspect > compositionAspect) {
+    // Container is wider - player will be pillarboxed (black bars on sides)
+    renderedHeight = containerHeight;
+    renderedWidth = renderedHeight * compositionAspect;
+    offsetX = (containerWidth - renderedWidth) / 2;
+  } else {
+    // Container is taller - player will be letterboxed (black bars on top/bottom)
+    renderedWidth = containerWidth;
+    renderedHeight = renderedWidth / compositionAspect;
+    offsetY = (containerHeight - renderedHeight) / 2;
+  }
+
+  return { width: renderedWidth, height: renderedHeight, offsetX, offsetY };
 }
 
 // ============================================================================
@@ -32,57 +82,38 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
   onSelectElement,
   containerWidth,
   containerHeight,
+  compositionWidth = 1080,   // Default to standard mobile dimensions
+  compositionHeight = 1920,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const [dragMode, setDragMode] = useState<DragMode>(null);
   const [dragElement, setDragElement] = useState<keyof ElementPositions | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [dragStartPos, setDragStartPos] = useState<ElementPosition>({ x: 0, y: 0, rotation: 0, scale: 1 });
-  const [elementCenter, setElementCenter] = useState({ x: 0, y: 0 });
+  const [dragStartPos, setDragStartPos] = useState<ElementPositionWithSize>({ 
+    x: 0, y: 0, rotation: 0, scale: 1, width: 0, height: 0 
+  });
+  
+  const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
+  const [initialDistance, setInitialDistance] = useState(0);
+  const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
 
-  // Element hit areas - sized to contain text with padding
+  // Calculate actual rendered dimensions
+  const rendered = calculateRenderedDimensions(
+    containerWidth,
+    containerHeight,
+    compositionWidth,
+    compositionHeight
+  );
+
+  // Element definitions with labels
   const elements: {
     id: keyof ElementPositions;
     label: string;
-    baseWidth: number;  // base percentage width
-    baseHeight: number; // base percentage height
   }[] = [
-    { id: "quoteMark", label: 'Quote Mark "', baseWidth: 15, baseHeight: 15 },
-    { id: "quote", label: "Quote Text", baseWidth: 85, baseHeight: 22 },
-    { id: "author", label: "Author", baseWidth: 80, baseHeight: 12 },
+    { id: "quoteMark", label: 'Quote Mark "' },
+    { id: "quote", label: "Quote Text" },
+    { id: "author", label: "Author" },
   ];
-
-  // Get scaled dimensions for element
-  const getScaledDimensions = (elementId: keyof ElementPositions) => {
-    const el = elements.find((e) => e.id === elementId);
-    if (!el) return { width: 0, height: 0 };
-    
-    const scale = positions[elementId]?.scale || 1;
-    return {
-      width: el.baseWidth * scale,
-      height: el.baseHeight * scale,
-    };
-  };
-
-  // Get element box center in pixels
-  const getElementCenter = (elementId: keyof ElementPositions) => {
-    const dims = getScaledDimensions(elementId);
-    if (!dims.width) return { x: 0, y: 0 };
-    
-    const pos = positions[elementId];
-    let centerX: number;
-    let centerY: number;
-
-    if (elementId === "quoteMark") {
-      centerX = (pos.x + dims.width / 2) / 100 * containerWidth;
-      centerY = (pos.y + dims.height / 2) / 100 * containerHeight;
-    } else {
-      centerX = pos.x / 100 * containerWidth;
-      centerY = pos.y / 100 * containerHeight;
-    }
-
-    return { x: centerX, y: centerY };
-  };
 
   // Handle mouse down for move
   const handleMouseDown = useCallback(
@@ -91,6 +122,18 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
       e.preventDefault();
 
       const pos = positions[elementId];
+      const rect = overlayRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
+      // Calculate element's center in screen coordinates
+      // FIXED: Use rendered dimensions and offset
+      const centerX = rect.left + rendered.offsetX + (pos.x / 100) * rendered.width;
+      const centerY = rect.top + rendered.offsetY + (pos.y / 100) * rendered.height;
+
+      // Calculate offset from element center to mouse position
+      const offsetX = e.clientX - centerX;
+      const offsetY = e.clientY - centerY;
+
       setDragMode("move");
       setDragElement(elementId);
       setDragStart({ x: e.clientX, y: e.clientY });
@@ -98,11 +141,15 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
         x: pos.x, 
         y: pos.y, 
         rotation: pos.rotation || 0, 
-        scale: pos.scale || 1 
+        scale: pos.scale || 1,
+        width: pos.width,
+        height: pos.height
       });
+      
+      setGrabOffset({ x: offsetX, y: offsetY });
       onSelectElement(elementId as SelectableElement);
     },
-    [positions, onSelectElement]
+    [positions, onSelectElement, rendered]
   );
 
   // Handle rotation start
@@ -112,7 +159,6 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
       e.preventDefault();
 
       const pos = positions[elementId];
-      const center = getElementCenter(elementId);
       
       setDragMode("rotate");
       setDragElement(elementId);
@@ -121,34 +167,38 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
         x: pos.x, 
         y: pos.y, 
         rotation: pos.rotation || 0, 
-        scale: pos.scale || 1 
+        scale: pos.scale || 1,
+        width: pos.width,
+        height: pos.height
       });
-      setElementCenter(center);
+      onSelectElement(elementId as SelectableElement);
     },
-    [positions, containerWidth, containerHeight]
+    [positions, onSelectElement]
   );
 
   // Handle resize start
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent, elementId: keyof ElementPositions) => {
+    (e: React.MouseEvent, elementId: keyof ElementPositions, direction: ResizeDirection) => {
       e.stopPropagation();
       e.preventDefault();
 
       const pos = positions[elementId];
-      const center = getElementCenter(elementId);
-      
+
       setDragMode("resize");
       setDragElement(elementId);
+      setResizeDirection(direction);
       setDragStart({ x: e.clientX, y: e.clientY });
       setDragStartPos({ 
         x: pos.x, 
         y: pos.y, 
         rotation: pos.rotation || 0, 
-        scale: pos.scale || 1 
+        scale: pos.scale || 1,
+        width: pos.width,
+        height: pos.height
       });
-      setElementCenter(center);
+      onSelectElement(elementId as SelectableElement);
     },
-    [positions, containerWidth, containerHeight]
+    [positions, onSelectElement]
   );
 
   // Handle mouse move
@@ -156,91 +206,139 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
     if (!dragMode || !dragElement) return;
 
     const handleMouseMove = (e: MouseEvent) => {
+      const rect = overlayRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
       if (dragMode === "move") {
-        const deltaX = e.clientX - dragStart.x;
-        const deltaY = e.clientY - dragStart.y;
+        // FIXED: Account for grab offset and rendered dimensions
+        const targetCenterX = e.clientX - grabOffset.x;
+        const targetCenterY = e.clientY - grabOffset.y;
 
-        const deltaXPercent = (deltaX / containerWidth) * 100;
-        const deltaYPercent = (deltaY / containerHeight) * 100;
+        // Convert to container-relative coordinates (accounting for offset)
+        const relativeX = targetCenterX - rect.left - rendered.offsetX;
+        const relativeY = targetCenterY - rect.top - rendered.offsetY;
 
-        const newX = Math.max(0, Math.min(100, dragStartPos.x + deltaXPercent));
-        const newY = Math.max(0, Math.min(100, dragStartPos.y + deltaYPercent));
+        // Convert to percentage based on RENDERED dimensions
+        const newX = (relativeX / rendered.width) * 100;
+        const newY = (relativeY / rendered.height) * 100;
 
-        onPositionChange(dragElement, { x: newX, y: newY });
+        // Apply bounds
+        const boundedX = Math.max(0, Math.min(100, newX));
+        const boundedY = Math.max(0, Math.min(100, newY));
+
+        onPositionChange(dragElement, { x: boundedX, y: boundedY });
+        
       } else if (dragMode === "rotate") {
-        // Calculate angle from center to current mouse position
-        const rect = overlayRef.current?.getBoundingClientRect();
-        if (!rect) return;
+        // FIXED: Use rendered dimensions for center calculation
+        const centerX = rect.left + rendered.offsetX + (dragStartPos.x / 100) * rendered.width;
+        const centerY = rect.top + rendered.offsetY + (dragStartPos.y / 100) * rendered.height;
 
-        const centerX = rect.left + elementCenter.x;
-        const centerY = rect.top + elementCenter.y;
-
-        // Starting angle
         const startAngle = Math.atan2(
           dragStart.y - centerY,
           dragStart.x - centerX
         );
 
-        // Current angle
         const currentAngle = Math.atan2(
           e.clientY - centerY,
           e.clientX - centerX
         );
 
-        // Delta in degrees
         const deltaDegrees = (currentAngle - startAngle) * (180 / Math.PI);
-        const newRotation = dragStartPos.rotation! + deltaDegrees;
+        const currentRotation = dragStartPos.rotation ?? 0;
+        const newRotation = currentRotation + deltaDegrees;
 
         onPositionChange(dragElement, { rotation: newRotation });
+        
       } else if (dragMode === "resize") {
-        // Calculate distance from center for scale
-        const rect = overlayRef.current?.getBoundingClientRect();
-        if (!rect) return;
+        const rotation = dragStartPos.rotation || 0;
+        const rotationRad = (rotation * Math.PI) / 180;
 
-        const centerX = rect.left + elementCenter.x;
-        const centerY = rect.top + elementCenter.y;
+        // FIXED: Use rendered dimensions for calculations
+        const centerX = rect.left + rendered.offsetX + (dragStartPos.x / 100) * rendered.width;
+        const centerY = rect.top + rendered.offsetY + (dragStartPos.y / 100) * rendered.height;
 
-        // Starting distance
-        const startDist = Math.sqrt(
-          Math.pow(dragStart.x - centerX, 2) + Math.pow(dragStart.y - centerY, 2)
-        );
+        const startVector = {
+          x: dragStart.x - centerX,
+          y: dragStart.y - centerY,
+        };
 
-        // Current distance
-        const currentDist = Math.sqrt(
-          Math.pow(e.clientX - centerX, 2) + Math.pow(e.clientY - centerY, 2)
-        );
+        const currentVector = {
+          x: e.clientX - centerX,
+          y: e.clientY - centerY,
+        };
 
-        // Scale ratio
-        const scaleRatio = currentDist / startDist;
-        const newScale = Math.max(0.3, Math.min(3, dragStartPos.scale! * scaleRatio));
+        // Rotate vectors back to element's local space
+        const startLocal = {
+          x: startVector.x * Math.cos(-rotationRad) - startVector.y * Math.sin(-rotationRad),
+          y: startVector.x * Math.sin(-rotationRad) + startVector.y * Math.cos(-rotationRad),
+        };
 
-        onPositionChange(dragElement, { scale: newScale });
+        const currentLocal = {
+          x: currentVector.x * Math.cos(-rotationRad) - currentVector.y * Math.sin(-rotationRad),
+          y: currentVector.x * Math.sin(-rotationRad) + currentVector.y * Math.cos(-rotationRad),
+        };
+
+        const deltaLocal = {
+          x: currentLocal.x - startLocal.x,
+          y: currentLocal.y - startLocal.y,
+        };
+
+        // Convert pixel delta to percentage delta (using rendered dimensions)
+        const deltaXPercent = (deltaLocal.x / rendered.width) * 100;
+        const deltaYPercent = (deltaLocal.y / rendered.height) * 100;
+
+        let newWidth = dragStartPos.width;
+        let newHeight = dragStartPos.height;
+        let newX = dragStartPos.x;
+        let newY = dragStartPos.y;
+
+        // Apply resize based on direction
+        if (resizeDirection === "se" || resizeDirection === "e") {
+          newWidth = Math.max(5, dragStartPos.width + deltaXPercent * 2);
+        }
+        if (resizeDirection === "se" || resizeDirection === "s") {
+          newHeight = Math.max(5, dragStartPos.height + deltaYPercent * 2);
+        }
+        if (resizeDirection === "nw" || resizeDirection === "w") {
+          newWidth = Math.max(5, dragStartPos.width - deltaXPercent * 2);
+        }
+        if (resizeDirection === "nw" || resizeDirection === "n") {
+          newHeight = Math.max(5, dragStartPos.height - deltaYPercent * 2);
+        }
+        if (resizeDirection === "ne") {
+          newWidth = Math.max(5, dragStartPos.width + deltaXPercent * 2);
+          newHeight = Math.max(5, dragStartPos.height - deltaYPercent * 2);
+        }
+        if (resizeDirection === "sw") {
+          newWidth = Math.max(5, dragStartPos.width - deltaXPercent * 2);
+          newHeight = Math.max(5, dragStartPos.height + deltaYPercent * 2);
+        }
+
+        onPositionChange(dragElement, { width: newWidth, height: newHeight, x: newX, y: newY });
       }
     };
 
     const handleMouseUp = () => {
       setDragMode(null);
       setDragElement(null);
+      setResizeDirection(null);
     };
 
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [dragMode, dragElement, dragStart, dragStartPos, elementCenter, containerWidth, containerHeight, onPositionChange]);
+  }, [dragMode, dragElement, dragStartPos, dragStart, grabOffset, resizeDirection, onPositionChange, rendered]);
 
-  // Handle click on empty area to deselect
-  const handleOverlayClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === overlayRef.current) {
-        onSelectElement(null);
-      }
-    },
-    [onSelectElement]
-  );
+  // Deselect when clicking overlay background
+  const handleOverlayClick = useCallback((e: React.MouseEvent) => {
+    if (e.target === overlayRef.current) {
+      onSelectElement(null);
+    }
+  }, [onSelectElement]);
 
   // ============================================================================
   // STYLES
@@ -249,110 +347,139 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
   const styles: Record<string, React.CSSProperties> = {
     overlay: {
       position: "absolute",
-      inset: 0,
-      cursor: "default",
-      zIndex: 10,
+      top: 0,
+      left: 0,
+      width: "100%",
+      height: "100%",
+      pointerEvents: "auto",
+      zIndex: 1000,
     },
     elementBox: {
       position: "absolute",
-      borderRadius: "4px",
-      cursor: "default",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      border: "2px solid rgba(59, 130, 246, 0.6)",
+      background: "rgba(59, 130, 246, 0.05)",
+      pointerEvents: "auto",
+      transition: dragMode ? "none" : "border-color 0.2s, box-shadow 0.2s",
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
     },
     elementBoxSelected: {
       border: "2px solid #3b82f6",
-      backgroundColor: "rgba(59, 130, 246, 0.1)",
-      boxShadow: "0 0 0 3px rgba(59, 130, 246, 0.3)",
+      background: "rgba(59, 130, 246, 0.1)",
+      boxShadow: "0 4px 16px rgba(59, 130, 246, 0.3)",
     },
     elementLabel: {
       position: "absolute",
-      top: "-24px",
+      top: -24,
       left: "50%",
-      transform: "translateX(-50%)",
-      backgroundColor: "#3b82f6",
-      color: "white",
-      fontSize: "10px",
+      fontSize: "11px",
       fontWeight: 600,
-      padding: "3px 8px",
+      color: "#3b82f6",
+      background: "rgba(255, 255, 255, 0.95)",
+      padding: "2px 8px",
       borderRadius: "4px",
       whiteSpace: "nowrap",
       pointerEvents: "none",
-    },
-    resizeHandle: {
-      position: "absolute",
-      width: "10px",
-      height: "10px",
-      backgroundColor: "#3b82f6",
-      border: "2px solid white",
-      borderRadius: "2px",
-      cursor: "nwse-resize",
-    },
-    rotateHandle: {
-      position: "absolute",
-      top: "-40px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      width: "20px",
-      height: "20px",
-      backgroundColor: "#10b981",
-      border: "2px solid white",
-      borderRadius: "50%",
-      cursor: "grab",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
+      transformOrigin: "center bottom",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.1)",
     },
     rotateLine: {
       position: "absolute",
-      top: "-22px",
+      top: -30,
       left: "50%",
-      transform: "translateX(-50%)",
       width: "2px",
-      height: "20px",
-      backgroundColor: "#10b981",
+      height: "24px",
+      background: "linear-gradient(to bottom, transparent, #10b981)",
       pointerEvents: "none",
+      transformOrigin: "bottom center",
     },
-    scaleIndicator: {
+    rotateHandle: {
       position: "absolute",
-      bottom: "-20px",
+      top: -36,
       left: "50%",
-      transform: "translateX(-50%)",
-      fontSize: "9px",
-      color: "#888",
-      backgroundColor: "rgba(0,0,0,0.7)",
+      width: "24px",
+      height: "24px",
+      background: "white",
+      border: "2px solid #10b981",
+      borderRadius: "50%",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+      transformOrigin: "center center",
+    },
+    resizeHandle: {
+      position: "absolute",
+      width: "12px",
+      height: "12px",
+      background: "white",
+      border: "2px solid #3b82f6",
+      borderRadius: "50%",
+      boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+      transformOrigin: "center center",
+    },
+    edgeHandle: {
+      position: "absolute",
+      background: "rgba(59, 130, 246, 0.3)",
+      border: "1px solid #3b82f6",
+      borderRadius: "2px",
+      transformOrigin: "center center",
+    },
+    sizeIndicator: {
+      position: "absolute",
+      bottom: -24,
+      left: "50%",
+      fontSize: "10px",
+      fontWeight: 500,
+      color: "#64748b",
+      background: "rgba(255, 255, 255, 0.95)",
       padding: "2px 6px",
       borderRadius: "3px",
       whiteSpace: "nowrap",
       pointerEvents: "none",
+      transformOrigin: "center top",
+      boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
     },
   };
 
+  // ============================================================================
+  // RENDER
+  // ============================================================================
+
   return (
-    <div ref={overlayRef} style={styles.overlay} onClick={handleOverlayClick}>
-      {elements.map((element, index) => {
+    <div
+      ref={overlayRef}
+      style={styles.overlay}
+      onClick={handleOverlayClick}
+    >
+      {elements.map((element) => {
         const pos = positions[element.id];
+        if (!pos) return null;
+
         const isSelected = selectedElement === element.id;
         const rotation = pos.rotation || 0;
         const scale = pos.scale || 1;
-        const dims = getScaledDimensions(element.id);
 
-        // Calculate position
-        let left: string;
-        let top: string;
+        // ============================================================================
+        // POSITIONING LOGIC - FIXED
+        // ============================================================================
+        // Convert center percentage to pixels using RENDERED dimensions
+        const centerXPx = rendered.offsetX + (pos.x / 100) * rendered.width;
+        const centerYPx = rendered.offsetY + (pos.y / 100) * rendered.height;
+        
+        // Box dimensions in pixels (using rendered dimensions)
+        const boxWidthPx = (pos.width / 100) * rendered.width;
+        const boxHeightPx = (pos.height / 100) * rendered.height;
+        
+        // Top-left corner position in pixels
+        const leftPx = centerXPx - (boxWidthPx / 2);
+        const topPx = centerYPx - (boxHeightPx / 2);
+        
+        const left = `${leftPx}px`;
+        const top = `${topPx}px`;
+        const width = `${boxWidthPx}px`;
+        const height = `${boxHeightPx}px`;
 
-        if (element.id === "quoteMark") {
-          left = `${pos.x}%`;
-          top = `${pos.y}%`;
-        } else {
-          left = `${pos.x - dims.width / 2}%`;
-          top = `${pos.y - dims.height / 2}%`;
-        }
-
-        // z-index: selected element on top, quoteMark above others when not selected
-        const baseZIndex = element.id === "quoteMark" ? 5 : (2 - index);
-        const zIndex = isSelected ? 10 : baseZIndex;
+        const zIndex = isSelected ? 100 : 10;
 
         return (
           <div
@@ -361,26 +488,24 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
               ...styles.elementBox,
               left,
               top,
-              width: `${dims.width}%`,
-              height: `${dims.height}%`,
+              width,
+              height,
               zIndex,
               ...(isSelected ? styles.elementBoxSelected : {}),
-              cursor: isSelected
-                ? dragMode === "move"
-                  ? "grabbing"
-                  : "move"
-                : "pointer",
-              transform: `rotate(${rotation}deg)`,
+              cursor: dragMode === "move" ? "grabbing" : "move",
+              transform: `rotate(${rotation}deg) scale(${scale})`,
               transformOrigin: "center center",
             }}
             onMouseDown={(e) => handleMouseDown(e, element.id)}
           >
             {/* Label */}
             {isSelected && (
-              <span style={{
-                ...styles.elementLabel,
-                transform: `translateX(-50%) rotate(${-rotation}deg)`,
-              }}>
+              <span 
+                style={{
+                  ...styles.elementLabel,
+                  transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                }}
+              >
                 {element.label}
               </span>
             )}
@@ -388,15 +513,30 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
             {/* Rotation handle */}
             {isSelected && (
               <>
-                <div style={styles.rotateLine} />
+                <div 
+                  style={{
+                    ...styles.rotateLine,
+                    transform: `translateX(-50%)`,
+                  }}
+                />
                 <div
                   style={{
                     ...styles.rotateHandle,
+                    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
                     cursor: dragMode === "rotate" ? "grabbing" : "grab",
                   }}
                   onMouseDown={(e) => handleRotateStart(e, element.id)}
                 >
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
+                  <svg 
+                    width="12" 
+                    height="12" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="#10b981" 
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
                     <path d="M23 4v6h-6M1 20v-6h6" />
                     <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
                   </svg>
@@ -404,35 +544,111 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
               </>
             )}
 
-            {/* Resize handles */}
+            {/* Corner resize handles */}
             {isSelected && (
               <>
                 <div
-                  style={{ ...styles.resizeHandle, top: -6, left: -6, cursor: "nw-resize" }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id)}
+                  style={{ 
+                    ...styles.resizeHandle, 
+                    top: -6, 
+                    left: -6, 
+                    cursor: "nwse-resize",
+                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "nw")}
                 />
                 <div
-                  style={{ ...styles.resizeHandle, top: -6, right: -6, cursor: "ne-resize" }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id)}
+                  style={{ 
+                    ...styles.resizeHandle, 
+                    top: -6, 
+                    right: -6, 
+                    cursor: "nesw-resize",
+                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "ne")}
                 />
                 <div
-                  style={{ ...styles.resizeHandle, bottom: -6, left: -6, cursor: "sw-resize" }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id)}
+                  style={{ 
+                    ...styles.resizeHandle, 
+                    bottom: -6, 
+                    left: -6, 
+                    cursor: "nesw-resize",
+                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "sw")}
                 />
                 <div
-                  style={{ ...styles.resizeHandle, bottom: -6, right: -6, cursor: "se-resize" }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id)}
+                  style={{ 
+                    ...styles.resizeHandle, 
+                    bottom: -6, 
+                    right: -6, 
+                    cursor: "nwse-resize",
+                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "se")}
+                />
+
+                {/* Edge handles */}
+                <div
+                  style={{ 
+                    ...styles.edgeHandle, 
+                    top: -4, 
+                    left: "50%",
+                    width: "30px",
+                    height: "8px",
+                    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                    cursor: "ns-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "n")}
+                />
+                <div
+                  style={{ 
+                    ...styles.edgeHandle, 
+                    bottom: -4, 
+                    left: "50%",
+                    width: "30px",
+                    height: "8px",
+                    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                    cursor: "ns-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "s")}
+                />
+                <div
+                  style={{ 
+                    ...styles.edgeHandle, 
+                    left: -4, 
+                    top: "50%",
+                    width: "8px",
+                    height: "30px",
+                    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                    cursor: "ew-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "w")}
+                />
+                <div
+                  style={{ 
+                    ...styles.edgeHandle, 
+                    right: -4, 
+                    top: "50%",
+                    width: "8px",
+                    height: "30px",
+                    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                    cursor: "ew-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, element.id, "e")}
                 />
               </>
             )}
 
-            {/* Scale indicator */}
-            {isSelected && (scale !== 1 || rotation !== 0) && (
-              <span style={{
-                ...styles.scaleIndicator,
-                transform: `translateX(-50%) rotate(${-rotation}deg)`,
-              }}>
-                {Math.round(scale * 100)}% • {Math.round(rotation)}°
+            {/* Size indicator */}
+            {isSelected && (
+              <span 
+                style={{
+                  ...styles.sizeIndicator,
+                  transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+                }}
+              >
+                {Math.round(pos.width)}% × {Math.round(pos.height)}% • {Math.round(scale * 100)}% • {Math.round(rotation)}°
               </span>
             )}
           </div>

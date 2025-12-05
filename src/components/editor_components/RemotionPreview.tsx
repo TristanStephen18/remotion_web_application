@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } f
 import { Player, type PlayerRef } from "@remotion/player";
 import { PreviewOverlay, type SelectableElement } from "./PreviewOverlay";
 import type { ElementPositions } from "../remotion_compositions/QuoteTemplate";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // ============================================================================
 // TYPES
@@ -74,6 +75,7 @@ function RemotionPreviewInner<T extends Record<string, unknown>>(
   const animationFrameId = useRef<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 });
+  const { colors } = useTheme();
 
   // Measure container size for interactive overlay
   useEffect(() => {
@@ -183,7 +185,11 @@ function RemotionPreviewInner<T extends Record<string, unknown>>(
       overflow: "hidden",
       background: "#000",
       position: "relative",
+      border: `2px solid ${colors.border}`,
+      borderRadius: "8px",
+      boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
     },
+    
     playerWrapper: {
       width: "100%",
       height: "100%",
@@ -234,6 +240,8 @@ function RemotionPreviewInner<T extends Record<string, unknown>>(
               onPositionChange={onPositionChange}
               containerWidth={frameSize.width || 270}
               containerHeight={frameSize.height || 480}
+              compositionWidth={compositionWidth}  // PASS COMPOSITION DIMENSIONS
+              compositionHeight={compositionHeight}  // PASS COMPOSITION DIMENSIONS
             />
           )}
         </div>

@@ -10,6 +10,8 @@ interface MediaGalleryModalProps {
   activeTab?: 'text' | 'audio' | 'media' | 'video';
   preselectedItem?: any;
   onConfirm: (selectedItem: any) => void;
+  replaceMode?: boolean; // NEW: Indicates if we're replacing existing media
+  replaceLayerId?: string; // NEW: ID of layer being replaced
 }
 
 type SidebarTab = 'home' | 'giphy' | 'viewFiles' | 'addMedia';
@@ -29,8 +31,9 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   isOpen,
   onClose,
   activeTab = 'media',
-  // preselectedItem,
   onConfirm,
+  replaceMode = false,
+  replaceLayerId,
 }) => {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('addMedia');
   const [selectedFiles, setSelectedFiles] = useState<FilePreview[]>([]);
@@ -46,6 +49,13 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       });
     };
   }, [selectedFiles]);
+
+  // Reset selected files when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSelectedFiles([]);
+    }
+  }, [isOpen]);
 
   // ============================================================================
   // FILE UPLOAD HANDLING
@@ -75,8 +85,13 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
     }));
 
-    setSelectedFiles(prev => [...prev, ...newFiles]);
-  }, [activeTab]);
+    // In replace mode, only allow single file selection
+    if (replaceMode) {
+      setSelectedFiles([newFiles[0]]);
+    } else {
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+    }
+  }, [activeTab, replaceMode]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -104,10 +119,12 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   }, []);
 
   const handleAddToProject = useCallback(() => {
-    console.log('🚀 handleAddToProject called, selectedFiles:', selectedFiles.length);
+    console.log('🚀 handleAddToProject called, selectedFiles:', selectedFiles.length, 'replaceMode:', replaceMode);
     if (selectedFiles.length > 0) {
-      // Convert files to base64 or handle upload
+      // Convert all files to base64 first
+      const processedFiles: any[] = [];
       let processedCount = 0;
+      
       selectedFiles.forEach((filePreview, index) => {
         console.log(`📄 Processing file ${index + 1}/${selectedFiles.length}:`, filePreview.name);
         const reader = new FileReader();
@@ -121,23 +138,39 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               data: result,
               file: filePreview.file,
               preview: filePreview.preview,
+              replaceMode,
+              replaceLayerId,
             };
-            console.log('📤 Calling onConfirm with:', mediaData.name, mediaData.type);
-            onConfirm(mediaData);
+            processedFiles.push(mediaData);
           }
           processedCount++;
-          // Close modal after all files are processed
+          
+          // When all files are processed, pass them all at once
           if (processedCount === selectedFiles.length) {
-            console.log('✅ All files processed, closing modal');
+            console.log('✅ All files processed, calling onConfirm with', processedFiles.length, 'files');
+            if (replaceMode) {
+              // In replace mode, only send the first file
+              onConfirm(processedFiles[0]);
+            } else {
+              // In add mode, send all files at once
+              onConfirm(processedFiles);
+            }
             onClose();
           }
         };
         reader.readAsDataURL(filePreview.file);
       });
     }
-  }, [selectedFiles, onConfirm, onClose]);
+  }, [selectedFiles, onConfirm, onClose, replaceMode, replaceLayerId]);
 
   if (!isOpen) return null;
+
+  const getAcceptedFormats = () => {
+    if (activeTab === 'audio') return 'MP3, WAV, AAC, OGG';
+    if (activeTab === 'video') return 'MP4, MOV, WEBM, AVI';
+    if (activeTab === 'media') return 'JPG, PNG, GIF, WEBP';
+    return 'All formats';
+  };
 
   // ============================================================================
   // STYLES
@@ -210,26 +243,25 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       color: '#888',
       fontSize: '20px',
       cursor: 'pointer',
+      transition: 'all 0.2s',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      transition: 'all 0.2s',
     },
-    content: {
-      flex: 1,
+    contentArea: {
       display: 'flex',
+      flex: 1,
       overflow: 'hidden',
     },
     sidebar: {
       width: '200px',
       borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-      padding: '16px 0',
       display: 'flex',
       flexDirection: 'column' as const,
-      gap: '4px',
+      padding: '16px 0',
     },
     sidebarButton: {
-      padding: '12px 20px',
+      padding: '12px 24px',
       border: 'none',
       backgroundColor: 'transparent',
       color: '#888',
@@ -240,11 +272,13 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       transition: 'all 0.2s',
       display: 'flex',
       alignItems: 'center',
-      gap: '8px',
+      gap: '12px',
     },
     sidebarButtonActive: {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      color: '#e5e5e5',
+      backgroundColor: 'rgba(99, 102, 241, 0.15)',
+      color: '#6366f1',
+      borderLeft: '3px solid #6366f1',
+      paddingLeft: '21px',
     },
     mainArea: {
       flex: 1,
@@ -258,7 +292,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '40px',
-      overflowY: 'auto' as const,
     },
     uploadBox: {
       width: '100%',
@@ -267,51 +300,43 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       border: '2px dashed rgba(255, 255, 255, 0.2)',
       borderRadius: '12px',
       textAlign: 'center' as const,
-      transition: 'all 0.3s',
       cursor: 'pointer',
+      transition: 'all 0.3s',
+      backgroundColor: 'rgba(255, 255, 255, 0.02)',
     },
     uploadBoxDragging: {
-      borderColor: '#3b82f6',
-      backgroundColor: 'rgba(59, 130, 246, 0.05)',
+      borderColor: '#6366f1',
+      backgroundColor: 'rgba(99, 102, 241, 0.05)',
+      transform: 'scale(1.02)',
     },
     uploadIcon: {
-      width: '48px',
-      height: '48px',
-      margin: '0 auto 16px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: '#888',
-      fontSize: '24px',
+      fontSize: '48px',
+      marginBottom: '16px',
     },
     uploadTitle: {
-      fontSize: '16px',
+      fontSize: '18px',
       fontWeight: '600' as const,
       color: '#e5e5e5',
       marginBottom: '8px',
     },
     uploadSubtitle: {
-      fontSize: '13px',
+      fontSize: '14px',
       color: '#888',
-      marginBottom: '4px',
+      marginBottom: '16px',
     },
     uploadFormats: {
-      fontSize: '11px',
+      fontSize: '12px',
       color: '#666',
     },
     previewArea: {
-      padding: '16px 24px',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-      maxHeight: '300px',
-      overflowY: 'auto' as const,
       flex: 1,
+      padding: '24px',
+      overflowY: 'auto' as const,
     },
     previewGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))',
-      gap: '12px',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gap: '16px',
     },
     previewCard: {
       position: 'relative' as const,
@@ -336,23 +361,22 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       padding: '8px',
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
       color: '#e5e5e5',
-      fontSize: '10px',
-      fontWeight: '500' as const,
+      fontSize: '11px',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
       whiteSpace: 'nowrap' as const,
     },
     removeButton: {
       position: 'absolute' as const,
-      top: '4px',
-      right: '4px',
+      top: '8px',
+      right: '8px',
       width: '24px',
       height: '24px',
       borderRadius: '50%',
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
       border: 'none',
+      backgroundColor: 'rgba(0, 0, 0, 0.8)',
       color: '#fff',
-      fontSize: '14px',
+      fontSize: '16px',
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
@@ -360,15 +384,16 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       transition: 'all 0.2s',
     },
     fileItem: {
-      padding: '12px',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      padding: '16px',
+      marginBottom: '12px',
+      backgroundColor: '#1a1a1a',
       borderRadius: '8px',
-      marginBottom: '8px',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      fontSize: '13px',
       color: '#e5e5e5',
+      fontSize: '13px',
     },
     footer: {
       padding: '16px 24px',
@@ -376,7 +401,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      gap: '12px',
+      backgroundColor: '#0a0a0a',
     },
     fileCount: {
       fontSize: '13px',
@@ -404,33 +429,16 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       backgroundColor: '#6366f1',
       color: '#fff',
       fontSize: '13px',
-      fontWeight: '500' as const,
+      fontWeight: '600' as const,
       cursor: 'pointer',
       transition: 'all 0.2s',
+      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
     },
     addButtonDisabled: {
-      opacity: 0.5,
+      backgroundColor: '#444',
       cursor: 'not-allowed',
+      opacity: 0.5,
     },
-  };
-
-  // const getFileTypeLabel = () => {
-  //   switch (activeTab) {
-  //     case 'audio': return 'audio';
-  //     case 'video': return 'video';
-  //     case 'media': return 'images';
-  //     case 'text': return 'text';
-  //     default: return 'files';
-  //   }
-  // };
-
-  const getAcceptedFormats = () => {
-    switch (activeTab) {
-      case 'audio': return 'Supported: mp3, wav, ogg, m4a';
-      case 'video': return 'Supported: mp4, webm, mov';
-      case 'media': return 'Supported: jpg, png, gif, webp';
-      default: return '';
-    }
   };
 
   return (
@@ -439,17 +447,11 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
         {/* Header */}
         <div style={styles.header}>
           <div style={styles.headerLeft}>
-            <span style={styles.headerTitle}>Media gallery</span>
-            <button 
-              style={{
-                ...styles.headerTab,
-                ...styles.headerTabActive
-              }}
-            >
-              Add Media
-            </button>
+            <span style={styles.headerTitle}>
+              {replaceMode ? `Replace ${activeTab === 'media' ? 'Image' : activeTab === 'video' ? 'Video' : 'Audio'}` : 'Media Library'}
+            </span>
           </div>
-          <button 
+          <button
             style={styles.closeButton}
             onClick={onClose}
             onMouseOver={(e) => {
@@ -459,71 +461,14 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               e.currentTarget.style.backgroundColor = 'transparent';
             }}
           >
-            ×
+            ✕
           </button>
         </div>
 
         {/* Content */}
-        <div style={styles.content}>
+        <div style={styles.contentArea}>
           {/* Sidebar */}
           <div style={styles.sidebar}>
-            <button
-              style={{
-                ...styles.sidebarButton,
-                ...(sidebarTab === 'home' ? styles.sidebarButtonActive : {}),
-              }}
-              onClick={() => setSidebarTab('home')}
-              onMouseOver={(e) => {
-                if (sidebarTab !== 'home') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (sidebarTab !== 'home') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              <span>🏠</span> Home
-            </button>
-            <button
-              style={{
-                ...styles.sidebarButton,
-                ...(sidebarTab === 'giphy' ? styles.sidebarButtonActive : {}),
-              }}
-              onClick={() => setSidebarTab('giphy')}
-              onMouseOver={(e) => {
-                if (sidebarTab !== 'giphy') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (sidebarTab !== 'giphy') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              <span>🎬</span> Giphy library
-            </button>
-            <button
-              style={{
-                ...styles.sidebarButton,
-                ...(sidebarTab === 'viewFiles' ? styles.sidebarButtonActive : {}),
-              }}
-              onClick={() => setSidebarTab('viewFiles')}
-              onMouseOver={(e) => {
-                if (sidebarTab !== 'viewFiles') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (sidebarTab !== 'viewFiles') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              <span>📂</span> View files
-            </button>
             <button
               style={{
                 ...styles.sidebarButton,
@@ -541,7 +486,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                 }
               }}
             >
-              <span>➕</span> Add media
+              <span>➕</span> {replaceMode ? 'Upload new' : 'Add media'}
             </button>
           </div>
 
@@ -562,19 +507,26 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                         onDragLeave={handleDragLeave}
                       >
                         <div style={styles.uploadIcon}>☁️</div>
-                        <div style={styles.uploadTitle}>Upload files</div>
+                        <div style={styles.uploadTitle}>
+                          {replaceMode ? 'Upload replacement file' : 'Upload files'}
+                        </div>
                         <div style={styles.uploadSubtitle}>
                           Drag and drop or click to browse
                         </div>
                         <div style={styles.uploadFormats}>
                           {getAcceptedFormats()}
                         </div>
+                        {replaceMode && (
+                          <div style={{ marginTop: '12px', fontSize: '11px', color: '#f59e0b' }}>
+                            ⚠️ This will replace the current {activeTab === 'media' ? 'image' : activeTab}
+                          </div>
+                        )}
                       </div>
                     </label>
                     <input
                       id="file-upload"
                       type="file"
-                      multiple
+                      multiple={!replaceMode}
                       accept={
                         activeTab === 'audio' ? 'audio/*' :
                         activeTab === 'video' ? 'video/*' :
@@ -624,32 +576,34 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                             </button>
                           </div>
                         ))}
-                        {/* Add more button */}
-                        <label htmlFor="file-upload-more">
-                          <div
-                            style={{
-                              ...styles.previewCard,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              border: '2px dashed rgba(255, 255, 255, 0.2)',
-                              backgroundColor: 'transparent',
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.borderColor = '#3b82f6';
-                              e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
-                              e.currentTarget.style.backgroundColor = 'transparent';
-                            }}
-                          >
-                            <div style={{ textAlign: 'center', color: '#888' }}>
-                              <div style={{ fontSize: '24px', marginBottom: '4px' }}>+</div>
-                              <div style={{ fontSize: '10px' }}>Add more</div>
+                        {/* Add more button - only in add mode */}
+                        {!replaceMode && (
+                          <label htmlFor="file-upload-more">
+                            <div
+                              style={{
+                                ...styles.previewCard,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: '2px dashed rgba(255, 255, 255, 0.2)',
+                                backgroundColor: 'transparent',
+                              }}
+                              onMouseOver={(e) => {
+                                e.currentTarget.style.borderColor = '#3b82f6';
+                                e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
+                              }}
+                              onMouseOut={(e) => {
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                e.currentTarget.style.backgroundColor = 'transparent';
+                              }}
+                            >
+                              <div style={{ textAlign: 'center', color: '#888' }}>
+                                <div style={{ fontSize: '24px', marginBottom: '4px' }}>+</div>
+                                <div style={{ fontSize: '10px' }}>Add more</div>
+                              </div>
                             </div>
-                          </div>
-                        </label>
+                          </label>
+                        )}
                         <input
                           id="file-upload-more"
                           type="file"
@@ -734,7 +688,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                       }
                     }}
                   >
-                    Add {selectedFiles.length} to project
+                    {replaceMode ? 'Replace' : `Add ${selectedFiles.length} to project`}
                   </button>
                 </div>
               </div>

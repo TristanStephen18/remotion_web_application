@@ -1,0 +1,158 @@
+/**
+ * Global Theme Styles
+ * Add this to your main CSS file or create a theme.css file
+ */
+
+/* Root variables for dark theme (default) */
+:root,
+[data-theme="dark"] {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1f1f1f;
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-active: rgba(255, 255, 255, 0.1);
+  
+  --text-primary: #e5e5e5;
+  --text-secondary: #ccc;
+  --text-tertiary: #aaa;
+  --text-muted: #888;
+  
+  --border: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.06);
+  --border-heavy: rgba(255, 255, 255, 0.1);
+  
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+}
+
+/* Light theme variables */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e5e5e5;
+  --bg-hover: rgba(0, 0, 0, 0.05);
+  --bg-active: rgba(0, 0, 0, 0.1);
+  
+  --text-primary: #1a1a1a;
+  --text-secondary: #333;
+  --text-tertiary: #555;
+  --text-muted: #777;
+  
+  --border: rgba(0, 0, 0, 0.12);
+  --border-light: rgba(0, 0, 0, 0.08);
+  --border-heavy: rgba(0, 0, 0, 0.16);
+  
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #dc2626;
+  --danger-hover: #b91c1c;
+}
+
+/* Smooth theme transitions */
+* {
+  transition: background-color 0.3s ease, 
+              color 0.3s ease, 
+              border-color 0.3s ease;
+}
+
+/* Prevent transitions on page load */
+.preload * {
+  transition: none !important;
+}
+
+/* Custom scrollbar for both themes */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: var(--border-heavy);
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Optional: If you want to use CSS variables directly in styles */
+.themed-container {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.themed-button {
+  background-color: var(--accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.themed-button:hover {
+  background-color: var(--accent-hover);
+}
+
+.themed-input {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.themed-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Timeline specific theming (if needed) */
+[data-theme="light"] .timeline-track {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+[data-theme="light"] .timeline-playhead {
+  background-color: var(--accent);
+}
+
+/* Preview panel theming */
+[data-theme="light"] .preview-panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+}
+
+/* Modal/Overlay theming */
+[data-theme="light"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="dark"] .modal-overlay {
+  background-color: rgba(0, 0, 0, 0.7);
+}

@@ -43,6 +43,9 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0, width: 0, height: 0, rotation: 0, fontSize: 0 });
   const [elementCenter, setElementCenter] = useState({ x: 0, y: 0 });
+  
+  // NEW: Store the offset from element center to where user clicked
+  const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     if (!overlayRef.current) return;
@@ -119,16 +122,39 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     if (editingLayerId === layer.id) return;
     if (!layer.position) return;
 
-    e.stopPropagation(); e.preventDefault();
+    e.stopPropagation(); 
+    e.preventDefault();
     if (isPlaying && onPlayingChange) onPlayingChange(false);
   
+    const rect = overlayRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    // KEY FIX: Calculate element's center in screen coordinates
+    const centerX = rect.left + (layer.position.x / 100) * actualWidth;
+    const centerY = rect.top + (layer.position.y / 100) * actualHeight;
+
+    // Calculate offset from element center to mouse position
+    const offsetX = e.clientX - centerX;
+    const offsetY = e.clientY - centerY;
+
     const fontSize = isTextLayer(layer) ? layer.fontSize : 0;
     setDragMode("move");
     setDragLayerId(layer.id);
     setDragStart({ x: e.clientX, y: e.clientY });
-    setDragStartPos({ x: layer.position.x, y: layer.position.y, width: layer.size.width, height: layer.size.height, rotation: layer.rotation || 0, fontSize });
+    setDragStartPos({ 
+      x: layer.position.x, 
+      y: layer.position.y, 
+      width: layer.size.width, 
+      height: layer.size.height, 
+      rotation: layer.rotation || 0, 
+      fontSize 
+    });
+    
+    // Store the grab offset
+    setGrabOffset({ x: offsetX, y: offsetY });
+    
     onSelectLayer(layer.id);
-  }, [onSelectLayer, editingLayerId, isPlaying, onPlayingChange]);
+  }, [onSelectLayer, editingLayerId, isPlaying, onPlayingChange, actualWidth, actualHeight]);
 
   const handleRotateStart = useCallback((e: React.MouseEvent, layer: Layer) => {
     if (layer.locked) return;
@@ -161,53 +187,109 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     if (!layer || !layer.position) return;
 
     const handleMouseMove = (e: MouseEvent) => {
+      const rect = overlayRef.current?.getBoundingClientRect();
+      if (!rect) return;
+
       if (dragMode === "move") {
-        const deltaX = e.clientX - dragStart.x;
-        const deltaY = e.clientY - dragStart.y;
-        const deltaXPercent = (deltaX / actualWidth) * 100;
-        const deltaYPercent = (deltaY / actualHeight) * 100;
-        onLayerUpdate(dragLayerId, { position: { x: dragStartPos.x + deltaXPercent, y: dragStartPos.y + deltaYPercent } });
+        // KEY FIX: Account for the grab offset
+        // Current mouse position minus grab offset = where the element center should be
+        const targetCenterX = e.clientX - grabOffset.x;
+        const targetCenterY = e.clientY - grabOffset.y;
+
+        // Convert to container-relative coordinates
+        const relativeX = targetCenterX - rect.left;
+        const relativeY = targetCenterY - rect.top;
+
+        // Convert to percentage
+        const newX = (relativeX / actualWidth) * 100;
+        const newY = (relativeY / actualHeight) * 100;
+
+        // Apply bounds
+        const boundedX = Math.max(0, Math.min(100, newX));
+        const boundedY = Math.max(0, Math.min(100, newY));
+
+        onLayerUpdate(dragLayerId, { position: { x: boundedX, y: boundedY } });
+        
       } else if (dragMode === "rotate") {
-        const rect = overlayRef.current?.getBoundingClientRect();
-        if (!rect) return;
-        const centerX = rect.left + elementCenter.x;
-        const centerY = rect.top + elementCenter.y;
-        const startAngle = Math.atan2(dragStart.y - centerY, dragStart.x - centerX);
-        const currentAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX);
-        const deltaDegrees = (currentAngle - startAngle) * (180 / Math.PI);
-        onLayerUpdate(dragLayerId, { rotation: dragStartPos.rotation + deltaDegrees });
+        const startAngle = Math.atan2(dragStart.y - (rect.top + elementCenter.y), dragStart.x - (rect.left + elementCenter.x));
+        const currentAngle = Math.atan2(e.clientY - (rect.top + elementCenter.y), e.clientX - (rect.left + elementCenter.x));
+        const deltaAngle = (currentAngle - startAngle) * (180 / Math.PI);
+        const newRotation = dragStartPos.rotation + deltaAngle;
+        onLayerUpdate(dragLayerId, { rotation: newRotation });
+        
       } else if (dragMode?.startsWith("resize-")) {
+        const corner = dragMode.split("-")[1];
         const deltaX = e.clientX - dragStart.x;
         const deltaY = e.clientY - dragStart.y;
-        const deltaWidthPercent = (deltaX / actualWidth) * 100;
-        const deltaHeightPercent = (deltaY / actualHeight) * 100;
+        const rotation = dragStartPos.rotation || 0;
+        const rotationRad = (rotation * Math.PI) / 180;
+        const cos = Math.cos(-rotationRad);
+        const sin = Math.sin(-rotationRad);
+        const localDeltaX = deltaX * cos - deltaY * sin;
+        const localDeltaY = deltaX * sin + deltaY * cos;
+        const deltaWidthPercent = (localDeltaX / actualWidth) * 100;
+        const deltaHeightPercent = (localDeltaY / actualHeight) * 100;
+        
         let newWidth = dragStartPos.width;
         let newHeight = dragStartPos.height;
-        const corner = dragMode.replace("resize-", "");
-        
-        if (corner === "br") { newWidth += (deltaWidthPercent * 2); newHeight += (deltaHeightPercent * 2); } 
-        else if (corner === "bl") { newWidth -= (deltaWidthPercent * 2); newHeight += (deltaHeightPercent * 2); } 
-        else if (corner === "tr") { newWidth += (deltaWidthPercent * 2); newHeight -= (deltaHeightPercent * 2); } 
-        else if (corner === "tl") { newWidth -= (deltaWidthPercent * 2); newHeight -= (deltaHeightPercent * 2); }
+        let newX = dragStartPos.x;
+        let newY = dragStartPos.y;
+        let newFontSize = dragStartPos.fontSize;
 
-        newWidth = Math.max(2, newWidth);
-        newHeight = Math.max(2, newHeight);
+        if (corner === "br") {
+          newWidth = Math.max(5, dragStartPos.width + deltaWidthPercent);
+          newHeight = Math.max(5, dragStartPos.height + deltaHeightPercent);
+        } else if (corner === "bl") {
+          newWidth = Math.max(5, dragStartPos.width - deltaWidthPercent);
+          newHeight = Math.max(5, dragStartPos.height + deltaHeightPercent);
+          newX = dragStartPos.x + deltaWidthPercent / 2;
+        } else if (corner === "tr") {
+          newWidth = Math.max(5, dragStartPos.width + deltaWidthPercent);
+          newHeight = Math.max(5, dragStartPos.height - deltaHeightPercent);
+          newY = dragStartPos.y + deltaHeightPercent / 2;
+        } else if (corner === "tl") {
+          newWidth = Math.max(5, dragStartPos.width - deltaWidthPercent);
+          newHeight = Math.max(5, dragStartPos.height - deltaHeightPercent);
+          newX = dragStartPos.x + deltaWidthPercent / 2;
+          newY = dragStartPos.y + deltaHeightPercent / 2;
+        }
 
-        if (isTextLayer(layer) && dragStartPos.fontSize > 0) {
-          const scaleRatio = newWidth / dragStartPos.width;
-          const newFontSize = Math.max(0.5, Math.min(50, dragStartPos.fontSize * scaleRatio));
-          onLayerUpdate(dragLayerId, { size: { width: newWidth, height: newHeight }, fontSize: newFontSize } as Partial<TextLayer>);
+        if (isTextLayer(layer)) {
+          const aspectRatio = newWidth / newHeight;
+          const baseAspect = dragStartPos.width / dragStartPos.height;
+          const scale = Math.sqrt((newWidth / dragStartPos.width) * (newHeight / dragStartPos.height));
+          newFontSize = Math.max(1, dragStartPos.fontSize * scale);
+          onLayerUpdate(dragLayerId, { position: { x: newX, y: newY }, size: { width: newWidth, height: newHeight }, fontSize: newFontSize } as Partial<TextLayer>);
         } else {
           onLayerUpdate(dragLayerId, { size: { width: newWidth, height: newHeight } });
         }
       }
     };
 
-    const handleMouseUp = () => { setDragMode(null); setDragLayerId(null); };
+    const handleMouseUp = () => { 
+      setDragMode(null); 
+      setDragLayerId(null); 
+      setGrabOffset({ x: 0, y: 0 }); // Reset grab offset
+    };
+    
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-    return () => { document.removeEventListener("mousemove", handleMouseMove); document.removeEventListener("mouseup", handleMouseUp); };
-  }, [dragMode, dragLayerId, dragStart, dragStartPos, elementCenter, actualWidth, actualHeight, onLayerUpdate, layers]);
+    return () => { 
+      document.removeEventListener("mousemove", handleMouseMove); 
+      document.removeEventListener("mouseup", handleMouseUp); 
+    };
+  }, [
+    dragMode, 
+    dragLayerId, 
+    dragStart, 
+    dragStartPos, 
+    elementCenter, 
+    grabOffset, // Add grabOffset to dependencies
+    actualWidth, 
+    actualHeight, 
+    onLayerUpdate, 
+    layers
+  ]);
 
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
     if (e.target === overlayRef.current) {
@@ -244,11 +326,8 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
           textAlign: layer.textAlign,
           whiteSpace: "pre-wrap",
           wordWrap: "break-word",
-          visibility: "hidden", // Invisible, just for sizing the flex container if needed
+          visibility: "hidden",
           pointerEvents: "none",
-          // The ghost text size doesn't determine box size anymore, 
-          // but we keep it here in case we want to re-enable auto-size later.
-          // For now, it just sits inside.
           width: "100%",
           padding: 0,
           margin: 0,
@@ -322,8 +401,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
               transformOrigin: "center center", 
               
               // --- CENTER CONTENT ---
-              // This ensures that if the box is larger than the element (e.g. text), 
-              // the element sits perfectly in the middle of the box.
               display: "flex",
               justifyContent: "center",
               alignItems: "center",
@@ -332,11 +409,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
             onDoubleClick={(e) => handleDoubleClick(e, layer)}
             onMouseDown={(e) => !isEditing && handleMouseDown(e, layer)}
           >
-            {/* For Text: We center the ghost/edit text inside the box.
-               For Images: Since there's no child <img> here (it's in Composition), 
-               the empty box just frames the area perfectly. 
-            */}
-            
             {isText && renderGhostText(layer as TextLayer)}
             {isEditing && isText && renderEditableText(layer as TextLayer)}
             

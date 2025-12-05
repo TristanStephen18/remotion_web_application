@@ -3,6 +3,7 @@ import toast from "react-hot-toast";
 import { type TextLayer } from "../remotion_compositions/DynamicLayerComposition";
 import { FONTS, FONT_WEIGHTS, DESIGN_PRESETS } from "../../data/editor_constants";
 import { EditorIcons } from "./EditorIcons";
+import { useTheme } from "../../contexts/ThemeContext";
 
 // Simple alignment icons
 const AlignIcons = {
@@ -37,8 +38,15 @@ export const TextEditor: React.FC<TextEditorProps> = ({
   onUpdate,
   onDelete,
 }) => {
+  const { colors } = useTheme();
   const [showPresets, setShowPresets] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [highlightInput, setHighlightInput] = useState(layer.highlightWords?.join(', ') || '');
+
+  // Sync local state when layer changes (e.g., switching between layers)
+  React.useEffect(() => {
+    setHighlightInput(layer.highlightWords?.join(', ') || '');
+  }, [layer.id]); // Only sync when switching to a different layer
 
   // Modern, compact styles
   const styles: Record<string, React.CSSProperties> = {
@@ -47,7 +55,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       flexDirection: "column",
       height: "100%",
       overflow: "auto",
-      backgroundColor: "#0a0a0a",
+      backgroundColor: colors.bgPrimary,
     },
     section: {
       padding: "10px 12px",
@@ -64,13 +72,13 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     sectionTitle: {
       fontSize: "11px",
       fontWeight: "600",
-      color: "#888",
+      color: colors.textMuted,
       textTransform: "uppercase",
       letterSpacing: "0.8px",
     },
     collapseIcon: {
       fontSize: "10px",
-      color: "#666",
+      color: colors.textTertiary,
       transition: "transform 0.2s",
     },
     // Form Controls - Compact
@@ -88,10 +96,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       width: "100%",
       minHeight: "60px",
       padding: "8px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
-      color: "#e5e5e5",
+      color: colors.textPrimary,
       fontSize: "13px",
       fontFamily: "inherit",
       resize: "vertical",
@@ -100,10 +108,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     select: {
       width: "100%",
       padding: "6px 8px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
-      color: "#e5e5e5",
+      color: colors.textPrimary,
       fontSize: "12px",
       cursor: "pointer",
       height: "28px",
@@ -111,10 +119,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     input: {
       width: "100%",
       padding: "6px 8px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
-      color: "#e5e5e5",
+      color: colors.textPrimary,
       fontSize: "12px",
       height: "28px",
     },
@@ -133,7 +141,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     buttonGroup: {
       display: "flex",
       gap: "4px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       padding: "3px",
       borderRadius: "6px",
       border: "1px solid rgba(255,255,255,0.06)",
@@ -144,7 +152,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       backgroundColor: "transparent",
       border: "none",
       borderRadius: "4px",
-      color: "#888",
+      color: colors.textMuted,
       fontSize: "11px",
       fontWeight: "600",
       cursor: "pointer",
@@ -160,10 +168,10 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     },
     iconButton: {
       padding: "6px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
-      color: "#888",
+      color: colors.textMuted,
       cursor: "pointer",
       transition: "all 0.15s",
       display: "flex",
@@ -192,7 +200,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
       cursor: "pointer",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
     },
     // Slider - Compact
     sliderWrapper: {
@@ -207,7 +215,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     },
     sliderValue: {
       fontSize: "11px",
-      color: "#888",
+      color: colors.textMuted,
       minWidth: "32px",
       textAlign: "right",
       fontWeight: "500",
@@ -223,7 +231,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     },
     presetCard: {
       padding: "10px 8px",
-      backgroundColor: "#141414",
+      backgroundColor: colors.bgSecondary,
       border: "1px solid rgba(255,255,255,0.08)",
       borderRadius: "6px",
       cursor: "pointer",
@@ -239,7 +247,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     },
     presetName: {
       fontSize: "9px",
-      color: "#666",
+      color: colors.textTertiary,
       fontWeight: "500",
     },
     // Delete Button
@@ -491,33 +499,63 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   fontFamily: 'inherit',
                 }}
                 placeholder="e.g. balance, moving"
-                value={(layer as any).highlightWords?.join(', ') || ''}
+                value={highlightInput}
                 onChange={(e) => {
-                  const words = e.target.value
+                  setHighlightInput(e.target.value);
+                }}
+                onBlur={() => {
+                  const words = highlightInput
                     .split(',')
                     .map(w => w.trim())
                     .filter(w => w.length > 0);
+                  console.log('Highlight words being saved:', words);
                   onUpdate(layer.id, { 
                     highlightWords: words.length > 0 ? words : undefined 
-                  } as any);
+                  });
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.currentTarget.blur();
+                  }
                 }}
               />
+              {layer.highlightWords && layer.highlightWords.length > 0 && (
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  marginTop: '4px',
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '4px'
+                }}>
+                  {layer.highlightWords.map((word, idx) => (
+                    <span key={idx} style={{
+                      backgroundColor: '#1a1a1a',
+                      padding: '2px 6px',
+                      borderRadius: '3px',
+                      border: '1px solid #333'
+                    }}>
+                      {word}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {(layer as any).highlightWords && (layer as any).highlightWords.length > 0 && (
+            {layer.highlightWords && layer.highlightWords.length > 0 && (
               <div style={styles.formGroup}>
                 <label style={styles.label}>Highlight Color</label>
                 <div style={styles.colorWrapper}>
                   <div
                     style={{
                       ...styles.colorPreview,
-                      backgroundColor: (layer as any).highlightColor || 'rgba(255, 215, 0, 0.4)',
+                      backgroundColor: layer.highlightColor || 'rgba(255, 215, 0, 0.4)',
                     }}
                   />
                   <input
                     type="color"
                     style={styles.colorInput}
-                    value={(layer as any).highlightColor?.replace(/rgba?\([^)]+\)/, '#FFD700') || '#FFD700'}
+                    value={layer.highlightColor?.replace(/rgba?\([^)]+\)/, '#FFD700') || '#FFD700'}
                     onChange={(e) => {
                       const hex = e.target.value;
                       const r = parseInt(hex.slice(1, 3), 16);
@@ -525,7 +563,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                       const b = parseInt(hex.slice(5, 7), 16);
                       onUpdate(layer.id, { 
                         highlightColor: `rgba(${r}, ${g}, ${b}, 0.4)` 
-                      } as any);
+                      });
                     }}
                   />
                 </div>
@@ -560,12 +598,12 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                 style={styles.presetCard}
                 onClick={() => applyPreset(preset)}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#1f1f1f";
+                  e.currentTarget.style.backgroundColor = colors.bgTertiary;
                   e.currentTarget.style.borderColor = "#3b82f6";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#141414";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                  e.currentTarget.style.backgroundColor = colors.bgSecondary;
+                  e.currentTarget.style.borderColor = colors.border;
                 }}
               >
                 <div

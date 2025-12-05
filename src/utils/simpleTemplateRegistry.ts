@@ -259,7 +259,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
   8: {
     id: 8,
     name: 'kenburnscarousel',
-    displayName: 'Blurred Background Style',
+    displayName: 'Ken Burns Carousel',
     description: 'Slideshow center with blurred background',
     category: 'Media',
     thumbnailUrl: '/template_previews/KenBurnsCarousel.mp4',
@@ -719,7 +719,7 @@ export const TEMPLATE_NAME_TO_ID: Record<string, number> = {
   'Quote Spotlight': 1,
   'Typing Animation': 2,
   'Split Screen': 6,
-  'Blurred Background Video': 8,
+  'Ken Burns Carousel': 8,
   'Photo Collage': 19,
   'Fake Text Conversation' : 9,
   'Dancing People':  30

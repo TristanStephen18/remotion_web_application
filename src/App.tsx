@@ -12,7 +12,6 @@ import { BarGraphEditor } from "./components/editors/BarGraph/Holder.tsx";
 import { SplitScreenEditor } from "./components/editors/SplitScreen/Holder.tsx";
 import { KpiFlipCardEditor } from "./components/editors/KpiFlipCards/Holder.tsx";
 // import { KenBurnsEditor } from "./components/editors/KenBurnsCarousel/Holder.tsx";
-import { ThemeProvider } from './context/ThemeContext';
 import { RedditVideoEditor } from "./components/editors/RedditTemplate/Holder.tsx";
 import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/Holder.tsx";
 import { CurveLineTrendEditor } from "./components/editors/CurveLineTrend/Holder.tsx";
@@ -41,10 +40,14 @@ import { LandingPage } from "./pages/LandingPage.tsx";
 import DynamicLayerEditor from "./components/editors/DynamicLayerEditor.tsx";
 import LoginLoading from "./pages/auth/LoginLoader.tsx";
 
+import { ThemeProvider } from "./contexts/ThemeContext";
+import "./styles/theme.css";
+
 function App() {
   return (
-    <BrowserRouter>
+
     <ThemeProvider>
+    <BrowserRouter>
       <Routes>
         {/* <Route
           path="/template/quotetemplate"
@@ -451,7 +454,6 @@ function App() {
         />
         {/* <Route path="/testpage" element={<QuoteTemplateEditor2 />} /> */}
       </Routes>
-      </ThemeProvider>
       {/* 👇 Must be rendered globally */}
       <Toaster
         position="top-right"
@@ -469,6 +471,7 @@ function App() {
         }}
       />
     </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

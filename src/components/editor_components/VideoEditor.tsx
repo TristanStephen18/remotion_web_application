@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { type VideoLayer } from "../remotion_compositions/DynamicLayerComposition";
-import { modernEditorStyles as styles } from "../../styles/modernEditorStyles";
+import { getThemedEditorStyles } from "../../styles/themedEditorStyles";
 import { FPS } from "../../data/editor_constants";
+import { useTheme } from "../../contexts/ThemeContext";
 // import { EditorIcons } from "./EditorIcons";
 
 interface VideoEditorProps {
@@ -22,6 +23,8 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   onDelete,
   onReplace,
 }) => {
+  const { colors } = useTheme();
+  const styles = getThemedEditorStyles(colors); 
   const [showFilters, setShowFilters] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -34,7 +37,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
     { name: "Bright", value: "brightness(1.3)" },
     { name: "Dark", value: "brightness(0.7)" },
     { name: "Contrast", value: "contrast(1.3)" },
-    { name: "Blur", value: "blur(2px)" },
+    { name: "Blur", value: "blur(10px)" },
     { name: "Cinematic", value: "contrast(1.1) brightness(0.9) saturate(1.2)" },
   ];
 
@@ -42,10 +45,10 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   const layoutBtnStyle: React.CSSProperties = {
     flex: 1,
     height: "40px",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: colors.borderLight,
     border: "1px solid rgba(255,255,255,0.1)",
     borderRadius: "6px",
-    color: "#e5e5e5",
+    color: colors.textPrimary,
     cursor: "pointer",
     display: "flex",
     flexDirection: "column",
@@ -62,12 +65,12 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
           style={styles.buttonSecondary}
           onClick={onReplace}
           onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = "#2a2a2a";
+            e.currentTarget.style.backgroundColor = colors.bgHover;
             e.currentTarget.style.borderColor = "#3b82f6";
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = "#1f1f1f";
-            e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+            e.currentTarget.style.backgroundColor = colors.bgTertiary;
+            e.currentTarget.style.borderColor = colors.border;
           }}
         >
           {/* {EditorIcons.video} */}
@@ -110,13 +113,13 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               });
             }}
             style={layoutBtnStyle}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.border}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.borderLight}
           >
             <div style={{ width: 14, height: 14, border: "1px solid #888", borderRadius: 2, position: "relative" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "50%", background: "#3b82f6" }} />
             </div>
-            <span style={{ fontSize: "9px", marginTop: "4px", color: "#888" }}>Top</span>
+            <span style={{ fontSize: "9px", marginTop: "4px", color: colors.textMuted }}>Top</span>
           </button>
 
           {/* FULL SCREEN */}
@@ -130,11 +133,11 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               });
             }}
             style={layoutBtnStyle}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.border}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.borderLight}
           >
             <div style={{ width: 14, height: 14, border: "1px solid #888", borderRadius: 2, background: "#3b82f6" }} />
-            <span style={{ fontSize: "9px", marginTop: "4px", color: "#888" }}>Full</span>
+            <span style={{ fontSize: "9px", marginTop: "4px", color: colors.textMuted }}>Full</span>
           </button>
 
           {/* BOTTOM HALF */}
@@ -148,13 +151,13 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
               });
             }}
             style={layoutBtnStyle}
-            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.1)"}
-            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)"}
+            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.border}
+            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.borderLight}
           >
             <div style={{ width: 14, height: 14, border: "1px solid #888", borderRadius: 2, position: "relative" }}>
               <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "50%", background: "#3b82f6" }} />
             </div>
-            <span style={{ fontSize: "9px", marginTop: "4px", color: "#888" }}>Bottom</span>
+            <span style={{ fontSize: "9px", marginTop: "4px", color: colors.textMuted }}>Bottom</span>
           </button>
 
         </div>
@@ -250,8 +253,8 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 e.currentTarget.style.color = "white";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#141414";
-                e.currentTarget.style.color = "#888";
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
+                e.currentTarget.style.color = colors.textMuted;
               }}
             >
               ↻
@@ -265,8 +268,8 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 e.currentTarget.style.color = "white";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = "#141414";
-                e.currentTarget.style.color = "#888";
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
+                e.currentTarget.style.color = colors.textMuted;
               }}
             >
               ⇄
@@ -304,14 +307,14 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 onClick={() => onUpdate(layer.id, { filter: filter.value })}
                 onMouseEnter={(e) => {
                   if (layer.filter !== filter.value) {
-                    e.currentTarget.style.backgroundColor = "#1f1f1f";
+                    e.currentTarget.style.backgroundColor = colors.bgTertiary;
                     e.currentTarget.style.borderColor = "#3b82f6";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (layer.filter !== filter.value) {
-                    e.currentTarget.style.backgroundColor = "#141414";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
+                    e.currentTarget.style.backgroundColor = colors.bgSecondary;
+                    e.currentTarget.style.borderColor = colors.border;
                   }
                 }}
               >

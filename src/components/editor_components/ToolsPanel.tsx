@@ -1,5 +1,7 @@
 import React from "react";
 import { EditorIcons } from "./EditorIcons";
+import { useTheme } from "../../contexts/ThemeContext";
+import type { ThemeColors } from "../../contexts/ThemeContext";
 
 interface ToolsPanelProps {
   onVoiceoverClick: () => void;
@@ -13,6 +15,73 @@ interface ToolsPanelProps {
   onEnhanceSpeechClick: () => void;
   onRemoveBackgroundClick: () => void;
 }
+
+const getStyles = (colors: ThemeColors): Record<string, React.CSSProperties> => ({
+  container: {
+    display: "flex",
+    flexDirection: "column",
+    height: "100%",
+    overflowY: "auto",
+    backgroundColor: colors.bgPrimary,
+  },
+  header: {
+    padding: "16px",
+    borderBottom: `1px solid ${colors.border}`,
+  },
+  title: {
+    fontSize: "14px",
+    fontWeight: "600",
+    color: colors.textPrimary,
+    margin: "0 0 4px 0",
+  },
+  subtitle: {
+    fontSize: "11px",
+    color: colors.textMuted,
+    margin: 0,
+  },
+  toolsGrid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "10px",
+    padding: "16px",
+  },
+  toolCard: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: "10px",
+    padding: "16px 12px",
+    backgroundColor: colors.bgSecondary,
+    border: `1px solid ${colors.borderHeavy}`,
+    borderRadius: "8px",
+    cursor: "pointer",
+    transition: "all 0.2s",
+    textAlign: "center",
+  },
+  iconWrapper: {
+    width: "48px",
+    height: "48px",
+    borderRadius: "12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "20px",
+  },
+  toolInfo: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "2px",
+  },
+  toolName: {
+    fontSize: "12px",
+    fontWeight: "600",
+    color: colors.textPrimary,
+  },
+  toolDescription: {
+    fontSize: "10px",
+    color: colors.textMuted,
+  },
+});
 
 /**
  * ToolsPanel Component
@@ -32,6 +101,9 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
   onEnhanceSpeechClick,
   onRemoveBackgroundClick,
 }) => {
+  const { colors } = useTheme();
+  const styles = getStyles(colors);
+
   const tools = [
     {
       id: "voiceover",
@@ -53,7 +125,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
       id: "magic-crop",
       name: "Magic Crop",
       description: "Smart cropping",
-    //   icon: <EditorIcons.Crop />,
+      // icon: <EditorIcons.Crop />,
       color: "#8b5cf6",
       onClick: onMagicCropClick,
     },
@@ -137,7 +209,7 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
               e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.backgroundColor = "#141414";
+              e.currentTarget.style.backgroundColor = colors.bgSecondary;
               e.currentTarget.style.borderColor = `${tool.color}20`;
               e.currentTarget.style.transform = "translateY(0)";
             }}
@@ -160,71 +232,4 @@ export const ToolsPanel: React.FC<ToolsPanelProps> = ({
       </div>
     </div>
   );
-};
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: "flex",
-    flexDirection: "column",
-    height: "100%",
-    overflowY: "auto",
-    backgroundColor: "#0a0a0a",
-  },
-  header: {
-    padding: "16px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-  },
-  title: {
-    fontSize: "14px",
-    fontWeight: "600",
-    color: "#e5e5e5",
-    margin: "0 0 4px 0",
-  },
-  subtitle: {
-    fontSize: "11px",
-    color: "#666",
-    margin: 0,
-  },
-  toolsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "10px",
-    padding: "16px",
-  },
-  toolCard: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "10px",
-    padding: "16px 12px",
-    backgroundColor: "#141414",
-    border: "1px solid rgba(255,255,255,0.1)",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.2s",
-    textAlign: "center",
-  },
-  iconWrapper: {
-    width: "48px",
-    height: "48px",
-    borderRadius: "12px",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    fontSize: "20px",
-  },
-  toolInfo: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-  },
-  toolName: {
-    fontSize: "12px",
-    fontWeight: "600",
-    color: "#e5e5e5",
-  },
-  toolDescription: {
-    fontSize: "10px",
-    color: "#666",
-  },
 };

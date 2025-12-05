@@ -1,5 +1,6 @@
 import React from "react";
 import { CLOUDINARY_VIDEOS, AUDIO_LIBRARY, CLOUD_UPLOADS } from "../../data/editor_constants";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface MediaLibraryProps {
   activeTab: "text" | "media" | "audio" | "video";
@@ -12,14 +13,16 @@ interface MediaLibraryProps {
 }
 
 /**
- * MediaLibrary Component with Upload Buttons
+ * MediaLibrary Component with Upload Buttons and Uploaded Files Display
  */
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   activeTab,
+  projectAssets,
   onAddLayer,
   onOpenGallery,
   onAddText,
 }) => {
+  const { colors } = useTheme(); 
   const handlePredefinedClick = (item: any, mediaType: "audio" | "video" | "image") => {
     const mediaObject = {
       id: item.id,
@@ -34,13 +37,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     onAddLayer(mediaObject);
   };
 
+  const handleUploadedAssetClick = (asset: any) => {
+    console.log('📤 MediaLibrary passing uploaded asset:', asset);
+    onAddLayer(asset);
+  };
+
   const cardStyle: React.CSSProperties = {
     padding: "12px",
     marginBottom: "8px",
-    background: "#1a1a1a",
+    background: colors.bgSecondary,
     borderRadius: "6px",
     cursor: "pointer",
-    border: "1px solid rgba(255,255,255,0.1)",
+    border: `1px solid ${colors.borderLight || 'rgba(255,255,255,0.08)'}`,
     transition: "all 0.2s",
   };
 
@@ -58,10 +66,31 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     marginBottom: "16px",
   };
 
+  const sectionHeaderStyle: React.CSSProperties = {
+    color: "#888", 
+    marginBottom: "12px", 
+    fontSize: "11px",
+    fontWeight: 600,
+    textTransform: "uppercase",
+    letterSpacing: "1px"
+  };
+
+  // Filter uploaded assets by type
+  const getUploadedAssets = (type: string) => {
+    return projectAssets.filter(asset => {
+      if (type === 'audio') return asset.type?.startsWith('audio/');
+      if (type === 'video') return asset.type?.startsWith('video/');
+      if (type === 'image') return asset.type?.startsWith('image/');
+      return false;
+    });
+  };
+
   // ============================================================================
   // AUDIO TAB
   // ============================================================================
   if (activeTab === "audio") {
+    const uploadedAudio = getUploadedAssets('audio');
+    
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
         {/* Upload Button */}
@@ -80,18 +109,46 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           📤 Upload Audio File
         </button>
 
+        {/* My Uploads */}
+        {uploadedAudio.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={sectionHeaderStyle}>My Uploads ({uploadedAudio.length})</h3>
+            {uploadedAudio.map((audio, index) => (
+              <div
+                key={`uploaded-audio-${index}`}
+                onClick={() => handleUploadedAssetClick(audio)}
+                style={cardStyle}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#252525";
+                  e.currentTarget.style.borderColor = "#3b82f6";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = colors.bgTertiary;
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                <div style={{ 
+                  color: "#e5e5e5", 
+                  fontWeight: 500, 
+                  fontSize: "13px", 
+                  marginBottom: "4px",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap"
+                }}>
+                  🎵 {audio.name}
+                </div>
+                <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
+                  ✓ Uploaded
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Stock Music */}
         <div style={{ marginBottom: "20px" }}>
-          <h3 style={{ 
-            color: "#888", 
-            marginBottom: "12px", 
-            fontSize: "11px",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "1px"
-          }}>
-            Stock Music
-          </h3>
+          <h3 style={sectionHeaderStyle}>Stock Music</h3>
           
           {AUDIO_LIBRARY.stockMusic.map((audio) => (
             <div
@@ -99,18 +156,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               onClick={() => handlePredefinedClick(audio, "audio")}
               style={cardStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#252525";
-                e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+      e.currentTarget.style.borderColor = "#3b82f6";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#1a1a1a";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
+      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
               }}
             >
-              <div style={{ color: "#e5e5e5", fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
+              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
                 🎵 {audio.name}
               </div>
-              <div style={{ color: "#666", fontSize: "11px" }}>
+              <div style={{ color: colors.textMuted, fontSize: "11px" }}>
                 {audio.duration}
               </div>
             </div>
@@ -119,16 +176,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
         {/* Sound Effects */}
         <div>
-          <h3 style={{ 
-            color: "#888", 
-            marginBottom: "12px", 
-            fontSize: "11px",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "1px"
-          }}>
-            Sound Effects
-          </h3>
+          <h3 style={sectionHeaderStyle}>Sound Effects</h3>
           
           {AUDIO_LIBRARY.soundEffects.map((sfx) => (
             <div
@@ -136,18 +184,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               onClick={() => handlePredefinedClick(sfx, "audio")}
               style={cardStyle}
               onMouseEnter={(e) => {
-                e.currentTarget.style.background = "#252525";
-                e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+      e.currentTarget.style.borderColor = "#3b82f6";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = "#1a1a1a";
-                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
+      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
               }}
             >
-              <div style={{ color: "#e5e5e5", fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
+              <div style={{ color: colors.textPrimary,fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
                 🔊 {sfx.name}
               </div>
-              <div style={{ color: "#666", fontSize: "11px" }}>
+              <div style={{ color: colors.textMuted, fontSize: "11px" }}>
                 {sfx.duration}
               </div>
             </div>
@@ -161,6 +209,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   // VIDEO TAB
   // ============================================================================
   if (activeTab === "video") {
+    const uploadedVideos = getUploadedAssets('video');
+    
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
         {/* Upload Button */}
@@ -179,16 +229,91 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           📤 Upload Video File
         </button>
 
-        <h3 style={{ 
-          color: "#888", 
-          marginBottom: "12px", 
-          fontSize: "11px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "1px"
-        }}>
-          Background Videos
-        </h3>
+        {/* My Uploads */}
+        {uploadedVideos.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={sectionHeaderStyle}>My Uploads ({uploadedVideos.length})</h3>
+            {uploadedVideos.map((video, index) => (
+              <div
+                key={`uploaded-video-${index}`}
+                onClick={() => handleUploadedAssetClick(video)}
+                style={{
+                  ...cardStyle,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#252525";
+                  e.currentTarget.style.borderColor = "#3b82f6";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = colors.bgTertiary;
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                {video.preview ? (
+                  <div style={{
+                    width: "60px",
+                    height: "45px",
+                    flexShrink: 0,
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    backgroundColor: "#000"
+                  }}>
+                    <img 
+                      src={video.preview} 
+                      alt={video.name}
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        objectFit: "cover",
+                        display: "block"
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{
+                    width: "60px",
+                    height: "45px",
+                    flexShrink: 0,
+                    borderRadius: "4px",
+                    backgroundColor: "#0a0a0a",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "20px"
+                  }}>
+                    🎬
+                  </div>
+                )}
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: 0,
+                  overflow: "hidden"
+                }}>
+                  <div style={{ 
+                    color: "#e5e5e5", 
+                    fontWeight: 500, 
+                    fontSize: "13px", 
+                    marginBottom: "4px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}>
+                    📹 {video.name}
+                  </div>
+                  <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
+                    ✓ Uploaded
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Background Videos */}
+        <h3 style={sectionHeaderStyle}>Background Videos</h3>
         
         {CLOUDINARY_VIDEOS.backgroundVideos.map((video) => (
           <div
@@ -201,29 +326,30 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               gap: "12px",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#252525";
-              e.currentTarget.style.borderColor = "#3b82f6";
+              e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+      e.currentTarget.style.borderColor = "#3b82f6";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#1a1a1a";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+              e.currentTarget.style.backgroundColor = colors.bgSecondary;
+      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
             }}
           >
             {video.thumbnail && (
               <img 
                 src={video.thumbnail} 
                 alt={video.name}
-                style={{ 
-                  width: "60px", 
-                  height: "40px", 
-                  objectFit: "cover", 
-                  borderRadius: "4px",
-                  backgroundColor: "#000"
-                }}
+               style={{ 
+          width: "48px", // Slightly smaller to match compact UI
+          height: "36px", 
+          objectFit: "cover", 
+          borderRadius: "4px",
+          backgroundColor: "#000",
+          border: `1px solid ${colors.borderLight}`
+        }}
               />
             )}
             <div style={{ flex: 1 }}>
-              <div style={{ color: "#e5e5e5", fontWeight: 500, fontSize: "13px", marginBottom: "2px" }}>
+              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "2px" }}>
                 📹 {video.name}
               </div>
               <div style={{ color: "#666", fontSize: "11px" }}>
@@ -240,6 +366,8 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   // MEDIA (IMAGES) TAB
   // ============================================================================
   if (activeTab === "media") {
+    const uploadedImages = getUploadedAssets('image');
+    
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
         {/* Upload Button */}
@@ -258,16 +386,77 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
           📤 Upload Image File
         </button>
 
-        <h3 style={{ 
-          color: "#888", 
-          marginBottom: "12px", 
-          fontSize: "11px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "1px"
-        }}>
-          Stock Images
-        </h3>
+        {/* My Uploads */}
+        {uploadedImages.length > 0 && (
+          <div style={{ marginBottom: "20px" }}>
+            <h3 style={sectionHeaderStyle}>My Uploads ({uploadedImages.length})</h3>
+            {uploadedImages.map((image, index) => (
+              <div
+                key={`uploaded-image-${index}`}
+                onClick={() => handleUploadedAssetClick(image)}
+                style={{
+                  ...cardStyle,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "12px",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#252525";
+                  e.currentTarget.style.borderColor = "#3b82f6";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = colors.bgTertiary;
+                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                }}
+              >
+                {image.preview && (
+                  <div style={{
+                    width: "60px",
+                    height: "60px",
+                    flexShrink: 0,
+                    borderRadius: "4px",
+                    overflow: "hidden",
+                    backgroundColor: "#000"
+                  }}>
+                    <img 
+                      src={image.preview} 
+                      alt={image.name}
+                      style={{ 
+                        width: "100%", 
+                        height: "100%", 
+                        objectFit: "cover",
+                        display: "block"
+                      }}
+                    />
+                  </div>
+                )}
+                <div style={{ 
+                  flex: 1, 
+                  minWidth: 0,
+                  overflow: "hidden"
+                }}>
+                  <div style={{ 
+                    color: "#e5e5e5", 
+                    fontWeight: 500, 
+                    fontSize: "13px", 
+                    marginBottom: "4px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap"
+                  }}>
+                    🖼️ {image.name}
+                  </div>
+                  <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
+                    ✓ Uploaded
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stock Images */}
+        <h3 style={sectionHeaderStyle}>Stock Images</h3>
         
         {CLOUD_UPLOADS.filter(item => item.type === "image").map((image) => (
           <div
@@ -279,14 +468,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               alignItems: "center",
               gap: "12px",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "#252525";
-              e.currentTarget.style.borderColor = "#3b82f6";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "#1a1a1a";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-            }}
+          onMouseEnter={(e) => {
+      e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+      e.currentTarget.style.borderColor = "#3b82f6";
+    }}
+    onMouseLeave={(e) => {
+      e.currentTarget.style.backgroundColor = colors.bgSecondary;
+      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+    }}
           >
             {image.thumbnail && (
               <img 
@@ -302,7 +491,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               />
             )}
             <div style={{ flex: 1 }}>
-              <div style={{ color: "#e5e5e5", fontWeight: 500, fontSize: "13px" }}>
+              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px" }}>
                 🖼️ {image.name}
               </div>
             </div>
@@ -318,16 +507,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   if (activeTab === "text") {
     return (
       <div style={{ padding: "16px" }}>
-        <h3 style={{ 
-          color: "#888", 
-          marginBottom: "12px", 
-          fontSize: "11px",
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "1px"
-        }}>
-          Add Text Layer
-        </h3>
+        <h3 style={sectionHeaderStyle}>Add Text Layer</h3>
         
         <button
           onClick={onAddText}
@@ -358,7 +538,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         <div style={{ 
           marginTop: "16px", 
           padding: "12px", 
-          background: "#1a1a1a", 
+          background: colors.bgTertiary, 
           borderRadius: "6px",
           fontSize: "11px",
           color: "#666"

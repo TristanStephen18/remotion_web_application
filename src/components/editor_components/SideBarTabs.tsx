@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom"; 
 import { EditorIcons } from "./EditorIcons";
 import type { SidebarTab } from '../../types/editor_types/index';
-import { editorStyles } from "../../styles/editorStyles";
+import { useTheme } from "../../contexts/ThemeContext";
 
 const ChatIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -25,7 +25,6 @@ const WatchIcon = () => (
   </svg>
 );
 
-// New Icon for the Blur Style template
 const StyleIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
@@ -34,7 +33,6 @@ const StyleIcon = () => (
   </svg>
 );
 
-// Standardized Back Arrow (Matches EditorIcons stroke/size)
 const BackArrowIcon = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 12H5" />
@@ -56,6 +54,40 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   templateId
 }) => {
   const navigate = useNavigate();
+  const { colors } = useTheme();
+
+  const sidebarStyles = {
+    leftSidebar: {
+      width: "80px",
+      backgroundColor: colors.bgSecondary,
+      borderRight: `1px solid ${colors.border}`,
+      display: "flex" as const,
+      flexDirection: "column" as const,
+      alignItems: "center",
+      padding: "16px 0",
+      gap: "4px",
+    },
+    sidebarButton: {
+      display: "flex" as const,
+      flexDirection: "column" as const,
+      alignItems: "center",
+      gap: "6px",
+      padding: "12px 8px",
+      backgroundColor: "transparent",
+      border: "none",
+      borderRadius: "8px",
+      color: colors.textMuted,
+      cursor: "pointer",
+      transition: "all 0.2s",
+      fontSize: "10px",
+      fontWeight: "500" as const,
+      width: "100%",
+    },
+    sidebarButtonActive: {
+      backgroundColor: colors.bgActive,
+      color: colors.accent,
+    },
+  };
 
   const handleTabClick = (tab: SidebarTab) => {
     if (activeTab === tab) {
@@ -67,24 +99,23 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
     }
   };
 
-  // Helper for rendering standard tabs
   const renderButton = (tab: SidebarTab, label: string, Icon: React.FC<any>) => (
     <button
       style={{
-        ...editorStyles.sidebarButton,
-        ...(activeTab === tab ? editorStyles.sidebarButtonActive : {}),
+        ...sidebarStyles.sidebarButton,
+        ...(activeTab === tab ? sidebarStyles.sidebarButtonActive : {}),
       }}
       onClick={() => handleTabClick(tab)}
       onMouseOver={(e) => {
         if (activeTab !== tab) {
-          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
-          e.currentTarget.style.color = "#888";
+          e.currentTarget.style.backgroundColor = colors.bgHover;
+          e.currentTarget.style.color = colors.textSecondary;
         }
       }}
       onMouseOut={(e) => {
         if (activeTab !== tab) {
           e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "#666";
+          e.currentTarget.style.color = colors.textMuted;
         }
       }}
       title={label}
@@ -95,19 +126,19 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
   );
 
   return (
-    <div style={editorStyles.leftSidebar}>
+    <div style={sidebarStyles.leftSidebar}>
       
       {/* Back Button */}
       <button
-        style={editorStyles.sidebarButton}
+        style={sidebarStyles.sidebarButton}
         onClick={() => navigate("/dashboard")}
         onMouseOver={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
-          e.currentTarget.style.color = "#888";
+          e.currentTarget.style.backgroundColor = colors.bgHover;
+          e.currentTarget.style.color = colors.textSecondary;
         }}
         onMouseOut={(e) => {
           e.currentTarget.style.backgroundColor = "transparent";
-          e.currentTarget.style.color = "#666";
+          e.currentTarget.style.color = colors.textMuted;
         }}
         title="Back to Dashboard"
       >
@@ -116,7 +147,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       </button>
 
       {/* Separator Line */}
-      <div style={{ width: '60%', height: '1px', backgroundColor: 'rgba(255,255,255,0.1)', margin: '8px auto' }} />
+      <div style={{ width: '60%', height: '1px', backgroundColor: colors.border, margin: '8px auto' }} />
 
       {/* Standard Editor Tabs */}
       {renderButton("text", "Text", EditorIcons.Type)}
@@ -125,9 +156,7 @@ export const SidebarTabs: React.FC<SidebarTabsProps> = ({
       {renderButton("video", "Video", EditorIcons.Video)}
       
       {/* Template Specific Tabs */}
-      {/* Corrected: Checking for templateId 9 for Chat */}
       {templateId === 9 && renderButton("chat" as any, "Chat", ChatIcon)}
-      
       {templateId === 30 && renderButton("watch" as any, "Watch", WatchIcon)}
       {templateId === 8 && renderButton("carousel" as any, "Blur Style", StyleIcon)}
       

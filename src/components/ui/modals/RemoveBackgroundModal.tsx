@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -6,6 +7,7 @@ interface RemoveBackgroundModalProps {
   onClose: () => void;
   onProcess: (processedImageUrl: string) => void;
   selectedLayerId: string | null;
+  currentImageUrl?: string | null; // selected layer src (can be blob: URL)
 }
 
 export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
@@ -13,8 +15,9 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
   onClose,
   onProcess,
   selectedLayerId,
+  currentImageUrl,
 }) => {
-  const [quality, setQuality] = useState("high");
+  const [quality, setQuality] = useState<"fast" | "balanced" | "high">("high");
   const [edgeSmoothing, setEdgeSmoothing] = useState(5);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -49,7 +52,7 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
     },
     title: {
       fontSize: "20px",
-      fontWeight: "600",
+      fontWeight: 600,
       color: "#e5e5e5",
       margin: "0 0 8px 0",
     },
@@ -60,16 +63,14 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
     },
     content: {
       padding: "24px",
-      overflowY: "auto" as const,
+      overflowY: "auto",
       flex: 1,
     },
-    section: {
-      marginBottom: "20px",
-    },
+    section: { marginBottom: "20px" },
     label: {
       display: "block",
       fontSize: "13px",
-      fontWeight: "600",
+      fontWeight: 600,
       color: "#e5e5e5",
       marginBottom: "8px",
     },
@@ -94,10 +95,10 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
       borderRadius: "8px",
       color: "#888",
       fontSize: "13px",
-      fontWeight: "500",
+      fontWeight: 500,
       cursor: "pointer",
       transition: "all 0.2s",
-      textAlign: "center" as const,
+      textAlign: "center",
     },
     qualityButtonActive: {
       backgroundColor: "rgba(6, 182, 212, 0.2)",
@@ -113,17 +114,17 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
       flex: 1,
       height: "4px",
       borderRadius: "2px",
-      appearance: "none" as const,
+      appearance: "none",
       backgroundColor: "rgba(255,255,255,0.1)",
       cursor: "pointer",
       outline: "none",
     },
     sliderValue: {
       fontSize: "13px",
-      fontWeight: "600",
+      fontWeight: 600,
       color: "#06b6d4",
       minWidth: "30px",
-      textAlign: "center" as const,
+      textAlign: "center",
     },
     footer: {
       padding: "16px 24px",
@@ -136,7 +137,7 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
       padding: "12px 24px",
       borderRadius: "8px",
       fontSize: "14px",
-      fontWeight: "600",
+      fontWeight: 600,
       cursor: "pointer",
       transition: "all 0.2s",
       border: "none",
@@ -164,25 +165,85 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
       return;
     }
 
+    if (!currentImageUrl) {
+      toast.error("No image URL found for the selected layer");
+      return;
+    }
+
     setIsProcessing(true);
+
     try {
-      // Simulate API call - replace with your actual API endpoint
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Mock processed image URL - replace with actual API response
-      const mockProcessedUrl = `https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1080&h=1920&fit=crop&bg-remove=true`;
-      
-      onProcess(mockProcessedUrl);
+      // 1. Download current image (including blob: URL) as Blob
+      const imageResponse = await fetch(currentImageUrl);
+      if (!imageResponse.ok) {
+        throw new Error("Failed to download image from currentImageUrl");
+      }
+      const blob = await imageResponse.blob();
+
+      // 2. Wrap Blob as a File for multer (upload.single("image"))
+      const file = new File([blob], "layer-image.png", {
+        type: blob.type || "image/png",
+      });
+
+      // 3. Build FormData
+      const formData = new FormData();
+      formData.append("image", file);
+      formData.append("quality", quality);
+      formData.append("edgeSmoothing", String(edgeSmoothing));
+
+      // 4. Call backend: /api/picture/remove-background
+      const res = await fetch("/api/picture/remove-background", {
+        method: "POST",
+        body: formData,
+      });
+
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = text;
+      }
+
+      if (!res.ok) {
+        console.error("remove-bg error response:", data);
+        const msg =
+          data?.error ||
+          data?.message ||
+          data?.details ||
+          `Background removal API error (${res.status})`;
+        throw new Error(msg);
+      }
+
+      console.log("remove-bg success response:", data);
+
+      // Try common keys in case backend changed
+      const processedUrl =
+        data?.imageUrl || data?.secure_url || data?.url || null;
+
+      if (!processedUrl) {
+        console.error("remove-bg missing imageUrl-like field:", data);
+        throw new Error(
+          data?.message ||
+            data?.error ||
+            "No imageUrl in remove-background response"
+        );
+      }
+
+      onProcess(processedUrl);
       toast.success("Background removed successfully!");
       onClose();
-    } catch (error) {
-      toast.error("Failed to remove background");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.message || "Failed to remove background");
     } finally {
       setIsProcessing(false);
     }
   };
 
   if (!isOpen) return null;
+
+  const disabled = isProcessing || !selectedLayerId || !currentImageUrl;
 
   return (
     <div style={styles.overlay} onClick={onClose}>
@@ -198,21 +259,30 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
               ⚠️ Please select an image or video layer before using this tool
             </div>
           )}
+          {selectedLayerId && !currentImageUrl && (
+            <div style={styles.warning}>
+              ⚠️ Selected layer has no image URL. Try another layer.
+            </div>
+          )}
 
           <div style={styles.section}>
             <label style={styles.label}>Quality</label>
             <div style={styles.qualityGrid}>
-              {["Fast", "Balanced", "High"].map((q) => (
+              {["fast", "balanced", "high"].map((q) => (
                 <button
                   key={q}
                   style={{
                     ...styles.qualityButton,
-                    ...(quality === q.toLowerCase() ? styles.qualityButtonActive : {}),
+                    ...(quality === q ? styles.qualityButtonActive : {}),
                   }}
-                  onClick={() => setQuality(q.toLowerCase())}
-                  disabled={isProcessing || !selectedLayerId}
+                  onClick={() => setQuality(q as any)}
+                  disabled={disabled}
                 >
-                  {q}
+                  {q === "fast"
+                    ? "Fast"
+                    : q === "balanced"
+                    ? "Balanced"
+                    : "High"}
                 </button>
               ))}
             </div>
@@ -223,12 +293,12 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
             <div style={styles.sliderContainer}>
               <input
                 type="range"
-                min="0"
-                max="10"
+                min={0}
+                max={10}
                 value={edgeSmoothing}
                 onChange={(e) => setEdgeSmoothing(Number(e.target.value))}
                 style={styles.slider}
-                disabled={isProcessing || !selectedLayerId}
+                disabled={disabled}
               />
               <span style={styles.sliderValue}>{edgeSmoothing}</span>
             </div>
@@ -246,10 +316,12 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
           <button
             style={{
               ...styles.button,
-              ...(isProcessing || !selectedLayerId ? styles.processingButton : styles.processButton),
+              ...(disabled
+                ? styles.processingButton
+                : styles.processButton),
             }}
             onClick={handleProcess}
-            disabled={isProcessing || !selectedLayerId}
+            disabled={disabled}
           >
             {isProcessing ? "Processing..." : "Remove Background"}
           </button>
