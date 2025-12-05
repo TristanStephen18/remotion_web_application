@@ -514,176 +514,176 @@ const CloudinaryAssets = {
 // COMPOSITION DURATION MANAGEMENT
 // ============================================================================
 
-const useCompositionDuration = (
-  layers: Layer[],
-  duration: number,
-  setDuration: (duration: number) => void,
-  fps: number = 30
-) => {
-  const maxLayerFrame = useMemo(() => {
-    if (layers.length === 0) return duration * fps;
-    return Math.max(...layers.map((layer) => layer.endFrame));
-  }, [layers, duration, fps]);
+// const useCompositionDuration = (
+//   layers: Layer[],
+//   duration: number,
+//   setDuration: (duration: number) => void,
+//   fps: number = 30
+// ) => {
+//   const maxLayerFrame = useMemo(() => {
+//     if (layers.length === 0) return duration * fps;
+//     return Math.max(...layers.map((layer) => layer.endFrame));
+//   }, [layers, duration, fps]);
 
-  const recommendedDuration = useMemo(() => {
-    const durationFromLayers = Math.ceil(maxLayerFrame / fps);
-    return Math.max(durationFromLayers + 2, 5);
-  }, [maxLayerFrame, fps]);
+//   const recommendedDuration = useMemo(() => {
+//     const durationFromLayers = Math.ceil(maxLayerFrame / fps);
+//     return Math.max(durationFromLayers + 2, 5);
+//   }, [maxLayerFrame, fps]);
 
-  const autoExtendComposition = useCallback(() => {
-    const currentTotalFrames = duration * fps;
-    if (maxLayerFrame > currentTotalFrames) {
-      const newDuration = Math.ceil(maxLayerFrame / fps) + 2;
-      setDuration(Math.max(newDuration, 5));
-      toast.success("Timeline extended to fit layers");
-      return true;
-    }
-    return false;
-  }, [maxLayerFrame, duration, fps, setDuration]);
+//   const autoExtendComposition = useCallback(() => {
+//     const currentTotalFrames = duration * fps;
+//     if (maxLayerFrame > currentTotalFrames) {
+//       const newDuration = Math.ceil(maxLayerFrame / fps) + 2;
+//       setDuration(Math.max(newDuration, 5));
+//       toast.success("Timeline extended to fit layers");
+//       return true;
+//     }
+//     return false;
+//   }, [maxLayerFrame, duration, fps, setDuration]);
 
-  const shrinkToFitLayers = useCallback(() => {
-    const newDuration = Math.ceil(maxLayerFrame / fps) + 1;
-    setDuration(Math.max(newDuration, 5));
-    toast.success(`Timeline trimmed to ${Math.max(newDuration, 5)}s`);
-  }, [maxLayerFrame, fps, setDuration]);
+//   const shrinkToFitLayers = useCallback(() => {
+//     const newDuration = Math.ceil(maxLayerFrame / fps) + 1;
+//     setDuration(Math.max(newDuration, 5));
+//     toast.success(`Timeline trimmed to ${Math.max(newDuration, 5)}s`);
+//   }, [maxLayerFrame, fps, setDuration]);
 
-  const needsExtension = useMemo(() => {
-    const currentTotalFrames = duration * fps;
-    return maxLayerFrame > currentTotalFrames - fps;
-  }, [maxLayerFrame, duration, fps]);
+//   const needsExtension = useMemo(() => {
+//     const currentTotalFrames = duration * fps;
+//     return maxLayerFrame > currentTotalFrames - fps;
+//   }, [maxLayerFrame, duration, fps]);
 
-  return {
-    maxLayerFrame,
-    recommendedDuration,
-    autoExtendComposition,
-    shrinkToFitLayers,
-    needsExtension,
-  };
-};
+//   return {
+//     maxLayerFrame,
+//     recommendedDuration,
+//     autoExtendComposition,
+//     shrinkToFitLayers,
+//     needsExtension,
+//   };
+// };
 
-const CompositionDurationControls: React.FC<{
-  duration: number;
-  setDuration: (duration: number) => void;
-  maxLayerFrame: number;
-  autoExtendComposition: () => void;
-  shrinkToFitLayers: () => void;
-  needsExtension: boolean;
-  fps: number;
-}> = ({
-  duration,
-  setDuration,
-  maxLayerFrame,
-  autoExtendComposition,
-  shrinkToFitLayers,
-  needsExtension,
-  fps,
-}) => {
-  const styles = {
-    container: {
-      display: "flex",
-      alignItems: "center",
-      gap: "8px",
-      padding: "8px 12px",
-      backgroundColor: "rgba(0, 0, 0, 0.3)",
-      borderRadius: "8px",
-      border: needsExtension
-        ? "1px solid #ef4444"
-        : "1px solid rgba(255, 255, 255, 0.1)",
-    } as React.CSSProperties,
-    label: {
-      fontSize: "12px",
-      color: "#9ca3af",
-      fontWeight: 500,
-    } as React.CSSProperties,
-    input: {
-      width: "70px",
-      padding: "4px 8px",
-      backgroundColor: "rgba(0, 0, 0, 0.4)",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      borderRadius: "4px",
-      color: "white",
-      fontSize: "13px",
-      outline: "none",
-    } as React.CSSProperties,
-    button: {
-      padding: "4px 10px",
-      backgroundColor: "rgba(59, 130, 246, 0.2)",
-      border: "1px solid rgba(59, 130, 246, 0.3)",
-      borderRadius: "4px",
-      color: "#60a5fa",
-      fontSize: "11px",
-      cursor: "pointer",
-      transition: "all 0.15s",
-      fontWeight: 500,
-    } as React.CSSProperties,
-    warningButton: {
-      backgroundColor: "rgba(239, 68, 68, 0.2)",
-      border: "1px solid rgba(239, 68, 68, 0.3)",
-      color: "#f87171",
-    } as React.CSSProperties,
-    info: {
-      fontSize: "11px",
-      color: "#6b7280",
-    } as React.CSSProperties,
-  };
+// const CompositionDurationControls: React.FC<{
+//   duration: number;
+//   setDuration: (duration: number) => void;
+//   maxLayerFrame: number;
+//   autoExtendComposition: () => void;
+//   shrinkToFitLayers: () => void;
+//   needsExtension: boolean;
+//   fps: number;
+// }> = ({
+//   duration,
+//   setDuration,
+//   maxLayerFrame,
+//   autoExtendComposition,
+//   shrinkToFitLayers,
+//   needsExtension,
+//   fps,
+// }) => {
+//   const styles = {
+//     container: {
+//       display: "flex",
+//       alignItems: "center",
+//       gap: "8px",
+//       padding: "8px 12px",
+//       backgroundColor: "rgba(0, 0, 0, 0.3)",
+//       borderRadius: "8px",
+//       border: needsExtension
+//         ? "1px solid #ef4444"
+//         : "1px solid rgba(255, 255, 255, 0.1)",
+//     } as React.CSSProperties,
+//     label: {
+//       fontSize: "12px",
+//       color: "#9ca3af",
+//       fontWeight: 500,
+//     } as React.CSSProperties,
+//     input: {
+//       width: "70px",
+//       padding: "4px 8px",
+//       backgroundColor: "rgba(0, 0, 0, 0.4)",
+//       border: "1px solid rgba(255, 255, 255, 0.1)",
+//       borderRadius: "4px",
+//       color: "white",
+//       fontSize: "13px",
+//       outline: "none",
+//     } as React.CSSProperties,
+//     button: {
+//       padding: "4px 10px",
+//       backgroundColor: "rgba(59, 130, 246, 0.2)",
+//       border: "1px solid rgba(59, 130, 246, 0.3)",
+//       borderRadius: "4px",
+//       color: "#60a5fa",
+//       fontSize: "11px",
+//       cursor: "pointer",
+//       transition: "all 0.15s",
+//       fontWeight: 500,
+//     } as React.CSSProperties,
+//     warningButton: {
+//       backgroundColor: "rgba(239, 68, 68, 0.2)",
+//       border: "1px solid rgba(239, 68, 68, 0.3)",
+//       color: "#f87171",
+//     } as React.CSSProperties,
+//     info: {
+//       fontSize: "11px",
+//       color: "#6b7280",
+//     } as React.CSSProperties,
+//   };
 
-  return (
-    <div style={styles.container}>
-      <span style={styles.label}>Duration:</span>
-      <input
-        type="number"
-        value={duration}
-        onChange={(e) => {
-          const newDuration = parseFloat(e.target.value);
-          if (newDuration > 0 && newDuration <= 300) {
-            setDuration(newDuration);
-          }
-        }}
-        min="1"
-        max="300"
-        step="1"
-        style={styles.input}
-      />
-      <span style={styles.info}>sec</span>
+//   return (
+//     <div style={styles.container}>
+//       <span style={styles.label}>Duration:</span>
+//       <input
+//         type="number"
+//         value={duration}
+//         onChange={(e) => {
+//           const newDuration = parseFloat(e.target.value);
+//           if (newDuration > 0 && newDuration <= 300) {
+//             setDuration(newDuration);
+//           }
+//         }}
+//         min="1"
+//         max="300"
+//         step="1"
+//         style={styles.input}
+//       />
+//       <span style={styles.info}>sec</span>
 
-      {needsExtension && (
-        <button
-          style={{ ...styles.button, ...styles.warningButton }}
-          onClick={autoExtendComposition}
-          title="Layers exceed composition duration"
-        >
-          ⚠ Extend
-        </button>
-      )}
+//       {needsExtension && (
+//         <button
+//           style={{ ...styles.button, ...styles.warningButton }}
+//           onClick={autoExtendComposition}
+//           title="Layers exceed composition duration"
+//         >
+//           ⚠ Extend
+//         </button>
+//       )}
 
-      <button
-        style={styles.button}
-        onClick={shrinkToFitLayers}
-        title="Shrink composition to fit all layers"
-      >
-        Fit to Layers
-      </button>
+//       <button
+//         style={styles.button}
+//         onClick={shrinkToFitLayers}
+//         title="Shrink composition to fit all layers"
+//       >
+//         Fit to Layers
+//       </button>
 
-      <button
-        style={styles.button}
-        onClick={() => setDuration(duration + 5)}
-        title="Add 5 seconds"
-      >
-        +5s
-      </button>
+//       <button
+//         style={styles.button}
+//         onClick={() => setDuration(duration + 5)}
+//         title="Add 5 seconds"
+//       >
+//         +5s
+//       </button>
 
-      <button
-        style={styles.button}
-        onClick={() => setDuration(duration + 10)}
-        title="Add 10 seconds"
-      >
-        +10s
-      </button>
+//       <button
+//         style={styles.button}
+//         onClick={() => setDuration(duration + 10)}
+//         title="Add 10 seconds"
+//       >
+//         +10s
+//       </button>
 
-      <span style={styles.info}>Max: {(maxLayerFrame / fps).toFixed(1)}s</span>
-    </div>
-  );
-};
+//       <span style={styles.info}>Max: {(maxLayerFrame / fps).toFixed(1)}s</span>
+//     </div>
+//   );
+// };
 
 // ============================================================================
 // MAIN COMPONENT

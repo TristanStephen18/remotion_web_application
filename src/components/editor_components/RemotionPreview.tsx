@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useImperativeHandle, forwardRef, useState } from "react";
 import { Player, type PlayerRef } from "@remotion/player";
-import { PreviewOverlay, type SelectableElement } from "./PreviewOverlay";
+import { PreviewOverlay, type ElementPositionsWithSize, type SelectableElement } from "./PreviewOverlay";
 import type { ElementPositions } from "../remotion_compositions/QuoteTemplate";
 import { useTheme } from "../../contexts/ThemeContext";
 
@@ -15,6 +15,19 @@ export interface RemotionPreviewHandle {
   getCurrentFrame: () => number;
   toggle: () => void;
 }
+
+const convertToPositionsWithSize = (
+  positions: ElementPositions
+): ElementPositionsWithSize => {
+  return Object.entries(positions).reduce((acc, [key, pos]) => {
+    acc[key] = {
+      ...pos,
+      width: 30, // Default width percentage
+      height: 15, // Default height percentage
+    };
+    return acc;
+  }, {} as ElementPositionsWithSize);
+};
 
 export interface RemotionPreviewProps<T extends Record<string, unknown>> {
   component: React.ComponentType<T>;
@@ -234,7 +247,7 @@ function RemotionPreviewInner<T extends Record<string, unknown>>(
           {/* Interactive overlay for click-to-select and drag-to-move */}
           {interactiveMode && onElementSelect && onPositionChange && (
             <PreviewOverlay
-              positions={activePositions}
+              positions={convertToPositionsWithSize(activePositions)}
               selectedElement={selectedElement || null}
               onSelectElement={onElementSelect}
               onPositionChange={onPositionChange}

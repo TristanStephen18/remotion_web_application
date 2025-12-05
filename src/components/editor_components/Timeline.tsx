@@ -46,7 +46,6 @@ const formatTime = (frames: number, fps: number): string => {
   const totalSeconds = frames / fps;
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
-  const remainingFrames = Math.floor(frames % fps);
   
   // Simplified format: only show what's needed
   if (minutes > 0) {

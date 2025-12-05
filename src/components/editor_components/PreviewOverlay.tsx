@@ -94,7 +94,6 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
   });
   
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
-  const [initialDistance, setInitialDistance] = useState(0);
   const [resizeDirection, setResizeDirection] = useState<ResizeDirection>(null);
 
   // Calculate actual rendered dimensions

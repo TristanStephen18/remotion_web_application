@@ -256,8 +256,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
         }
 
         if (isTextLayer(layer)) {
-          const aspectRatio = newWidth / newHeight;
-          const baseAspect = dragStartPos.width / dragStartPos.height;
           const scale = Math.sqrt((newWidth / dragStartPos.width) * (newHeight / dragStartPos.height));
           newFontSize = Math.max(1, dragStartPos.fontSize * scale);
           onLayerUpdate(dragLayerId, { position: { x: newX, y: newY }, size: { width: newWidth, height: newHeight }, fontSize: newFontSize } as Partial<TextLayer>);
