@@ -1,14 +1,17 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom"; 
 
 const LoginLoading = () => {
+  const navigate = useNavigate(); 
+
   useEffect(() => {
-    // Navigate to dashboard after 3 seconds
+     
     const timer = setTimeout(() => {
-      window.location.assign("/dashboard");
+      navigate("/dashboard"); 
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [navigate]); 
 
   return (
     <div

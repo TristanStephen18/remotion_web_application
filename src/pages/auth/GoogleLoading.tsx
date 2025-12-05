@@ -1,22 +1,49 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ ADDED
 import toast from "react-hot-toast";
 import { loginWithGoogle } from "../../utils/LoginUsingGoogle";
 
 const GoogleLoading = () => {
+  const navigate = useNavigate(); // ✅ ADDED: Use React Router hook
+  const [isProcessing, setIsProcessing] = useState(true); // ✅ ADDED: Track processing state
+
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const email = params.get("email");
+    const handleGoogleLogin = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const email = params.get("email");
 
-    if (!email) {
-      toast.error("No email found from Google login");
-      window.location.assign("/");
-      return;
-    } else {
-      loginWithGoogle(email);
-    }
+      if (!email) {
+        toast.error("No email found from Google login");
+        // ✅ FIXED: Use navigate instead of window.location.assign
+        setTimeout(() => navigate("/login"), 1000);
+        return;
+      }
 
-    console.log("Google email:", email);
-  }, []);
+      try {
+        console.log("Processing Google login for:", email);
+        
+        // ✅ FIXED: Await the login and handle response
+        const response = await loginWithGoogle(email);
+        
+        if (response.success) {
+          toast.success("Login successful!");
+          // ✅ FIXED: Use navigate like LoginPage.tsx does
+          setTimeout(() => navigate("/initializing-login"), 1000);
+        } else {
+          throw new Error("Login failed");
+        }
+      } catch (error: any) {
+        console.error("Google login error:", error);
+        toast.error(error.message || "Google login failed. Please try again.");
+        // ✅ FIXED: Navigate to login on error
+        setTimeout(() => navigate("/login"), 2000);
+      } finally {
+        setIsProcessing(false);
+      }
+    };
+
+    handleGoogleLogin();
+  }, [navigate]); // ✅ ADDED: navigate dependency
 
   return (
     <div
@@ -80,11 +107,11 @@ const GoogleLoading = () => {
 
         {/* Main text */}
         <h2 className="text-3xl font-bold mb-3 animate-slide-up delay-400 bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600 bg-clip-text text-transparent">
-          Setting up your studio
+          {isProcessing ? "Setting up your studio" : "Redirecting..."}
         </h2>
 
         <p className="text-gray-600 text-lg font-medium mb-2 animate-slide-up delay-500">
-          Preparing your video creation tools
+          {isProcessing ? "Preparing your video creation tools" : "Taking you to your dashboard"}
         </p>
 
         {/* Progress bar */}

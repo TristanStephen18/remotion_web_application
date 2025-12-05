@@ -3,8 +3,9 @@ import "../css/Login.css";
 import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import Visibility from "@mui/icons-material/Visibility";
 import PersonIcon from "@mui/icons-material/Person";
-import { backendPrefix } from "../../config";
 import { GoogleButton } from "../../components/ui/buttons/GoogleButton";
+import { signup } from "../../services/authService";
+import { validatePassword, meetsRequirements } from "../../services/passwordValidator";
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -20,6 +21,10 @@ const SignupPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // ✅ NEW: Password strength
+  const passwordStrength = password ? validatePassword(password) : null;
+  const isPasswordValid = password ? meetsRequirements(password) : false;
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -33,8 +38,8 @@ const SignupPage: React.FC = () => {
       setError("Please enter a valid email address.");
       return;
     }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isPasswordValid) {
+      setError("Password does not meet requirements.");
       return;
     }
     if (password !== verifyPassword) {
@@ -44,27 +49,15 @@ const SignupPage: React.FC = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(`${backendPrefix}/auth/signup`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          name: username,
-        }),
-      });
+      const response = await signup(email, password, username);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `HTTP error! status: ${response.status}, message: ${errorText}`
-        );
+      if (!response.success) {
+        setError(response.error || "Signup failed");
+        return;
       }
 
-      setSuccess(
-        "Signup successful! 🎉 Please check your email to verify your account."
-      );
-    } catch (err) {
+      setSuccess("Signup successful! 🎉 Please check your email to verify your account.");
+    } catch {
       setError("Signup failed. Please try again.");
     } finally {
       setLoading(false);
@@ -119,16 +112,8 @@ const SignupPage: React.FC = () => {
               <div className="field">
                 <span className="field__icon" aria-hidden>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <path
-                      d="M4 6h16v12H4z"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
-                    <path
-                      d="m4 7 8 6 8-6"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
+                    <path d="M4 6h16v12H4z" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="m4 7 8 6 8-6" stroke="currentColor" strokeWidth="1.6" />
                   </svg>
                 </span>
                 <input
@@ -146,20 +131,8 @@ const SignupPage: React.FC = () => {
               <div className="field password-field">
                 <span className="field__icon" aria-hidden>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <rect
-                      x="5"
-                      y="10"
-                      width="14"
-                      height="10"
-                      rx="2"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
-                    <path
-                      d="M8 10V7a4 4 0 1 1 8 0v3"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
+                    <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" strokeWidth="1.6" />
                   </svg>
                 </span>
                 <input
@@ -178,31 +151,57 @@ const SignupPage: React.FC = () => {
                   onClick={() => setShowPassword((prev) => !prev)}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <VisibilityOff fontSize="small" />
-                  ) : (
-                    <Visibility fontSize="small" />
-                  )}
+                  {showPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                 </button>
               </div>
+
+              {/* ✅ NEW: Password strength indicator */}
+              {password && passwordStrength && (
+                <div style={{ marginTop: "-8px", marginBottom: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <div style={{ 
+                      flex: 1, 
+                      height: "4px", 
+                      backgroundColor: "#1f2937", 
+                      borderRadius: "2px",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{ 
+                        width: `${(passwordStrength.score + 1) * 20}%`, 
+                        height: "100%", 
+                        backgroundColor: passwordStrength.color,
+                        transition: "all 0.3s"
+                      }} />
+                    </div>
+                    <span style={{ 
+                      fontSize: "0.75rem", 
+                      color: passwordStrength.color,
+                      fontWeight: 500
+                    }}>
+                      {passwordStrength.strength}
+                    </span>
+                  </div>
+                  {passwordStrength.feedback.length > 0 && (
+                    <ul style={{ 
+                      fontSize: "0.75rem", 
+                      color: "#9ca3af", 
+                      listStyle: "none", 
+                      padding: 0,
+                      margin: 0
+                    }}>
+                      {passwordStrength.feedback.slice(0, 3).map((fb, i) => (
+                        <li key={i} style={{ marginTop: "2px" }}>• {fb}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
 
               <div className="field password-field">
                 <span className="field__icon" aria-hidden>
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                    <rect
-                      x="5"
-                      y="10"
-                      width="14"
-                      height="10"
-                      rx="2"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
-                    <path
-                      d="M8 10V7a4 4 0 1 1 8 0v3"
-                      stroke="currentColor"
-                      strokeWidth="1.6"
-                    />
+                    <rect x="5" y="10" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.6" />
+                    <path d="M8 10V7a4 4 0 1 1 8 0v3" stroke="currentColor" strokeWidth="1.6" />
                   </svg>
                 </span>
                 <input
@@ -219,30 +218,26 @@ const SignupPage: React.FC = () => {
                   type="button"
                   className="field__suffix"
                   onClick={() => setShowVerifyPassword((prev) => !prev)}
-                  aria-label={
-                    showVerifyPassword ? "Hide password" : "Show password"
-                  }
+                  aria-label={showVerifyPassword ? "Hide password" : "Show password"}
                 >
-                  {showVerifyPassword ? (
-                    <VisibilityOff fontSize="small" />
-                  ) : (
-                    <Visibility fontSize="small" />
-                  )}
+                  {showVerifyPassword ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
                 </button>
               </div>
 
               <button
                 className="btn btn--primary"
                 type="submit"
-                disabled={loading}
+                disabled={loading || !isPasswordValid}
               >
                 {loading ? <span className="spinner" aria-hidden /> : "Sign Up"}
               </button>
+
               <div className="flex items-center">
                 <div className="flex-grow h-px bg-gray-600"></div>
                 <span className="mx-2 text-gray-400 text-sm">or</span>
                 <div className="flex-grow h-px bg-gray-600"></div>
               </div>
+
               <GoogleButton />
 
               <div className="divider"></div>
