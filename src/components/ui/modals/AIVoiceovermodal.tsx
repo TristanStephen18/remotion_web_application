@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { backendPrefix } from "../../../config";
 
 interface AIVoiceoverModalProps {
   isOpen: boolean;
@@ -62,7 +63,7 @@ export const AIVoiceoverModal: React.FC<AIVoiceoverModalProps> = ({
     setIsGenerating(true);
     try {
       // TODO: Replace with your actual API endpoint
-      const response = await fetch("/api/generate-voiceover", {
+      const response = await fetch(`${backendPrefix}/sound/generate-voiceover`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

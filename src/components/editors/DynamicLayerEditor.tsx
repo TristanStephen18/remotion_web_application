@@ -946,8 +946,6 @@ const DynamicLayerEditor: React.FC = () => {
   handleVideoUpload,
   updateLayer,
   deleteLayer,
-  splitLayer,        // ADD THIS
-  reorderLayers,     // ADD THIS
 } = useLayerManagement({
     layers,
     currentFrame,
@@ -2161,12 +2159,12 @@ const DynamicLayerEditor: React.FC = () => {
     [layers, pushState]
   );
 
-  const handleCutTrack = useCallback(
-  (trackId: string, frame: number) => {
-    splitLayer(trackId, frame);
-  },
-  [splitLayer]
-);
+//   const handleCutTrack = useCallback(
+//   (trackId: string, frame: number) => {
+//     splitLayer(trackId, frame);
+//   },
+//   [splitLayer]
+// );
 
 
   const handleFrameChange = useCallback((frame: number) => {
@@ -3119,7 +3117,7 @@ const DynamicLayerEditor: React.FC = () => {
             onTrackSelect={handleTrackSelect}
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
-            onCutTrack={handleCutTrack}  
+
             onDeleteTrack={deleteLayer}
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}

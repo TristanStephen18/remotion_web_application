@@ -326,6 +326,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
+import { backendPrefix } from "../../../config";
 
 interface VEOGeneratorModalProps {
   isOpen: boolean;
@@ -629,7 +630,7 @@ export const VEOGeneratorModal: React.FC<VEOGeneratorModalProps> = ({
     setGenerationStatus(null);
 
     try {
-      const response = await fetch("/api/veo3/generate", {
+      const response = await fetch(`${backendPrefix}/api/veo3/generate`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

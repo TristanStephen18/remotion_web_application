@@ -104,12 +104,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   // ============================================================================
 
   const searchGiphy = useCallback(async (query: string = '') => {
-    if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE') {
-      console.error('❌ Please add your Giphy API key!');
-      setGiphyResults([]);
-      return;
-    }
-
     setGiphyLoading(true);
     try {
       const endpoint = query 
@@ -1041,7 +1035,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                     <div style={{ fontSize: '32px', marginBottom: '16px' }}>⏳</div>
                     <div>Loading GIFs...</div>
                   </div>
-                ) : !GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE' ? (
+                ) : !GIPHY_API_KEY ? (
                   <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔑</div>
                     <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>

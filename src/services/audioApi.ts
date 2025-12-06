@@ -1,8 +1,4 @@
-
-
-
-// src/services/audioApi.ts
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+import { backendPrefix } from "../config";
 
 interface EnhanceAudioResponse {
   success: boolean;
@@ -27,7 +23,7 @@ export async function enhanceAudio(
 
   try {
     // ✅ correct backend path that uses enhanceSpeech.ts
-    const url = `${API_BASE_URL}/api/tools/speech-enhancement/enhance-speech`;
+    const url = `${backendPrefix}/api/tools/speech-enhancement/enhance-speech`;
     console.log("🎙️ Sending request to:", url);
 
     const response = await fetch(url, {

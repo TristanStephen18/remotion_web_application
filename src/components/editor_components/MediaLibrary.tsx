@@ -364,7 +364,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         {/* Stock Videos */}
         <h3 style={sectionHeaderStyle}>Stock Videos</h3>
         
-        {CLOUDINARY_VIDEOS.map((video) => (
+        {CLOUDINARY_VIDEOS.backgroundVideos.map((video) => (
           <div
             key={video.id}
             onClick={() => handlePredefinedClick(video, "video")}
