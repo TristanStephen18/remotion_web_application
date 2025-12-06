@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useUploadHooks } from "../../hooks/dashboardhooks/UploadHooks";
 
 // ============================================================================
 // TYPES
@@ -17,8 +18,7 @@ export interface MediaItem {
 }
 
 export interface MediaPanelProps {
-  projectUploads: MediaItem[];
-  cloudUploads: MediaItem[];
+  activeMediaType?: "image" | "video" | "audio" | "all";
   onMediaSelect: (media: MediaItem) => void;
   onUploadClick: () => void;
 }
@@ -105,6 +105,23 @@ const Icons = {
       <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
     </svg>
   ),
+  Refresh: () => (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <polyline points="23 4 23 10 17 10"></polyline>
+      <polyline points="1 20 1 14 7 14"></polyline>
+      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+    </svg>
+  ),
 };
 
 // ============================================================================
@@ -118,33 +135,14 @@ const styles = {
     height: "100%",
     backgroundColor: "#0a0a0a",
   },
-  tabsContainer: {
-    display: "flex",
-    borderBottom: "1px solid rgba(255,255,255,0.1)",
-    backgroundColor: "#0a0a0a",
-  },
-  tab: {
-    flex: 1,
-    padding: "14px 16px",
-    fontSize: "13px",
-    fontWeight: "500" as const,
-    color: "#888",
-    backgroundColor: "transparent",
-    border: "none",
-    borderBottom: "2px solid transparent",
-    cursor: "pointer",
-    transition: "all 0.2s",
-  },
-  tabActive: {
-    color: "#3b82f6",
-    borderBottomColor: "#3b82f6",
-  },
   uploadSection: {
     padding: "16px",
     borderBottom: "1px solid rgba(255,255,255,0.08)",
+    display: "flex",
+    gap: "8px",
   },
   uploadButton: {
-    width: "100%",
+    flex: 1,
     padding: "12px 16px",
     display: "flex",
     alignItems: "center",
@@ -155,6 +153,21 @@ const styles = {
     color: "#e5e5e5",
     backgroundColor: "rgba(59, 130, 246, 0.12)",
     border: "1px solid rgba(59, 130, 246, 0.3)",
+    borderRadius: "8px",
+    cursor: "pointer",
+    transition: "all 0.2s",
+  },
+  refreshButton: {
+    width: "44px",
+    padding: "12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: "13px",
+    fontWeight: "500" as const,
+    color: "#888",
+    backgroundColor: "rgba(255, 255, 255, 0.03)",
+    border: "1px solid rgba(255, 255, 255, 0.1)",
     borderRadius: "8px",
     cursor: "pointer",
     transition: "all 0.2s",
@@ -193,6 +206,15 @@ const styles = {
     fontSize: "12px",
     color: "#888",
     lineHeight: "1.5",
+  },
+  loadingState: {
+    display: "flex",
+    flexDirection: "column" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "40px 20px",
+    textAlign: "center" as const,
+    color: "#888",
   },
   mediaGrid: {
     display: "grid",
@@ -303,7 +325,7 @@ const styles = {
     color: "white",
     opacity: 0,
     transition: "opacity 0.2s",
-    paddingLeft: "3px", // Center the play icon visually
+    paddingLeft: "3px",
   },
   durationBadge: {
     position: "absolute" as const,
@@ -333,19 +355,56 @@ const styles = {
 // ============================================================================
 
 export const MediaPanel: React.FC<MediaPanelProps> = ({
-  projectUploads,
-  cloudUploads,
+  activeMediaType = "all",
   onMediaSelect,
   onUploadClick,
 }) => {
-  const [activeTab, setActiveTab] = useState<"project" | "cloud">("project");
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const currentItems = activeTab === "project" ? projectUploads : cloudUploads;
+  // Use upload hooks for project uploads
+  const {
+    uploads,
+    fetchUploads,
+    loadingUploads,
+  } = useUploadHooks();
 
-  // Separate media by type
-  const visualMedia = currentItems.filter((item) => item.type === "image" || item.type === "video");
-  const audioMedia = currentItems.filter((item) => item.type === "audio");
+  // Fetch uploads when component mounts
+  useEffect(() => {
+    fetchUploads();
+  }, []);
+
+  // Convert uploads to MediaItem format and filter by type
+  const projectUploads: MediaItem[] = uploads
+    .map((upload) => ({
+      id: upload.id.toString(),
+      name: upload.url.split('/').pop() || 'Uploaded file',
+      type: upload.type as MediaType,
+      url: upload.url,
+      thumbnail: upload.url,
+    }))
+    .filter((item) => {
+      if (activeMediaType === "all") return true;
+      if (activeMediaType === "image") {
+        return item.type === "image" || 
+          item.url.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+      }
+      if (activeMediaType === "video") {
+        return item.type === "video" || 
+          item.url.match(/\.(mp4|mov|webm|avi)$/i);
+      }
+      if (activeMediaType === "audio") {
+        return item.type === "audio" || 
+          item.url.match(/\.(mp3|wav|aac|ogg)$/i);
+      }
+      return item.type === activeMediaType;
+    });
+
+  const visualMedia = projectUploads.filter((item) => item.type === "image" || item.type === "video");
+  const audioMedia = projectUploads.filter((item) => item.type === "audio");
+
+  const handleRefresh = () => {
+    fetchUploads();
+  };
 
   const renderVisualMedia = () => {
     if (visualMedia.length === 0) return null;
@@ -371,10 +430,10 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                   onMouseLeave={() => setHoveredItem(null)}
                 >
                   {item.thumbnail && (
-                    <img
-                      src={item.thumbnail}
-                      alt={item.name}
+                    <video
+                      src={item.url}
                       style={styles.mediaThumbnail}
+                      muted
                     />
                   )}
                   <div
@@ -470,40 +529,23 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
         <Icons.Cloud />
       </div>
       <div style={styles.emptyTitle}>
-        {activeTab === "project" ? "No uploads yet" : "No cloud files"}
+        No uploads yet
       </div>
       <div style={styles.emptyDescription}>
-        {activeTab === "project"
-          ? "Click to view or upload files"
-          : "Connect your cloud storage to see files"}
+        Click the upload button to add your first file
       </div>
+    </div>
+  );
+
+  const renderLoadingState = () => (
+    <div style={styles.loadingState}>
+      <div style={{ fontSize: "32px", marginBottom: "16px" }}>⏳</div>
+      <div>Loading your uploads...</div>
     </div>
   );
 
   return (
     <div style={styles.container}>
-      {/* Tabs */}
-      <div style={styles.tabsContainer}>
-        <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "project" ? styles.tabActive : {}),
-          }}
-          onClick={() => setActiveTab("project")}
-        >
-          Project Uploads
-        </button>
-        <button
-          style={{
-            ...styles.tab,
-            ...(activeTab === "cloud" ? styles.tabActive : {}),
-          }}
-          onClick={() => setActiveTab("cloud")}
-        >
-          Cloud Uploads
-        </button>
-      </div>
-
       {/* Upload Button */}
       <div style={styles.uploadSection}>
         <button
@@ -519,13 +561,30 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
           }}
         >
           <Icons.Cloud />
-          Click to view or upload files
+          Upload files
+        </button>
+        <button
+          style={styles.refreshButton}
+          onClick={handleRefresh}
+          disabled={loadingUploads}
+          onMouseOver={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.06)";
+            e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.3)";
+          }}
+          onMouseOut={(e) => {
+            e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.03)";
+            e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
+          }}
+        >
+          <Icons.Refresh />
         </button>
       </div>
 
       {/* Content */}
       <div style={styles.content}>
-        {currentItems.length === 0 ? (
+        {loadingUploads ? (
+          renderLoadingState()
+        ) : projectUploads.length === 0 ? (
           renderEmptyState()
         ) : (
           <>
@@ -536,17 +595,17 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
       </div>
 
       <style>{`
-        ${styles.content.toString().replace(/[{}]/g, '')} ::-webkit-scrollbar {
+        div[style*="overflowY: auto"]::-webkit-scrollbar {
           width: 6px;
         }
-        ${styles.content.toString().replace(/[{}]/g, '')} ::-webkit-scrollbar-track {
+        div[style*="overflowY: auto"]::-webkit-scrollbar-track {
           background: transparent;
         }
-        ${styles.content.toString().replace(/[{}]/g, '')} ::-webkit-scrollbar-thumb {
+        div[style*="overflowY: auto"]::-webkit-scrollbar-thumb {
           background: rgba(255,255,255,0.2);
           border-radius: 3px;
         }
-        ${styles.content.toString().replace(/[{}]/g, '')} ::-webkit-scrollbar-thumb:hover {
+        div[style*="overflowY: auto"]::-webkit-scrollbar-thumb:hover {
           background: rgba(255,255,255,0.3);
         }
       `}</style>

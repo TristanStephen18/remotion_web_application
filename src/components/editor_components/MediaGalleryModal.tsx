@@ -1,4 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react';
+import { useFileUpload } from '../../hooks/uploads/HandleImageUpload';
+import { useVideoUpload } from '../../hooks/uploads/HandleVideoUploads';
+import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
+
+//lipat mo to sa ennv
+const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
+
 
 // ============================================================================
 // TYPES
@@ -10,8 +17,9 @@ interface MediaGalleryModalProps {
   activeTab?: 'text' | 'audio' | 'media' | 'video';
   preselectedItem?: any;
   onConfirm: (selectedItem: any) => void;
-  replaceMode?: boolean; // NEW: Indicates if we're replacing existing media
-  replaceLayerId?: string; // NEW: ID of layer being replaced
+  replaceMode?: boolean;
+  replaceLayerId?: string;
+  onUploadComplete?: () => void;
 }
 
 type SidebarTab = 'home' | 'giphy' | 'viewFiles' | 'addMedia';
@@ -24,7 +32,7 @@ interface FilePreview {
 }
 
 // ============================================================================
-// MEDIA GALLERY MODAL COMPONENT
+// MEDIA GALLERY MODAL COMPONENT WITH GIPHY
 // ============================================================================
 
 export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
@@ -34,10 +42,34 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   onConfirm,
   replaceMode = false,
   replaceLayerId,
+  onUploadComplete,
 }) => {
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>('addMedia');
   const [selectedFiles, setSelectedFiles] = useState<FilePreview[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedUploadIds, setSelectedUploadIds] = useState<string[]>([]);
+
+  // Giphy states
+  const [giphySearchQuery, setGiphySearchQuery] = useState('');
+  const [giphyResults, setGiphyResults] = useState<any[]>([]);
+  const [giphyLoading, setGiphyLoading] = useState(false);
+  const [selectedGiphyIds, setSelectedGiphyIds] = useState<string[]>([]);
+
+  // Upload hooks
+  const imageUpload = useFileUpload({
+    type: 'image',
+    saveRecord: true,
+  });
+
+  const videoUpload = useVideoUpload();
+
+  // Fetch user uploads
+  const {
+    uploads,
+    fetchUploads,
+    loadingUploads,
+  } = useUploadHooks();
 
   // Clean up previews on unmount
   useEffect(() => {
@@ -50,12 +82,104 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     };
   }, [selectedFiles]);
 
-  // Reset selected files when modal opens
+  // Reset when modal opens
   useEffect(() => {
     if (isOpen) {
       setSelectedFiles([]);
+      setSelectedUploadIds([]);
+      setSelectedGiphyIds([]);
+      fetchUploads();
     }
   }, [isOpen]);
+
+  // Fetch uploads when viewFiles tab is selected
+  useEffect(() => {
+    if (sidebarTab === 'viewFiles') {
+      fetchUploads();
+    }
+  }, [sidebarTab]);
+
+  // ============================================================================
+  // GIPHY FUNCTIONS
+  // ============================================================================
+
+  const searchGiphy = useCallback(async (query: string = '') => {
+    if (!GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE') {
+      console.error('❌ Please add your Giphy API key!');
+      setGiphyResults([]);
+      return;
+    }
+
+    setGiphyLoading(true);
+    try {
+      const endpoint = query 
+        ? `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_API_KEY}&q=${encodeURIComponent(query)}&limit=20&rating=g`
+        : `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_API_KEY}&limit=20&rating=g`;
+      
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      
+      if (data.data) {
+        setGiphyResults(data.data);
+        console.log('✅ Giphy: Found', data.data.length, 'GIFs');
+      }
+    } catch (error) {
+      console.error('❌ Giphy search failed:', error);
+    } finally {
+      setGiphyLoading(false);
+    }
+  }, []);
+
+  // Load trending GIFs when Giphy tab opens
+  useEffect(() => {
+    if (sidebarTab === 'giphy' && giphyResults.length === 0) {
+      searchGiphy();
+    }
+  }, [sidebarTab, searchGiphy]);
+
+  const handleGiphySelect = useCallback((gifId: string) => {
+    setSelectedGiphyIds(prev => {
+      if (prev.includes(gifId)) {
+        return prev.filter(id => id !== gifId);
+      } else {
+        if (replaceMode) {
+          return [gifId];
+        }
+        return [...prev, gifId];
+      }
+    });
+  }, [replaceMode]);
+
+  const handleAddSelectedGiphys = useCallback(() => {
+    const selectedGifs = giphyResults.filter(gif => 
+      selectedGiphyIds.includes(gif.id)
+    );
+
+    if (selectedGifs.length === 0) return;
+
+    const mediaData = selectedGifs.map(gif => ({
+      id: gif.id,
+      name: gif.title || 'Giphy GIF',
+      type: 'image', // GIFs are treated as images
+      source: gif.images.original.url, // High quality
+      url: gif.images.original.url,
+      preview: gif.images.fixed_width.url, // Preview
+      thumbnail: gif.images.fixed_width_small.url,
+      width: parseInt(gif.images.original.width),
+      height: parseInt(gif.images.original.height),
+      replaceMode,
+      replaceLayerId,
+    }));
+
+    console.log('✅ Adding selected GIFs:', mediaData.length);
+    console.log('📋 First GIF data:', JSON.stringify(mediaData[0], null, 2));
+    if (replaceMode) {
+      onConfirm(mediaData[0]);
+    } else {
+      onConfirm(mediaData);
+    }
+    onClose();
+  }, [giphyResults, selectedGiphyIds, onConfirm, onClose, replaceMode, replaceLayerId]);
 
   // ============================================================================
   // FILE UPLOAD HANDLING
@@ -66,7 +190,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     
     const fileArray = Array.from(files);
     const validFiles = fileArray.filter(file => {
-      // Filter based on active tab
       if (activeTab === 'audio') {
         return file.type.startsWith('audio/');
       } else if (activeTab === 'video') {
@@ -77,7 +200,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       return true;
     });
     
-    // Create previews for each file
     const newFiles: FilePreview[] = validFiles.map(file => ({
       file,
       name: file.name,
@@ -85,7 +207,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : '',
     }));
 
-    // In replace mode, only allow single file selection
     if (replaceMode) {
       setSelectedFiles([newFiles[0]]);
     } else {
@@ -118,50 +239,137 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     });
   }, []);
 
-  const handleAddToProject = useCallback(() => {
-    console.log('🚀 handleAddToProject called, selectedFiles:', selectedFiles.length, 'replaceMode:', replaceMode);
-    if (selectedFiles.length > 0) {
-      // Convert all files to base64 first
-      const processedFiles: any[] = [];
-      let processedCount = 0;
+  const handleSelectUpload = useCallback((uploadId: string) => {
+    setSelectedUploadIds(prev => {
+      if (prev.includes(uploadId)) {
+        return prev.filter(id => id !== uploadId);
+      } else {
+        if (replaceMode) {
+          return [uploadId];
+        }
+        return [...prev, uploadId];
+      }
+    });
+  }, [replaceMode]);
+
+  const handleAddSelectedUploads = useCallback(() => {
+    const selectedUploads = uploads.filter(upload => 
+      selectedUploadIds.includes(upload.id.toString())
+    );
+
+    if (selectedUploads.length === 0) return;
+
+    const mediaData = selectedUploads.map(upload => {
+      let mediaType = upload.type;
+      if (typeof mediaType === 'string') {
+        if (mediaType.startsWith('image/') || mediaType === 'image') {
+          mediaType = 'image';
+        } else if (mediaType.startsWith('video/') || mediaType === 'video') {
+          mediaType = 'video';
+        } else if (mediaType.startsWith('audio/') || mediaType === 'audio') {
+          mediaType = 'audio';
+        }
+      }
       
-      selectedFiles.forEach((filePreview, index) => {
-        console.log(`📄 Processing file ${index + 1}/${selectedFiles.length}:`, filePreview.name);
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const result = e.target?.result;
-          if (result) {
-            console.log(`✅ File ${index + 1} converted to base64, length:`, (result as string).length);
-            const mediaData = {
-              name: filePreview.name,
-              type: filePreview.type,
-              data: result,
-              file: filePreview.file,
-              preview: filePreview.preview,
-              replaceMode,
-              replaceLayerId,
-            };
-            processedFiles.push(mediaData);
-          }
-          processedCount++;
-          
-          // When all files are processed, pass them all at once
-          if (processedCount === selectedFiles.length) {
-            console.log('✅ All files processed, calling onConfirm with', processedFiles.length, 'files');
-            if (replaceMode) {
-              // In replace mode, only send the first file
-              onConfirm(processedFiles[0]);
-            } else {
-              // In add mode, send all files at once
-              onConfirm(processedFiles);
-            }
-            onClose();
-          }
-        };
-        reader.readAsDataURL(filePreview.file);
-      });
+      return {
+        id: upload.id,
+        name: upload.url.split('/').pop() || 'Uploaded file',
+        type: mediaType,
+        source: upload.url,
+        url: upload.url,
+        preview: upload.url,
+        replaceMode,
+        replaceLayerId,
+      };
+    });
+
+    console.log('✅ Adding selected uploads:', mediaData.length);
+    if (replaceMode) {
+      onConfirm(mediaData[0]);
+    } else {
+      onConfirm(mediaData);
     }
-  }, [selectedFiles, onConfirm, onClose, replaceMode, replaceLayerId]);
+    onClose();
+  }, [uploads, selectedUploadIds, onConfirm, onClose, replaceMode, replaceLayerId]);
+
+  const handleAddToProject = useCallback(async () => {
+    if (selectedFiles.length === 0) return;
+    
+    setIsProcessing(true);
+    console.log('🚀 Starting upload process for', selectedFiles.length, 'files');
+
+    try {
+      const uploadedFiles: any[] = [];
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const filePreview = selectedFiles[i];
+        
+        console.log(`📤 Uploading file ${i + 1}/${selectedFiles.length}:`, filePreview.name);
+
+        let uploadedUrl: string | null = null;
+        let duration: number | undefined;
+
+        if (filePreview.type.startsWith('image/')) {
+          uploadedUrl = await imageUpload.uploadFile(filePreview.file);
+        } else if (filePreview.type.startsWith('video/')) {
+          const result = await videoUpload.uploadVideo(filePreview.file);
+          if (result) {
+            uploadedUrl = result.url;
+            duration = result.duration;
+          }
+        } else if (filePreview.type.startsWith('audio/')) {
+          uploadedUrl = await imageUpload.uploadFile(filePreview.file);
+        }
+
+        if (uploadedUrl) {
+          console.log('✅ Upload successful:', uploadedUrl);
+          
+          let mediaType = 'image';
+          if (filePreview.type.startsWith('video/')) {
+            mediaType = 'video';
+          } else if (filePreview.type.startsWith('audio/')) {
+            mediaType = 'audio';
+          } else if (filePreview.type.startsWith('image/')) {
+            mediaType = 'image';
+          }
+          
+          const mediaData = {
+            name: filePreview.name,
+            type: mediaType,
+            source: uploadedUrl,
+            url: uploadedUrl,
+            preview: filePreview.preview || uploadedUrl,
+            duration,
+            file: filePreview.file,
+            replaceMode,
+            replaceLayerId,
+          };
+          
+          uploadedFiles.push(mediaData);
+        } else {
+          console.error('❌ Upload failed for:', filePreview.name);
+        }
+      }
+
+      if (onUploadComplete) {
+        onUploadComplete();
+      }
+
+      if (uploadedFiles.length > 0) {
+        console.log('✅ All uploads complete, passing', uploadedFiles.length, 'files to parent');
+        if (replaceMode) {
+          onConfirm(uploadedFiles[0]);
+        } else {
+          onConfirm(uploadedFiles);
+        }
+        onClose();
+      }
+    } catch (error) {
+      console.error('❌ Upload error:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedFiles, onConfirm, onClose, replaceMode, replaceLayerId, imageUpload, videoUpload, onUploadComplete]);
 
   if (!isOpen) return null;
 
@@ -171,6 +379,30 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     if (activeTab === 'media') return 'JPG, PNG, GIF, WEBP';
     return 'All formats';
   };
+
+  const getFilteredUploads = () => {
+    if (activeTab === 'audio') {
+      return uploads.filter(upload => 
+        upload.type === 'audio' || 
+        upload.url.match(/\.(mp3|wav|aac|ogg)$/i)
+      );
+    } else if (activeTab === 'video') {
+      return uploads.filter(upload => 
+        upload.type === 'video' || 
+        upload.url.match(/\.(mp4|mov|webm|avi)$/i)
+      );
+    } else if (activeTab === 'media') {
+      return uploads.filter(upload => 
+        upload.type === 'image' || 
+        upload.url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+      );
+    }
+    return uploads;
+  };
+
+  const filteredUploads = getFilteredUploads();
+  const isUploading = imageUpload.isUploading || videoUpload.isUploading || isProcessing;
+  const uploadError = imageUpload.error || videoUpload.error;
 
   // ============================================================================
   // STYLES
@@ -200,142 +432,119 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       display: 'flex',
       flexDirection: 'column' as const,
       overflow: 'hidden',
-      boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)',
     },
     header: {
-      padding: '20px 24px',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+      padding: '24px 28px',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
-    headerLeft: {
-      display: 'flex',
-      alignItems: 'center',
-      gap: '16px',
-    },
-    headerTitle: {
+    title: {
       fontSize: '18px',
-      fontWeight: '600' as const,
+      fontWeight: 600,
       color: '#e5e5e5',
     },
-    headerTab: {
-      padding: '8px 16px',
-      borderRadius: '8px',
-      border: 'none',
-      backgroundColor: 'transparent',
-      color: '#888',
-      fontSize: '13px',
-      fontWeight: '500' as const,
-      cursor: 'pointer',
-      transition: 'all 0.2s',
-    },
-    headerTabActive: {
-      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-      color: '#6366f1',
-    },
     closeButton: {
-      width: '32px',
-      height: '32px',
+      width: '36px',
+      height: '36px',
       borderRadius: '8px',
-      border: 'none',
       backgroundColor: 'transparent',
+      border: 'none',
       color: '#888',
-      fontSize: '20px',
       cursor: 'pointer',
-      transition: 'all 0.2s',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      transition: 'all 0.2s',
     },
-    contentArea: {
+    body: {
       display: 'flex',
       flex: 1,
       overflow: 'hidden',
     },
     sidebar: {
       width: '200px',
-      borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+      padding: '16px',
       display: 'flex',
       flexDirection: 'column' as const,
-      padding: '16px 0',
+      gap: '8px',
     },
     sidebarButton: {
-      padding: '12px 24px',
-      border: 'none',
+      padding: '12px 16px',
+      borderRadius: '8px',
       backgroundColor: 'transparent',
+      border: 'none',
       color: '#888',
       fontSize: '13px',
-      fontWeight: '500' as const,
+      fontWeight: 500,
       cursor: 'pointer',
-      textAlign: 'left' as const,
       transition: 'all 0.2s',
+      textAlign: 'left' as const,
       display: 'flex',
       alignItems: 'center',
-      gap: '12px',
+      gap: '10px',
     },
     sidebarButtonActive: {
-      backgroundColor: 'rgba(99, 102, 241, 0.15)',
-      color: '#6366f1',
-      borderLeft: '3px solid #6366f1',
-      paddingLeft: '21px',
+      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+      color: '#3b82f6',
     },
-    mainArea: {
+    content: {
       flex: 1,
       display: 'flex',
       flexDirection: 'column' as const,
-      overflow: 'hidden',
     },
     uploadArea: {
       flex: 1,
+      padding: '28px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      padding: '40px',
+      overflowY: 'auto' as const,
     },
     uploadBox: {
       width: '100%',
-      maxWidth: '500px',
+      maxWidth: '600px',
       padding: '60px 40px',
       border: '2px dashed rgba(255, 255, 255, 0.2)',
       borderRadius: '12px',
       textAlign: 'center' as const,
       cursor: 'pointer',
-      transition: 'all 0.3s',
+      transition: 'all 0.2s',
       backgroundColor: 'rgba(255, 255, 255, 0.02)',
     },
     uploadBoxDragging: {
-      borderColor: '#6366f1',
-      backgroundColor: 'rgba(99, 102, 241, 0.05)',
-      transform: 'scale(1.02)',
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.05)',
     },
     uploadIcon: {
       fontSize: '48px',
-      marginBottom: '16px',
+      marginBottom: '20px',
     },
     uploadTitle: {
-      fontSize: '18px',
-      fontWeight: '600' as const,
+      fontSize: '16px',
+      fontWeight: 600,
       color: '#e5e5e5',
       marginBottom: '8px',
     },
     uploadSubtitle: {
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#888',
-      marginBottom: '16px',
+      marginBottom: '12px',
     },
     uploadFormats: {
-      fontSize: '12px',
+      fontSize: '11px',
       color: '#666',
     },
     previewArea: {
       flex: 1,
-      padding: '24px',
+      padding: '28px',
       overflowY: 'auto' as const,
     },
     previewGrid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
       gap: '16px',
     },
     previewCard: {
@@ -359,22 +568,22 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       left: 0,
       right: 0,
       padding: '8px',
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      color: '#e5e5e5',
       fontSize: '11px',
+      color: '#fff',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      whiteSpace: 'nowrap' as const,
       overflow: 'hidden',
       textOverflow: 'ellipsis',
-      whiteSpace: 'nowrap' as const,
     },
     removeButton: {
       position: 'absolute' as const,
-      top: '8px',
-      right: '8px',
+      top: '6px',
+      right: '6px',
       width: '24px',
       height: '24px',
       borderRadius: '50%',
-      border: 'none',
       backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      border: 'none',
       color: '#fff',
       fontSize: '16px',
       cursor: 'pointer',
@@ -384,24 +593,23 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       transition: 'all 0.2s',
     },
     fileItem: {
-      padding: '16px',
-      marginBottom: '12px',
-      backgroundColor: '#1a1a1a',
-      borderRadius: '8px',
+      padding: '12px',
+      marginBottom: '10px',
+      backgroundColor: 'rgba(255, 255, 255, 0.03)',
       border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '8px',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      color: '#e5e5e5',
       fontSize: '13px',
+      color: '#e5e5e5',
     },
     footer: {
-      padding: '16px 24px',
-      borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+      padding: '20px 28px',
+      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: '#0a0a0a',
     },
     fileCount: {
       fontSize: '13px',
@@ -414,30 +622,172 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     cancelButton: {
       padding: '10px 20px',
       borderRadius: '8px',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
       backgroundColor: 'transparent',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
       color: '#e5e5e5',
       fontSize: '13px',
-      fontWeight: '500' as const,
+      fontWeight: 500,
       cursor: 'pointer',
       transition: 'all 0.2s',
     },
     addButton: {
       padding: '10px 24px',
       borderRadius: '8px',
-      border: 'none',
       backgroundColor: '#6366f1',
+      border: 'none',
       color: '#fff',
       fontSize: '13px',
-      fontWeight: '600' as const,
+      fontWeight: 600,
       cursor: 'pointer',
       transition: 'all 0.2s',
-      boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)',
     },
     addButtonDisabled: {
-      backgroundColor: '#444',
-      cursor: 'not-allowed',
       opacity: 0.5,
+      cursor: 'not-allowed',
+    },
+    errorMessage: {
+      marginTop: '12px',
+      padding: '12px',
+      backgroundColor: 'rgba(239, 68, 68, 0.1)',
+      border: '1px solid rgba(239, 68, 68, 0.3)',
+      borderRadius: '8px',
+      color: '#ef4444',
+      fontSize: '12px',
+    },
+    uploadsGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+      gap: '16px',
+      padding: '20px',
+    },
+    uploadCard: {
+      position: 'relative' as const,
+      aspectRatio: '1',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      backgroundColor: '#1a1a1a',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+    },
+    uploadCardSelected: {
+      borderColor: '#3b82f6',
+      boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3)',
+    },
+    uploadThumbnail: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover' as const,
+    },
+    uploadOverlay: {
+      position: 'absolute' as const,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: '8px',
+      background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)',
+    },
+    uploadName: {
+      fontSize: '11px',
+      fontWeight: '500' as const,
+      color: '#fff',
+      whiteSpace: 'nowrap' as const,
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+    },
+    selectedBadge: {
+      position: 'absolute' as const,
+      top: '8px',
+      right: '8px',
+      width: '24px',
+      height: '24px',
+      borderRadius: '50%',
+      backgroundColor: '#3b82f6',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#fff',
+      fontSize: '14px',
+      fontWeight: 'bold',
+    },
+    audioUploadItem: {
+      padding: '12px',
+      marginBottom: '10px',
+      backgroundColor: 'rgba(255, 255, 255, 0.03)',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '8px',
+      cursor: 'pointer',
+      transition: 'all 0.2s',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+    },
+    audioUploadItemSelected: {
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59, 130, 246, 0.1)',
+    },
+    loadingSpinner: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '40px',
+      color: '#888',
+    },
+    // Giphy-specific styles
+    giphyContainer: {
+      display: 'flex',
+      flexDirection: 'column' as const,
+      height: '100%',
+    },
+    giphySearch: {
+      padding: '20px',
+      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+    },
+    searchInput: {
+      width: '100%',
+      padding: '12px 16px',
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      border: '1px solid rgba(255, 255, 255, 0.1)',
+      borderRadius: '8px',
+      color: '#e5e5e5',
+      fontSize: '14px',
+      outline: 'none',
+      transition: 'all 0.2s',
+    },
+    giphyGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+      gap: '12px',
+      padding: '20px',
+      overflowY: 'auto' as const,
+      flex: 1,
+    },
+    giphyItem: {
+      position: 'relative' as const,
+      aspectRatio: '1',
+      borderRadius: '8px',
+      overflow: 'hidden',
+      cursor: 'pointer',
+      border: '2px solid rgba(255, 255, 255, 0.1)',
+      transition: 'all 0.2s',
+      backgroundColor: '#1a1a1a',
+    },
+    giphyItemSelected: {
+      borderColor: '#3b82f6',
+      boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.3)',
+    },
+    giphyImage: {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover' as const,
+    },
+    giphyAttribution: {
+      padding: '12px 20px',
+      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      textAlign: 'center' as const,
+      fontSize: '10px',
+      color: '#666',
     },
   };
 
@@ -446,16 +796,14 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div style={styles.header}>
-          <div style={styles.headerLeft}>
-            <span style={styles.headerTitle}>
-              {replaceMode ? `Replace ${activeTab === 'media' ? 'Image' : activeTab === 'video' ? 'Video' : 'Audio'}` : 'Media Library'}
-            </span>
-          </div>
+          <h2 style={styles.title}>
+            {replaceMode ? `Replace ${activeTab}` : `Add ${activeTab}`}
+          </h2>
           <button
             style={styles.closeButton}
             onClick={onClose}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -465,8 +813,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
           </button>
         </div>
 
-        {/* Content */}
-        <div style={styles.contentArea}>
+        {/* Body */}
+        <div style={styles.body}>
           {/* Sidebar */}
           <div style={styles.sidebar}>
             <button
@@ -475,28 +823,45 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                 ...(sidebarTab === 'addMedia' ? styles.sidebarButtonActive : {}),
               }}
               onClick={() => setSidebarTab('addMedia')}
-              onMouseOver={(e) => {
-                if (sidebarTab !== 'addMedia') {
-                  e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-                }
-              }}
-              onMouseOut={(e) => {
-                if (sidebarTab !== 'addMedia') {
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
             >
-              <span>➕</span> {replaceMode ? 'Upload new' : 'Add media'}
+              ☁️ Upload Files
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
+                ...(sidebarTab === 'viewFiles' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('viewFiles')}
+            >
+              📂 Your Files
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
+                ...(sidebarTab === 'giphy' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('giphy')}
+            >
+              🎬 Giphy
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
+                ...(sidebarTab === 'home' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('home')}
+            >
+              🏠 Home
             </button>
           </div>
 
-          {/* Main Area */}
-          <div style={styles.mainArea}>
+          {/* Content Area */}
+          <div style={styles.content}>
             {sidebarTab === 'addMedia' ? (
               <>
                 {selectedFiles.length === 0 ? (
                   <div style={styles.uploadArea}>
-                    <label htmlFor="file-upload">
+                    <label htmlFor="file-upload" style={{ width: '100%', maxWidth: '600px' }}>
                       <div
                         style={{
                           ...styles.uploadBox,
@@ -538,7 +903,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   </div>
                 ) : (
                   <div style={styles.previewArea}>
-                    {/* Image Previews Grid */}
                     {activeTab === 'media' ? (
                       <div style={styles.previewGrid}>
                         {selectedFiles.map((filePreview, index) => (
@@ -576,7 +940,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                             </button>
                           </div>
                         ))}
-                        {/* Add more button - only in add mode */}
                         {!replaceMode && (
                           <label htmlFor="file-upload-more">
                             <div
@@ -614,7 +977,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                         />
                       </div>
                     ) : (
-                      // Audio/Video file list
                       <div>
                         {selectedFiles.map((filePreview, index) => (
                           <div key={index} style={styles.fileItem}>
@@ -629,36 +991,278 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                         ))}
                       </div>
                     )}
+
+                    {uploadError && (
+                      <div style={styles.errorMessage}>
+                        ❌ Upload failed: {uploadError}
+                      </div>
+                    )}
                   </div>
                 )}
               </>
-            ) : (
-              <div style={styles.uploadArea}>
-                <div style={{ textAlign: 'center', color: '#888' }}>
-                  <div style={{ fontSize: '48px', marginBottom: '16px' }}>
-                    {sidebarTab === 'home' && '🏠'}
-                    {sidebarTab === 'giphy' && '🎬'}
-                    {sidebarTab === 'viewFiles' && '📂'}
-                  </div>
-                  <div style={{ fontSize: '14px' }}>
-                    {sidebarTab === 'home' && 'Home content coming soon'}
-                    {sidebarTab === 'giphy' && 'Giphy library coming soon'}
-                    {sidebarTab === 'viewFiles' && 'Your files will appear here'}
+            ) : sidebarTab === 'giphy' ? (
+              // GIPHY TAB
+              <div style={styles.giphyContainer}>
+                {/* Search Bar */}
+                <div style={styles.giphySearch}>
+                  <input
+                    type="text"
+                    placeholder="Search Giphy..."
+                    value={giphySearchQuery}
+                    onChange={(e) => setGiphySearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        searchGiphy(giphySearchQuery);
+                      }
+                    }}
+                    style={styles.searchInput}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                    }}
+                  />
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: '#666', 
+                    marginTop: '8px',
+                    textAlign: 'center'
+                  }}>
+                    {giphySearchQuery ? 'Press Enter to search' : 'Showing trending GIFs'}
                   </div>
                 </div>
+
+                {/* GIF Grid */}
+                {giphyLoading ? (
+                  <div style={styles.loadingSpinner}>
+                    <div style={{ fontSize: '32px', marginBottom: '16px' }}>⏳</div>
+                    <div>Loading GIFs...</div>
+                  </div>
+                ) : !GIPHY_API_KEY || GIPHY_API_KEY === 'YOUR_GIPHY_API_KEY_HERE' ? (
+                  <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔑</div>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                      Giphy API Key Required
+                    </div>
+                    <div style={{ fontSize: '12px', marginBottom: '16px' }}>
+                      Get your free key from developers.giphy.com
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#666', maxWidth: '300px', margin: '0 auto' }}>
+                      Add it to line 11 of this file:<br/>
+                      <code style={{ color: '#3b82f6' }}>const GIPHY_API_KEY = 'your_key';</code>
+                    </div>
+                  </div>
+                ) : giphyResults.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                      No GIFs found
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      Try a different search term
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={styles.giphyGrid}>
+                      {giphyResults.map((gif) => (
+                        <div
+                          key={gif.id}
+                          style={{
+                            ...styles.giphyItem,
+                            ...(selectedGiphyIds.includes(gif.id) 
+                              ? styles.giphyItemSelected 
+                              : {}),
+                          }}
+                          onClick={() => handleGiphySelect(gif.id)}
+                          onMouseOver={(e) => {
+                            if (!selectedGiphyIds.includes(gif.id)) {
+                              e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                              e.currentTarget.style.transform = 'scale(1.02)';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!selectedGiphyIds.includes(gif.id)) {
+                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }
+                          }}
+                        >
+                          <img
+                            src={gif.images.fixed_width.url}
+                            alt={gif.title}
+                            style={styles.giphyImage}
+                          />
+                          {selectedGiphyIds.includes(gif.id) && (
+                            <div style={styles.selectedBadge}>✓</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    {/* Giphy Attribution */}
+                    <div style={styles.giphyAttribution}>
+                      Powered by <a href="https://giphy.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>GIPHY</a>
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <div style={styles.uploadArea}>
+                {sidebarTab === 'viewFiles' ? (
+                  loadingUploads ? (
+                    <div style={styles.loadingSpinner}>
+                      <div style={{ fontSize: '32px', marginBottom: '16px' }}>⏳</div>
+                      <div>Loading your uploads...</div>
+                    </div>
+                  ) : filteredUploads.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                      <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
+                      <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                        No {activeTab === 'media' ? 'images' : activeTab === 'video' ? 'videos' : 'audio files'} uploaded yet
+                      </div>
+                      <div style={{ fontSize: '12px' }}>
+                        Upload your first file to see it here
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ flex: 1, overflowY: 'auto', width: '100%' }}>
+                      {activeTab === 'audio' ? (
+                        <div style={{ padding: '20px' }}>
+                          {filteredUploads.map((upload) => (
+                            <div
+                              key={upload.id}
+                              style={{
+                                ...styles.audioUploadItem,
+                                ...(selectedUploadIds.includes(upload.id.toString()) 
+                                  ? styles.audioUploadItemSelected 
+                                  : {}),
+                              }}
+                              onClick={() => handleSelectUpload(upload.id.toString())}
+                            >
+                              <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '8px',
+                                backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#f59e0b',
+                                fontSize: '20px',
+                              }}>
+                                🎵
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{
+                                  fontSize: '13px',
+                                  fontWeight: '500',
+                                  color: '#e5e5e5',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                }}>
+                                  {upload.url.split('/').pop()}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                                  Click to select
+                                </div>
+                              </div>
+                              {selectedUploadIds.includes(upload.id.toString()) && (
+                                <div style={{
+                                  width: '24px',
+                                  height: '24px',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#3b82f6',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  color: '#fff',
+                                  fontSize: '14px',
+                                }}>
+                                  ✓
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={styles.uploadsGrid}>
+                          {filteredUploads.map((upload) => (
+                            <div
+                              key={upload.id}
+                              style={{
+                                ...styles.uploadCard,
+                                ...(selectedUploadIds.includes(upload.id.toString()) 
+                                  ? styles.uploadCardSelected 
+                                  : {}),
+                              }}
+                              onClick={() => handleSelectUpload(upload.id.toString())}
+                              onMouseOver={(e) => {
+                                if (!selectedUploadIds.includes(upload.id.toString())) {
+                                  e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                                }
+                              }}
+                              onMouseOut={(e) => {
+                                if (!selectedUploadIds.includes(upload.id.toString())) {
+                                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                }
+                              }}
+                            >
+                              {activeTab === 'video' ? (
+                                <video
+                                  src={upload.url}
+                                  style={styles.uploadThumbnail}
+                                  muted
+                                />
+                              ) : (
+                                <img
+                                  src={upload.url}
+                                  alt={upload.url.split('/').pop()}
+                                  style={styles.uploadThumbnail}
+                                />
+                              )}
+                              {selectedUploadIds.includes(upload.id.toString()) && (
+                                <div style={styles.selectedBadge}>✓</div>
+                              )}
+                              <div style={styles.uploadOverlay}>
+                                <div style={styles.uploadName}>
+                                  {upload.url.split('/').pop()}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#888' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
+                    <div style={{ fontSize: '14px' }}>Home content coming soon</div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Footer */}
-            {selectedFiles.length > 0 && (
+            {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && (
               <div style={styles.footer}>
                 <div style={styles.fileCount}>
-                  {selectedFiles.length} {selectedFiles.length === 1 ? 'file' : 'files'} selected
+                  {selectedFiles.length > 0 
+                    ? `${selectedFiles.length} ${selectedFiles.length === 1 ? 'file' : 'files'} selected`
+                    : selectedUploadIds.length > 0
+                      ? `${selectedUploadIds.length} ${selectedUploadIds.length === 1 ? 'upload' : 'uploads'} selected`
+                      : `${selectedGiphyIds.length} ${selectedGiphyIds.length === 1 ? 'GIF' : 'GIFs'} selected`
+                  }
                 </div>
                 <div style={styles.buttonGroup}>
                   <button
                     style={styles.cancelButton}
                     onClick={onClose}
+                    disabled={isUploading}
                     onMouseOver={(e) => {
                       e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
                     }}
@@ -671,24 +1275,41 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   <button
                     style={{
                       ...styles.addButton,
-                      ...(selectedFiles.length === 0 ? styles.addButtonDisabled : {}),
+                      ...((selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0) || isUploading 
+                        ? styles.addButtonDisabled 
+                        : {}),
                     }}
-                    onClick={handleAddToProject}
-                    disabled={selectedFiles.length === 0}
+                    onClick={
+                      selectedFiles.length > 0 
+                        ? handleAddToProject 
+                        : selectedUploadIds.length > 0
+                          ? handleAddSelectedUploads
+                          : handleAddSelectedGiphys
+                    }
+                    disabled={(selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0) || isUploading}
                     onMouseOver={(e) => {
-                      if (selectedFiles.length > 0) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#5558e3';
                         e.currentTarget.style.transform = 'translateY(-1px)';
                       }
                     }}
                     onMouseOut={(e) => {
-                      if (selectedFiles.length > 0) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#6366f1';
                         e.currentTarget.style.transform = 'translateY(0)';
                       }
                     }}
                   >
-                    {replaceMode ? 'Replace' : `Add ${selectedFiles.length} to project`}
+                    {isUploading 
+                      ? 'Uploading...' 
+                      : replaceMode 
+                        ? 'Replace' 
+                        : selectedFiles.length > 0
+                          ? `Add ${selectedFiles.length} to project`
+                          : selectedUploadIds.length > 0
+                            ? `Add ${selectedUploadIds.length} to project`
+                            : `Add ${selectedGiphyIds.length} to project`
+                    }
                   </button>
                 </div>
               </div>

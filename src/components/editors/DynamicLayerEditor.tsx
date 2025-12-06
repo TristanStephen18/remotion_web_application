@@ -940,13 +940,15 @@ const DynamicLayerEditor: React.FC = () => {
   }, [searchParams, pushState]);
 
   const {
-    addTextLayer,
-    handleImageUpload,
-    handleAudioUpload,
-    handleVideoUpload,
-    updateLayer,
-    deleteLayer,
-  } = useLayerManagement({
+  addTextLayer,
+  handleImageUpload,
+  handleAudioUpload,
+  handleVideoUpload,
+  updateLayer,
+  deleteLayer,
+  splitLayer,        // ADD THIS
+  reorderLayers,     // ADD THIS
+} = useLayerManagement({
     layers,
     currentFrame,
     totalFrames,
@@ -1338,7 +1340,7 @@ const DynamicLayerEditor: React.FC = () => {
       locked: false,
       type: 'image',
       startFrame: 0,
-      endFrame: totalFrames,  
+      endFrame: collageEndFrame,  
       position: { 
         x: slot.x + (slot.width / 2),
         y: slot.y + (slot.height / 2)
@@ -1401,7 +1403,7 @@ const DynamicLayerEditor: React.FC = () => {
     locked: false,
     type: 'text',
     startFrame: 0,
-    endFrame: totalFrames,  
+    endFrame: collageEndFrame,  
     position: { x: 50, y: 10 },  // Top center
     size: { width: 85, height: 12 },
     rotation: 0,
@@ -2116,15 +2118,27 @@ const DynamicLayerEditor: React.FC = () => {
   );
 
   const handleReorderTracks = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      const uiOrderedLayers = [...layers].reverse();
-      const [movedLayer] = uiOrderedLayers.splice(fromIndex, 1);
-      uiOrderedLayers.splice(toIndex, 0, movedLayer);
-      pushState(uiOrderedLayers.reverse());
-      toast.success("Layer reordered");
-    },
-    [layers, pushState]
-  );
+  (fromIndex: number, toIndex: number) => {
+    console.log('🔄 REORDER:', { from: fromIndex, to: toIndex, total: layers.length });
+    
+    if (fromIndex === toIndex) {
+      console.log('❌ Same index, skipping');
+      return;
+    }
+    
+    // Timeline shows layers in reverse (newest on top)
+    const reversedLayers = [...layers].reverse();
+    const [movedLayer] = reversedLayers.splice(fromIndex, 1);
+    reversedLayers.splice(toIndex, 0, movedLayer);
+    const newLayers = reversedLayers.reverse();
+    
+    console.log('✅ New order:', newLayers.map(l => l.name));
+    
+    pushState(newLayers);
+    toast.success(`Moved ${movedLayer.name}`);
+  },
+  [layers, pushState]
+);
 
   const handleTracksChange = useCallback(
     (updatedTracks: TimelineTrack[]) => {
@@ -2146,6 +2160,15 @@ const DynamicLayerEditor: React.FC = () => {
     },
     [layers, pushState]
   );
+
+  const handleCutTrack = useCallback(
+  (trackId: string, frame: number) => {
+    splitLayer(trackId, frame);
+  },
+  [splitLayer]
+);
+
+
   const handleFrameChange = useCallback((frame: number) => {
     setCurrentFrame(frame);
     if (previewRef.current) previewRef.current.seekTo(frame);
@@ -3096,6 +3119,7 @@ const DynamicLayerEditor: React.FC = () => {
             onTrackSelect={handleTrackSelect}
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
+            onCutTrack={handleCutTrack}  
             onDeleteTrack={deleteLayer}
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}

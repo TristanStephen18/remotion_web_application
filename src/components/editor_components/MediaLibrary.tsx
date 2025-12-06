@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { CLOUDINARY_VIDEOS, AUDIO_LIBRARY, CLOUD_UPLOADS } from "../../data/editor_constants";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useUploadHooks } from "../../hooks/dashboardhooks/UploadHooks";
 
 interface MediaLibraryProps {
   activeTab: "text" | "media" | "audio" | "video";
@@ -14,15 +15,28 @@ interface MediaLibraryProps {
 
 /**
  * MediaLibrary Component with Upload Buttons and Uploaded Files Display
+ * Now integrates with useUploadHooks to fetch and display uploaded files
  */
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   activeTab,
-  projectAssets,
   onAddLayer,
   onOpenGallery,
   onAddText,
 }) => {
-  const { colors } = useTheme(); 
+  const { colors } = useTheme();
+  
+  // Use upload hooks to fetch uploaded files
+  const {
+    uploads,
+    fetchUploads,
+    loadingUploads,
+  } = useUploadHooks();
+
+  // Fetch uploads when component mounts
+  useEffect(() => {
+    fetchUploads();
+  }, []);
+
   const handlePredefinedClick = (item: any, mediaType: "audio" | "video" | "image") => {
     const mediaObject = {
       id: item.id,
@@ -39,7 +53,18 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 
   const handleUploadedAssetClick = (asset: any) => {
     console.log('📤 MediaLibrary passing uploaded asset:', asset);
-    onAddLayer(asset);
+    
+    // Convert the upload format to layer format
+    const mediaObject = {
+      id: asset.id,
+      name: asset.url.split('/').pop() || 'Uploaded file',
+      type: asset.type, // 'image' or 'video'
+      url: asset.url,
+      thumbnail: asset.url, // For images, use URL as thumbnail
+      preview: asset.url,
+    };
+    
+    onAddLayer(mediaObject);
   };
 
   const cardStyle: React.CSSProperties = {
@@ -75,21 +100,54 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
     letterSpacing: "1px"
   };
 
-  // Filter uploaded assets by type
-  const getUploadedAssets = (type: string) => {
-    return projectAssets.filter(asset => {
-      if (type === 'audio') return asset.type?.startsWith('audio/');
-      if (type === 'video') return asset.type?.startsWith('video/');
-      if (type === 'image') return asset.type?.startsWith('image/');
-      return false;
-    });
+  // Filter uploaded assets by type from useUploadHooks
+  const getUploadedAssetsByType = (type: string) => {
+    if (type === 'image') {
+      // For images/media tab, only show image types
+      return uploads.filter(upload => 
+        upload.type === 'image' || 
+        (upload.url && (
+          upload.url.endsWith('.jpg') || 
+          upload.url.endsWith('.jpeg') || 
+          upload.url.endsWith('.png') || 
+          upload.url.endsWith('.gif') || 
+          upload.url.endsWith('.webp') ||
+          upload.url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+        ))
+      );
+    } else if (type === 'video') {
+      // For video tab, only show video types
+      return uploads.filter(upload => 
+        upload.type === 'video' || 
+        (upload.url && (
+          upload.url.endsWith('.mp4') || 
+          upload.url.endsWith('.mov') || 
+          upload.url.endsWith('.webm') || 
+          upload.url.endsWith('.avi') ||
+          upload.url.match(/\.(mp4|mov|webm|avi)$/i)
+        ))
+      );
+    } else if (type === 'audio') {
+      // For audio tab, only show audio types
+      return uploads.filter(upload => 
+        upload.type === 'audio' || 
+        (upload.url && (
+          upload.url.endsWith('.mp3') || 
+          upload.url.endsWith('.wav') || 
+          upload.url.endsWith('.aac') || 
+          upload.url.endsWith('.ogg') ||
+          upload.url.match(/\.(mp3|wav|aac|ogg)$/i)
+        ))
+      );
+    }
+    return uploads.filter(upload => upload.type === type);
   };
 
   // ============================================================================
   // AUDIO TAB
   // ============================================================================
   if (activeTab === "audio") {
-    const uploadedAudio = getUploadedAssets('audio');
+    const uploadedAudio = getUploadedAssetsByType('audio');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
@@ -110,12 +168,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         </button>
 
         {/* My Uploads */}
-        {uploadedAudio.length > 0 && (
+        {loadingUploads ? (
+          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+            Loading uploads...
+          </div>
+        ) : uploadedAudio.length > 0 ? (
           <div style={{ marginBottom: "20px" }}>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedAudio.length})</h3>
-            {uploadedAudio.map((audio, index) => (
+            {uploadedAudio.map((audio) => (
               <div
-                key={`uploaded-audio-${index}`}
+                key={`uploaded-audio-${audio.id}`}
                 onClick={() => handleUploadedAssetClick(audio)}
                 style={cardStyle}
                 onMouseEnter={(e) => {
@@ -136,7 +198,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   textOverflow: "ellipsis",
                   whiteSpace: "nowrap"
                 }}>
-                  🎵 {audio.name}
+                  🎵 {audio.url.split('/').pop()}
                 </div>
                 <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
                   ✓ Uploaded
@@ -144,7 +206,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               </div>
             ))}
           </div>
-        )}
+        ) : null}
 
         {/* Stock Music */}
         <div style={{ marginBottom: "20px" }}>
@@ -157,11 +219,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               style={cardStyle}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-      e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.borderColor = "#3b82f6";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = colors.bgSecondary;
-      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
               }}
             >
               <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
@@ -185,14 +247,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               style={cardStyle}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-      e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.borderColor = "#3b82f6";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = colors.bgSecondary;
-      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
               }}
             >
-              <div style={{ color: colors.textPrimary,fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
+              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
                 🔊 {sfx.name}
               </div>
               <div style={{ color: colors.textMuted, fontSize: "11px" }}>
@@ -209,7 +271,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   // VIDEO TAB
   // ============================================================================
   if (activeTab === "video") {
-    const uploadedVideos = getUploadedAssets('video');
+    const uploadedVideos = getUploadedAssetsByType('video');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
@@ -230,12 +292,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         </button>
 
         {/* My Uploads */}
-        {uploadedVideos.length > 0 && (
+        {loadingUploads ? (
+          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+            Loading uploads...
+          </div>
+        ) : uploadedVideos.length > 0 ? (
           <div style={{ marginBottom: "20px" }}>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedVideos.length})</h3>
-            {uploadedVideos.map((video, index) => (
+            {uploadedVideos.map((video) => (
               <div
-                key={`uploaded-video-${index}`}
+                key={`uploaded-video-${video.id}`}
                 onClick={() => handleUploadedAssetClick(video)}
                 style={{
                   ...cardStyle,
@@ -252,41 +318,24 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
                 }}
               >
-                {video.preview ? (
-                  <div style={{
-                    width: "60px",
-                    height: "45px",
-                    flexShrink: 0,
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    backgroundColor: "#000"
-                  }}>
-                    <img 
-                      src={video.preview} 
-                      alt={video.name}
-                      style={{ 
-                        width: "100%", 
-                        height: "100%", 
-                        objectFit: "cover",
-                        display: "block"
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div style={{
-                    width: "60px",
-                    height: "45px",
-                    flexShrink: 0,
-                    borderRadius: "4px",
-                    backgroundColor: "#0a0a0a",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "20px"
-                  }}>
-                    🎬
-                  </div>
-                )}
+                <div style={{
+                  width: "48px",
+                  height: "36px",
+                  flexShrink: 0,
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                  backgroundColor: "#000"
+                }}>
+                  <video 
+                    src={video.url} 
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "cover",
+                      display: "block"
+                    }}
+                  />
+                </div>
                 <div style={{ 
                   flex: 1, 
                   minWidth: 0,
@@ -301,7 +350,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap"
                   }}>
-                    📹 {video.name}
+                    📹 {video.url.split('/').pop()}
                   </div>
                   <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
                     ✓ Uploaded
@@ -310,12 +359,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               </div>
             ))}
           </div>
-        )}
+        ) : null}
 
-        {/* Background Videos */}
-        <h3 style={sectionHeaderStyle}>Background Videos</h3>
+        {/* Stock Videos */}
+        <h3 style={sectionHeaderStyle}>Stock Videos</h3>
         
-        {CLOUDINARY_VIDEOS.backgroundVideos.map((video) => (
+        {CLOUDINARY_VIDEOS.map((video) => (
           <div
             key={video.id}
             onClick={() => handlePredefinedClick(video, "video")}
@@ -327,25 +376,25 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-      e.currentTarget.style.borderColor = "#3b82f6";
+              e.currentTarget.style.borderColor = "#3b82f6";
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.backgroundColor = colors.bgSecondary;
-      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+              e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
             }}
           >
             {video.thumbnail && (
               <img 
                 src={video.thumbnail} 
                 alt={video.name}
-               style={{ 
-          width: "48px", // Slightly smaller to match compact UI
-          height: "36px", 
-          objectFit: "cover", 
-          borderRadius: "4px",
-          backgroundColor: "#000",
-          border: `1px solid ${colors.borderLight}`
-        }}
+                style={{ 
+                  width: "48px",
+                  height: "36px", 
+                  objectFit: "cover", 
+                  borderRadius: "4px",
+                  backgroundColor: "#000",
+                  border: `1px solid ${colors.borderLight}`
+                }}
               />
             )}
             <div style={{ flex: 1 }}>
@@ -366,7 +415,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   // MEDIA (IMAGES) TAB
   // ============================================================================
   if (activeTab === "media") {
-    const uploadedImages = getUploadedAssets('image');
+    const uploadedImages = getUploadedAssetsByType('image');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
@@ -387,12 +436,16 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         </button>
 
         {/* My Uploads */}
-        {uploadedImages.length > 0 && (
+        {loadingUploads ? (
+          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+            Loading uploads...
+          </div>
+        ) : uploadedImages.length > 0 ? (
           <div style={{ marginBottom: "20px" }}>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedImages.length})</h3>
-            {uploadedImages.map((image, index) => (
+            {uploadedImages.map((image) => (
               <div
-                key={`uploaded-image-${index}`}
+                key={`uploaded-image-${image.id}`}
                 onClick={() => handleUploadedAssetClick(image)}
                 style={{
                   ...cardStyle,
@@ -409,27 +462,25 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                   e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
                 }}
               >
-                {image.preview && (
-                  <div style={{
-                    width: "60px",
-                    height: "60px",
-                    flexShrink: 0,
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    backgroundColor: "#000"
-                  }}>
-                    <img 
-                      src={image.preview} 
-                      alt={image.name}
-                      style={{ 
-                        width: "100%", 
-                        height: "100%", 
-                        objectFit: "cover",
-                        display: "block"
-                      }}
-                    />
-                  </div>
-                )}
+                <div style={{
+                  width: "60px",
+                  height: "60px",
+                  flexShrink: 0,
+                  borderRadius: "4px",
+                  overflow: "hidden",
+                  backgroundColor: "#000"
+                }}>
+                  <img 
+                    src={image.url} 
+                    alt="Uploaded"
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "cover",
+                      display: "block"
+                    }}
+                  />
+                </div>
                 <div style={{ 
                   flex: 1, 
                   minWidth: 0,
@@ -444,7 +495,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                     textOverflow: "ellipsis",
                     whiteSpace: "nowrap"
                   }}>
-                    🖼️ {image.name}
+                    🖼️ {image.url.split('/').pop()}
                   </div>
                   <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
                     ✓ Uploaded
@@ -453,7 +504,7 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               </div>
             ))}
           </div>
-        )}
+        ) : null}
 
         {/* Stock Images */}
         <h3 style={sectionHeaderStyle}>Stock Images</h3>
@@ -468,14 +519,14 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
               alignItems: "center",
               gap: "12px",
             }}
-          onMouseEnter={(e) => {
-      e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-      e.currentTarget.style.borderColor = "#3b82f6";
-    }}
-    onMouseLeave={(e) => {
-      e.currentTarget.style.backgroundColor = colors.bgSecondary;
-      e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
-    }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+              e.currentTarget.style.borderColor = "#3b82f6";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = colors.bgSecondary;
+              e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+            }}
           >
             {image.thumbnail && (
               <img 

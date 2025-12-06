@@ -344,47 +344,51 @@ export const Timeline: React.FC<TimelineProps> = ({
   ]);
 
   // Reorder handle drag
-  const handleReorderMouseDown = useCallback((e: React.MouseEvent, track: TimelineTrack, trackIndex: number) => {
-    if (track.locked) return;
+ const handleReorderMouseDown = useCallback((e: React.MouseEvent, track: TimelineTrack, trackIndex: number) => {
+  if (track.locked) return;
+  
+  e.stopPropagation();
+  handleTrackSelect(track.id, e);
+  
+  const rect = trackAreaRef.current?.getBoundingClientRect();
+  if (!rect) return;
+
+  // Local state to avoid closure issues
+  let dragState = {
+    trackId: track.id,
+    startY: e.clientY,
+    startIndex: trackIndex,
+    currentIndex: trackIndex,
+    isDragging: true,
+  };
+
+  setReorderState(dragState);
+
+  const handleMouseMove = (moveEvent: MouseEvent) => {
+    if (!trackAreaRef.current || !rect) return;
     
-    e.stopPropagation();
+    const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
+    const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
     
-    // Select the track
-    handleTrackSelect(track.id, e);
+    dragState = { ...dragState, currentIndex: newIndex };
+    setReorderState(dragState);
+  };
+
+  const handleMouseUp = () => {
+    if (dragState.isDragging && dragState.startIndex !== dragState.currentIndex) {
+      console.log('✅ Calling onReorderTracks:', dragState.startIndex, '→', dragState.currentIndex);
+      onReorderTracks?.(dragState.startIndex, dragState.currentIndex);
+    }
     
-    const rect = trackAreaRef.current?.getBoundingClientRect();
-    if (!rect) return;
+    setReorderState(null);
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+  };
 
-    setReorderState({
-      trackId: track.id,
-      startY: e.clientY,
-      startIndex: trackIndex,
-      currentIndex: trackIndex,
-      isDragging: true,
-    });
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
+}, [tracks, onReorderTracks, handleTrackSelect]);
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!trackAreaRef.current || !rect) return;
-      
-      const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
-      const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
-      
-      setReorderState(prev => prev ? { ...prev, currentIndex: newIndex } : null);
-    };
-
-    const handleMouseUp = () => {
-      if (reorderState?.isDragging && reorderState.startIndex !== reorderState.currentIndex) {
-        onReorderTracks?.(reorderState.startIndex, reorderState.currentIndex);
-      }
-      
-      setReorderState(null);
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, [tracks, reorderState, onReorderTracks, handleTrackSelect]);
 
   // Toggle Lock/Visibility
   const handleToggleLock = useCallback((trackId: string) => {

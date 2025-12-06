@@ -9,7 +9,6 @@ import {
   isImageLayer,
 } from "../../components/remotion_compositions/DynamicLayerComposition";
 import { generateId } from "../../utils/layerHelper";
-// import { FPS } from "../constants";
 
 interface UseLayerManagementProps {
   layers: Layer[];
@@ -194,22 +193,22 @@ export const useLayerManagement = ({
     [currentFrame, totalFrames, layers, pushState, setSelectedLayerId, setActiveTab]
   );
 
- const updateLayer = useCallback(
-  (layerId: string, updates: Partial<Layer>) => {
-    console.log('📝 updateLayer called:', { layerId, updates });
-    
-    const newLayers = layers.map((layer): Layer => {
-      if (layer.id !== layerId) return layer;
-      const updated = { ...layer, ...updates } as Layer;
-      console.log('  ↳ Layer updated:', layer.name, updated);
-      return updated;
-    });
-    
-    console.log('📝 Pushing new state with', newLayers.length, 'layers');
-    pushState(newLayers);
-  },
-  [layers, pushState]
-);
+  const updateLayer = useCallback(
+    (layerId: string, updates: Partial<Layer>) => {
+      console.log('🔍 updateLayer called:', { layerId, updates });
+      
+      const newLayers = layers.map((layer): Layer => {
+        if (layer.id !== layerId) return layer;
+        const updated = { ...layer, ...updates } as Layer;
+        console.log('  ↳ Layer updated:', layer.name, updated);
+        return updated;
+      });
+      
+      console.log('🔍 Pushing new state with', newLayers.length, 'layers');
+      pushState(newLayers);
+    },
+    [layers, pushState]
+  );
 
   const deleteLayer = useCallback(
     (layerId: string) => {
@@ -226,6 +225,72 @@ export const useLayerManagement = ({
     [layers, pushState, setSelectedLayerId]
   );
 
+  /**
+   * Reorder a layer in the stack
+   * @param layerId - ID of the layer to move
+   * @param direction - Direction to move: "up" (forward one), "down" (back one), "top" (to front), "bottom" (to back)
+   */
+  const reorderLayer = useCallback(
+    (layerId: string, direction: "up" | "down" | "top" | "bottom") => {
+      const currentIndex = layers.findIndex((l) => l.id === layerId);
+      if (currentIndex === -1) return;
+
+      let newLayers = [...layers];
+      const [movedLayer] = newLayers.splice(currentIndex, 1);
+
+      switch (direction) {
+        case "up":
+          // Move forward one position (higher z-index)
+          if (currentIndex > 0) {
+            newLayers.splice(currentIndex - 1, 0, movedLayer);
+            toast.success("Layer moved up");
+          }
+          break;
+        case "down":
+          // Move back one position (lower z-index)
+          if (currentIndex < layers.length - 1) {
+            newLayers.splice(currentIndex + 1, 0, movedLayer);
+            toast.success("Layer moved down");
+          }
+          break;
+        case "top":
+          // Move to front (highest z-index)
+          newLayers.unshift(movedLayer);
+          toast.success("Layer moved to top");
+          break;
+        case "bottom":
+          // Move to back (lowest z-index)
+          newLayers.push(movedLayer);
+          toast.success("Layer moved to bottom");
+          break;
+      }
+
+      pushState(newLayers);
+    },
+    [layers, pushState]
+  );
+
+  /**
+   * Move a layer from one index to another
+   * @param fromIndex - Current index of the layer
+   * @param toIndex - Target index for the layer
+   */
+  const moveLayerToIndex = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex || fromIndex < 0 || fromIndex >= layers.length || toIndex < 0 || toIndex >= layers.length) {
+        return;
+      }
+
+      const newLayers = [...layers];
+      const [movedLayer] = newLayers.splice(fromIndex, 1);
+      newLayers.splice(toIndex, 0, movedLayer);
+      
+      pushState(newLayers);
+      toast.success("Layer reordered");
+    },
+    [layers, pushState]
+  );
+
   return {
     fileInputRef,
     audioInputRef,
@@ -239,5 +304,7 @@ export const useLayerManagement = ({
     handleVideoUpload,
     updateLayer,
     deleteLayer,
+    reorderLayer,
+    moveLayerToIndex,
   };
 };
