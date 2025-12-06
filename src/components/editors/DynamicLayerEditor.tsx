@@ -696,7 +696,7 @@ const DynamicLayerEditor: React.FC = () => {
   const [template, setTemplate] = useState<TemplateDefinition | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectTitle, setProjectTitle] = useState<string>("");
-  const [isLight, setIsLight] = useState(false);
+  // const [isLight, setIsLight] = useState(false);
 
   // State
   const [duration, setDuration] = useState(10);
