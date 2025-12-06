@@ -149,6 +149,7 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
             )
             .map((template) => (
               <ModalTemplateCard
+                available={template.available}
                 key={template.name}
                 label={template.name}
                 description={template.description}

@@ -4,8 +4,9 @@ export const ModalTemplateCard: React.FC<{
   label: string;
   description: string;
   onSelect: (template: string, description: string) => void;
+  available: boolean;
   url: string;
-}> = ({ label, description, onSelect, url }) => {
+}> = ({ label, description, onSelect, url, available }) => {
   return (
     <Card
       sx={{
@@ -24,11 +25,10 @@ export const ModalTemplateCard: React.FC<{
     >
       {/* Smaller Video Preview */}
       <Box sx={{ position: "relative", height: 120 }}>
-
         <img
           alt={`${label} preview`}
           style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          src={`${url}`} 
+          src={`${url}`}
         />
       </Box>
 
@@ -58,16 +58,61 @@ export const ModalTemplateCard: React.FC<{
           variant="outlined"
           size="small"
           fullWidth
-          onClick={() => onSelect(label, description)}
+          disabled={!available}
+          onClick={() => {
+            if (available) {
+              onSelect(label, description);
+            }
+          }}
           sx={{
             mt: 1,
             borderRadius: "10px",
             textTransform: "none",
             fontSize: "0.75rem",
             fontWeight: 600,
+            ...(available
+              ? {
+                  borderColor: "#d81b60",
+                  color: "#d81b60",
+                  "&:hover": {
+                    borderColor: "#c2185b",
+                    backgroundColor: "rgba(216, 27, 96, 0.04)",
+                  },
+                }
+              : {
+                  borderColor: "#bdbdbd",
+                  borderStyle: "dashed",
+                  color: "#9e9e9e",
+                  backgroundColor: "#f5f5f5",
+                  cursor: "not-allowed",
+                  opacity: 0.6,
+                  "&:hover": {
+                    borderColor: "#bdbdbd",
+                    backgroundColor: "#f5f5f5",
+                  },
+                }),
           }}
         >
-          Select
+          {available ? (
+            "Select"
+          ) : (
+            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+              <svg
+                style={{ width: "14px", height: "14px" }}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+              Unavailable
+            </span>
+          )}
         </Button>
       </CardContent>
     </Card>

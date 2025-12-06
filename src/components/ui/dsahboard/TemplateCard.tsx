@@ -1,19 +1,21 @@
 import React from "react";
+import toast from "react-hot-toast";
 
 interface TemplateCardProps {
   label: string;
   description: string;
   name: string;
   onTry: (template: string, description: string) => void;
+  available: boolean;
 }
 
 export const TemplateCard: React.FC<TemplateCardProps> = ({
   label,
   description,
   onTry,
-  name
+  name,
+  available,
 }) => {
-
   return (
     <div
       className="relative group bg-white/90 backdrop-blur-xl border border-white/40 rounded-xl sm:rounded-2xl
@@ -50,16 +52,51 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
 
         {/* Hover-Only Button */}
         <button
-          onClick={() => onTry(name, description)}
-          className="mt-1.5 sm:mt-3 opacity-100 sm:opacity-0 sm:translate-y-3 sm:group-hover:opacity-100 sm:group-hover:translate-y-0
-          transition-all duration-500 ease-out relative inline-flex items-center justify-center w-full py-1.5 sm:py-2
-          font-semibold text-[10px] sm:text-sm rounded-full text-white overflow-hidden
-          bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-sky-500
-          shadow-[0_4px_15px_rgba(99,102,241,0.3)]
-          before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/30 before:to-transparent before:opacity-0 sm:group-hover:before:opacity-40
-          hover:shadow-[0_0_25px_rgba(99,102,241,0.45)] active:scale-[0.97] focus:outline-none"
+          disabled={!available}
+          onClick={() => {
+            if (available) {
+              onTry(name, description);
+            } else {
+              toast.success("This template is currently unavailable");
+            }
+          }}
+          className={`mt-1.5 sm:mt-3 opacity-100 sm:opacity-0 sm:translate-y-3 sm:group-hover:opacity-100 sm:group-hover:translate-y-0
+  transition-all duration-500 ease-out relative inline-flex items-center justify-center w-full py-1.5 sm:py-2
+  font-semibold text-[10px] sm:text-sm rounded-full overflow-hidden
+  focus:outline-none active:scale-[0.97]
+  ${
+    available
+      ? `text-white bg-gradient-to-r from-fuchsia-500 via-indigo-500 to-sky-500
+       shadow-[0_4px_15px_rgba(99,102,241,0.3)]
+       before:absolute before:inset-0 before:bg-gradient-to-r before:from-white/30 before:to-transparent before:opacity-0 sm:group-hover:before:opacity-40
+       hover:shadow-[0_0_25px_rgba(99,102,241,0.45)]`
+      : `text-gray-500 bg-gray-200 border-2 border-dashed border-gray-300
+       cursor-not-allowed opacity-60
+       shadow-none`
+  }`}
         >
-          <span className="relative z-10">Try this template</span>
+          <span className="relative z-10 flex items-center gap-1.5">
+            {available ? (
+              "Try this template"
+            ) : (
+              <>
+                <svg
+                  className="w-3 h-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+                Unavailable
+              </>
+            )}
+          </span>
         </button>
       </div>
 

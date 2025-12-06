@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FiImage, FiVideo, FiFilm, FiArrowRight } from "react-icons/fi";
+import { FiImage, FiFilm, FiArrowRight } from "react-icons/fi";
 import { AIToolsPanel } from "./tools/AIToolsPanel";
 import { YoutubeDownloader } from "./tools/YoutubeDownloader";
 import { VEO3Generator } from "./tools/VEO3Generator";
@@ -116,14 +116,14 @@ export const ToolsSection: React.FC = () => {
         setActiveView("ai-tools");
       },
     },
-    {
-      icon: <FiVideo />,
-      title: "Youtube Video Downloader",
-      description: "Download Youtube videos in high quality for your content creation needs.",
-      action: () => {
-        setActiveView("youtube-downloader");
-      },
-    },
+    // {
+    //   icon: <FiVideo />,
+    //   title: "Youtube Video Downloader",
+    //   description: "Download Youtube videos in high quality for your content creation needs.",
+    //   action: () => {
+    //     setActiveView("youtube-downloader");
+    //   },
+    // },
     {
       icon: <FiFilm />,
       title: "VEO3 Video Generator",
@@ -163,12 +163,19 @@ export const ToolsSection: React.FC = () => {
 
       {/* Coming Soon Section */}
       <div className="mt-8 p-5 sm:p-6 rounded-xl bg-white/70 backdrop-blur-xl border border-white/40 shadow-sm">
-        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-1">
-          More Tools Coming Soon
+        <h3 className="text-base sm:text-lg font-bold text-gray-900 mb-2">
+          Coming Soon
         </h3>
-        <p className="text-xs sm:text-sm text-gray-600">
-          We're constantly building new AI-powered tools to help you create amazing content. Stay tuned!
-        </p>
+        <ul className="space-y-2 text-xs sm:text-sm text-gray-600">
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            <span>YouTube Video Downloader - Download videos in high quality</span>
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+            <span>More AI-powered tools to enhance your content creation</span>
+          </li>
+        </ul>
       </div>
     </div>
   );

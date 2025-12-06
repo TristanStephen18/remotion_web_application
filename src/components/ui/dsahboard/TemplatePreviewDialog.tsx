@@ -11,9 +11,10 @@ import {
   Chip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import { TemplateNavigator } from "../../../utils/TemplateNavigator";
+// import { TemplateNavigator } from "../../../utils/TemplateNavigator";
 import { templateUrlFinder } from "../../../data/DashboardCardsData";
 import { TEMPLATE_NAME_TO_ID } from "../../../utils/simpleTemplateRegistry";
+import toast from "react-hot-toast";
 
 interface TemplatePreviewDialogProps {
   open: boolean;
@@ -183,6 +184,7 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
             <Box sx={{ mt: 2 }}>
               <Button
                 variant="contained"
+                disabled={!TEMPLATE_NAME_TO_ID[selectedTemplate || ""]}
                 onClick={() => {
                   console.log(selectedTemplate);
                   const templateId =
@@ -191,10 +193,8 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                     const location = `/editor?template=${templateId}`;
                     window.open(location, "_blank");
                   } else {
-                    const location = TemplateNavigator(
-                      selectedTemplate || "user"
-                    );
-                    window.open(location, "_blank");
+                    toast.error("This template is currently unavailable");
+                    return;
                   }
                   onClose();
                 }}
@@ -203,13 +203,55 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                   borderRadius: "12px",
                   textTransform: "uppercase",
                   fontWeight: 800,
-                  background:
-                    "linear-gradient(90deg, #d81b60 0%, #42a5f5 100%)",
-                  boxShadow: "0 8px 20px rgba(68, 91, 173, 0.12)",
                   py: 1.3,
+                  ...(TEMPLATE_NAME_TO_ID[selectedTemplate || ""]
+                    ? {
+                        background:
+                          "linear-gradient(90deg, #d81b60 0%, #42a5f5 100%)",
+                        boxShadow: "0 8px 20px rgba(68, 91, 173, 0.12)",
+                        "&:hover": {
+                          boxShadow: "0 12px 28px rgba(68, 91, 173, 0.2)",
+                        },
+                      }
+                    : {
+                        background: "#e0e0e0",
+                        color: "#9e9e9e",
+                        border: "2px dashed #bdbdbd",
+                        boxShadow: "none",
+                        cursor: "not-allowed",
+                        opacity: 0.6,
+                        "&:hover": {
+                          background: "#e0e0e0",
+                        },
+                      }),
                 }}
               >
-                Try this template
+                {TEMPLATE_NAME_TO_ID[selectedTemplate || ""] ? (
+                  "Try this template"
+                ) : (
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <svg
+                      style={{ width: "16px", height: "16px" }}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                      />
+                    </svg>
+                    Unavailable
+                  </span>
+                )}
               </Button>
             </Box>
             <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>

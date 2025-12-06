@@ -218,6 +218,7 @@ export const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onTry }) => 
                 name={template.name}
                 description={template.description}
                 onTry={onTry}
+                available={template.available}
               />
             ))}
           </div>
