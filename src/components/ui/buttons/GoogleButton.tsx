@@ -7,8 +7,8 @@ export const GoogleButton = () => (
       window.location.href = `${backendPrefix}/authenticate/google`;
     }}
     className="
-      w-full flex items-center justify-center gap-3 py-2 mt-3 
-      bg-white text-gray-700 font-medium rounded-lg shadow-md
+      w-full flex items-center justify-center gap-3 py-3 mt-3 
+      bg-white text-gray-700 font-medium text-base rounded-lg shadow-md
       transition-all duration-300 cursor-pointer relative overflow-hidden
       hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]
       active:scale-[0.98]
@@ -19,7 +19,7 @@ export const GoogleButton = () => (
       <img
         src="https://res.cloudinary.com/dnxc1lw18/image/upload/v1761736576/google_logo_sbrbgg.png"
         alt="Google"
-        className="w-5 h-5"
+        className="w-6 h-6"
       />
       Continue with Google
     </span>

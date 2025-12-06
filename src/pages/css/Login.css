@@ -90,9 +90,9 @@ body{ margin:0; background:var(--bg); color:var(--text); font-family: var(--font
   margin: 4px 0 6px;
   line-height:1.2;
 }
-.wave{ display:inline-block; transform-origin: 70% 70%; }
+/* .wave{ display:inline-block; transform-origin: 70% 70%; }
 .wave{ animation: wave 1.3s ease-in-out infinite; }
-@keyframes wave { 0%,100%{ transform: rotate(0deg);} 50%{ transform: rotate(14deg);} }
+@keyframes wave { 0%,100%{ transform: rotate(0deg);} 50%{ transform: rotate(14deg);} } */
 
 .auth__subtitle{
   color: var(--muted);
