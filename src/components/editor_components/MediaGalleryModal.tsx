@@ -5,8 +5,6 @@ import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
 
 //lipat mo to sa ennv
 const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
-
-
 // ============================================================================
 // TYPES
 // ============================================================================
@@ -49,6 +47,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedUploadIds, setSelectedUploadIds] = useState<string[]>([]);
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   // Giphy states
   const [giphySearchQuery, setGiphySearchQuery] = useState('');
@@ -70,6 +69,14 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     fetchUploads,
     loadingUploads,
   } = useUploadHooks();
+
+  // Get theme from localStorage
+  useEffect(() => {
+    const storedTheme = localStorage.getItem('editor-theme') as 'light' | 'dark' | null;
+    if (storedTheme) {
+      setTheme(storedTheme);
+    }
+  }, [isOpen]);
 
   // Clean up previews on unmount
   useEffect(() => {
@@ -399,6 +406,41 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   const uploadError = imageUpload.error || videoUpload.error;
 
   // ============================================================================
+  // THEME COLORS
+  // ============================================================================
+
+  const colors = {
+    light: {
+      overlay: 'rgba(0, 0, 0, 0.4)',
+      modalBg: '#ffffff',
+      border: 'rgba(0, 0, 0, 0.1)',
+      title: '#1a1a1a',
+      text: '#333333',
+      textSecondary: '#666666',
+      textTertiary: '#999999',
+      buttonHover: 'rgba(0, 0, 0, 0.05)',
+      cardBg: '#f5f5f5',
+      inputBg: 'rgba(0, 0, 0, 0.05)',
+      inputBorder: 'rgba(0, 0, 0, 0.1)',
+    },
+    dark: {
+      overlay: 'rgba(0, 0, 0, 0.8)',
+      modalBg: '#0f0f0f',
+      border: 'rgba(255, 255, 255, 0.1)',
+      title: '#e5e5e5',
+      text: '#e5e5e5',
+      textSecondary: '#888',
+      textTertiary: '#666',
+      buttonHover: 'rgba(255, 255, 255, 0.05)',
+      cardBg: '#1a1a1a',
+      inputBg: 'rgba(255, 255, 255, 0.05)',
+      inputBorder: 'rgba(255, 255, 255, 0.1)',
+    },
+  };
+
+  const c = colors[theme];
+
+  // ============================================================================
   // STYLES
   // ============================================================================
 
@@ -409,7 +451,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
+      backgroundColor: c.overlay,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -420,16 +462,16 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       width: '90%',
       maxWidth: '900px',
       height: '80vh',
-      backgroundColor: '#0f0f0f',
+      backgroundColor: c.modalBg,
       borderRadius: '16px',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      border: `1px solid ${c.border}`,
       display: 'flex',
       flexDirection: 'column' as const,
       overflow: 'hidden',
     },
     header: {
       padding: '24px 28px',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      borderBottom: `1px solid ${c.border}`,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
@@ -437,7 +479,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     title: {
       fontSize: '18px',
       fontWeight: 600,
-      color: '#e5e5e5',
+      color: c.title,
     },
     closeButton: {
       width: '36px',
@@ -445,7 +487,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       borderRadius: '8px',
       backgroundColor: 'transparent',
       border: 'none',
-      color: '#888',
+      color: c.textSecondary,
       cursor: 'pointer',
       display: 'flex',
       alignItems: 'center',
@@ -459,7 +501,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     },
     sidebar: {
       width: '200px',
-      borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+      borderRight: `1px solid ${c.border}`,
       padding: '16px',
       display: 'flex',
       flexDirection: 'column' as const,
@@ -470,7 +512,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       borderRadius: '8px',
       backgroundColor: 'transparent',
       border: 'none',
-      color: '#888',
+      color: c.textSecondary,
       fontSize: '13px',
       fontWeight: 500,
       cursor: 'pointer',
@@ -501,12 +543,12 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       width: '100%',
       maxWidth: '600px',
       padding: '60px 40px',
-      border: '2px dashed rgba(255, 255, 255, 0.2)',
+      border: `2px dashed ${c.border}`,
       borderRadius: '12px',
       textAlign: 'center' as const,
       cursor: 'pointer',
       transition: 'all 0.2s',
-      backgroundColor: 'rgba(255, 255, 255, 0.02)',
+      backgroundColor: c.inputBg,
     },
     uploadBoxDragging: {
       borderColor: '#3b82f6',
@@ -519,17 +561,17 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     uploadTitle: {
       fontSize: '16px',
       fontWeight: 600,
-      color: '#e5e5e5',
+      color: c.text,
       marginBottom: '8px',
     },
     uploadSubtitle: {
       fontSize: '13px',
-      color: '#888',
+      color: c.textSecondary,
       marginBottom: '12px',
     },
     uploadFormats: {
       fontSize: '11px',
-      color: '#666',
+      color: c.textTertiary,
     },
     previewArea: {
       flex: 1,
@@ -546,8 +588,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       aspectRatio: '1',
       borderRadius: '8px',
       overflow: 'hidden',
-      backgroundColor: '#1a1a1a',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: c.cardBg,
+      border: `1px solid ${c.border}`,
       cursor: 'pointer',
       transition: 'all 0.2s',
     },
@@ -589,25 +631,25 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     fileItem: {
       padding: '12px',
       marginBottom: '10px',
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: c.inputBg,
+      border: `1px solid ${c.border}`,
       borderRadius: '8px',
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       fontSize: '13px',
-      color: '#e5e5e5',
+      color: c.text,
     },
     footer: {
       padding: '20px 28px',
-      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      borderTop: `1px solid ${c.border}`,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
     },
     fileCount: {
       fontSize: '13px',
-      color: '#888',
+      color: c.textSecondary,
     },
     buttonGroup: {
       display: 'flex',
@@ -617,8 +659,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       padding: '10px 20px',
       borderRadius: '8px',
       backgroundColor: 'transparent',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
-      color: '#e5e5e5',
+      border: `1px solid ${c.border}`,
+      color: c.text,
       fontSize: '13px',
       fontWeight: 500,
       cursor: 'pointer',
@@ -659,8 +701,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       aspectRatio: '1',
       borderRadius: '8px',
       overflow: 'hidden',
-      backgroundColor: '#1a1a1a',
-      border: '2px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: c.cardBg,
+      border: `2px solid ${c.border}`,
       cursor: 'pointer',
       transition: 'all 0.2s',
     },
@@ -707,8 +749,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     audioUploadItem: {
       padding: '12px',
       marginBottom: '10px',
-      backgroundColor: 'rgba(255, 255, 255, 0.03)',
-      border: '2px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: c.inputBg,
+      border: `2px solid ${c.border}`,
       borderRadius: '8px',
       cursor: 'pointer',
       transition: 'all 0.2s',
@@ -726,26 +768,25 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       alignItems: 'center',
       justifyContent: 'center',
       padding: '40px',
-      color: '#888',
+      color: c.textSecondary,
     },
-    // Giphy-specific styles
     giphyContainer: {
       display: 'flex',
       flexDirection: 'column' as const,
       flex: 1,
-      minHeight: 0, // Important: allows flex child to shrink
+      minHeight: 0,
     },
     giphySearch: {
       padding: '20px',
-      borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+      borderBottom: `1px solid ${c.border}`,
     },
     searchInput: {
       width: '100%',
       padding: '12px 16px',
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      border: '1px solid rgba(255, 255, 255, 0.1)',
+      backgroundColor: c.inputBg,
+      border: `1px solid ${c.inputBorder}`,
       borderRadius: '8px',
-      color: '#e5e5e5',
+      color: c.text,
       fontSize: '14px',
       outline: 'none',
       transition: 'all 0.2s',
@@ -764,9 +805,9 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       borderRadius: '8px',
       overflow: 'hidden',
       cursor: 'pointer',
-      border: '2px solid rgba(255, 255, 255, 0.1)',
+      border: `2px solid ${c.border}`,
       transition: 'all 0.2s',
-      backgroundColor: '#1a1a1a',
+      backgroundColor: c.cardBg,
     },
     giphyItemSelected: {
       borderColor: '#3b82f6',
@@ -779,10 +820,10 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     },
     giphyAttribution: {
       padding: '12px 20px',
-      borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+      borderTop: `1px solid ${c.border}`,
       textAlign: 'center' as const,
       fontSize: '10px',
-      color: '#666',
+      color: c.textTertiary,
     },
   };
 
@@ -798,7 +839,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
             style={styles.closeButton}
             onClick={onClose}
             onMouseOver={(e) => {
-              e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+              e.currentTarget.style.backgroundColor = c.buttonHover;
             }}
             onMouseOut={(e) => {
               e.currentTarget.style.backgroundColor = 'transparent';
@@ -943,7 +984,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                border: '2px dashed rgba(255, 255, 255, 0.2)',
+                                border: `2px dashed ${c.border}`,
                                 backgroundColor: 'transparent',
                               }}
                               onMouseOver={(e) => {
@@ -951,11 +992,11 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                                 e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.05)';
                               }}
                               onMouseOut={(e) => {
-                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)';
+                                e.currentTarget.style.borderColor = c.border;
                                 e.currentTarget.style.backgroundColor = 'transparent';
                               }}
                             >
-                              <div style={{ textAlign: 'center', color: '#888' }}>
+                              <div style={{ textAlign: 'center', color: c.textSecondary }}>
                                 <div style={{ fontSize: '24px', marginBottom: '4px' }}>+</div>
                                 <div style={{ fontSize: '10px' }}>Add more</div>
                               </div>
@@ -996,9 +1037,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                 )}
               </>
             ) : sidebarTab === 'giphy' ? (
-              // GIPHY TAB
               <div style={styles.giphyContainer}>
-                {/* Search Bar */}
                 <div style={styles.giphySearch}>
                   <input
                     type="text"
@@ -1013,16 +1052,16 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                     style={styles.searchInput}
                     onFocus={(e) => {
                       e.currentTarget.style.borderColor = '#3b82f6';
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                      e.currentTarget.style.backgroundColor = theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
                     }}
                     onBlur={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.borderColor = c.inputBorder;
+                      e.currentTarget.style.backgroundColor = c.inputBg;
                     }}
                   />
                   <div style={{ 
                     fontSize: '11px', 
-                    color: '#666', 
+                    color: c.textTertiary, 
                     marginTop: '8px',
                     textAlign: 'center'
                   }}>
@@ -1030,30 +1069,29 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   </div>
                 </div>
 
-                {/* GIF Grid */}
                 {giphyLoading ? (
                   <div style={styles.loadingSpinner}>
                     <div style={{ fontSize: '32px', marginBottom: '16px' }}>⏳</div>
                     <div>Loading GIFs...</div>
                   </div>
                 ) : !GIPHY_API_KEY ? (
-                  <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                  <div style={{ textAlign: 'center', color: c.textSecondary, padding: '40px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔑</div>
-                    <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: c.text }}>
                       Giphy API Key Required
                     </div>
                     <div style={{ fontSize: '12px', marginBottom: '16px' }}>
                       Get your free key from developers.giphy.com
                     </div>
-                    <div style={{ fontSize: '11px', color: '#666', maxWidth: '300px', margin: '0 auto' }}>
+                    <div style={{ fontSize: '11px', color: c.textTertiary, maxWidth: '300px', margin: '0 auto' }}>
                       Add it to line 11 of this file:<br/>
                       <code style={{ color: '#3b82f6' }}>const GIPHY_API_KEY = 'your_key';</code>
                     </div>
                   </div>
                 ) : giphyResults.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                  <div style={{ textAlign: 'center', color: c.textSecondary, padding: '40px' }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎬</div>
-                    <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: c.text }}>
                       No GIFs found
                     </div>
                     <div style={{ fontSize: '12px' }}>
@@ -1081,7 +1119,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                           }}
                           onMouseOut={(e) => {
                             if (!selectedGiphyIds.includes(gif.id)) {
-                              e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                              e.currentTarget.style.borderColor = c.border;
                               e.currentTarget.style.transform = 'scale(1)';
                             }
                           }}
@@ -1097,7 +1135,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                         </div>
                       ))}
                     </div>
-                    {/* Giphy Attribution */}
                     <div style={styles.giphyAttribution}>
                       Powered by <a href="https://giphy.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>GIPHY</a>
                     </div>
@@ -1113,9 +1150,9 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                       <div>Loading your uploads...</div>
                     </div>
                   ) : filteredUploads.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: '#888', padding: '40px' }}>
+                    <div style={{ textAlign: 'center', color: c.textSecondary, padding: '40px' }}>
                       <div style={{ fontSize: '48px', marginBottom: '16px' }}>📂</div>
-                      <div style={{ fontSize: '14px', marginBottom: '8px', color: '#e5e5e5' }}>
+                      <div style={{ fontSize: '14px', marginBottom: '8px', color: c.text }}>
                         No {activeTab === 'media' ? 'images' : activeTab === 'video' ? 'videos' : 'audio files'} uploaded yet
                       </div>
                       <div style={{ fontSize: '12px' }}>
@@ -1154,14 +1191,14 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                                 <div style={{
                                   fontSize: '13px',
                                   fontWeight: '500',
-                                  color: '#e5e5e5',
+                                  color: c.text,
                                   whiteSpace: 'nowrap',
                                   overflow: 'hidden',
                                   textOverflow: 'ellipsis',
                                 }}>
                                   {upload.url.split('/').pop()}
                                 </div>
-                                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                                <div style={{ fontSize: '11px', color: c.textSecondary, marginTop: '4px' }}>
                                   Click to select
                                 </div>
                               </div>
@@ -1202,7 +1239,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                               }}
                               onMouseOut={(e) => {
                                 if (!selectedUploadIds.includes(upload.id.toString())) {
-                                  e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                  e.currentTarget.style.borderColor = c.border;
                                 }
                               }}
                             >
@@ -1234,7 +1271,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                     </div>
                   )
                 ) : (
-                  <div style={{ textAlign: 'center', color: '#888' }}>
+                  <div style={{ textAlign: 'center', color: c.textSecondary }}>
                     <div style={{ fontSize: '48px', marginBottom: '16px' }}>🏠</div>
                     <div style={{ fontSize: '14px' }}>Home content coming soon</div>
                   </div>
@@ -1242,7 +1279,6 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               </div>
             )}
 
-            {/* Footer */}
             {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && (
               <div style={styles.footer}>
                 <div style={styles.fileCount}>
@@ -1259,7 +1295,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                     onClick={onClose}
                     disabled={isUploading}
                     onMouseOver={(e) => {
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+                      e.currentTarget.style.backgroundColor = c.buttonHover;
                     }}
                     onMouseOut={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent';

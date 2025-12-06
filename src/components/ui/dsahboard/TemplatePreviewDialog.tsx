@@ -191,7 +191,8 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
                     TEMPLATE_NAME_TO_ID[selectedTemplate || ""];
                   if (templateId) {
                     const location = `/editor?template=${templateId}`;
-                    window.open(location, "_blank");
+                    // window.assign(location, "_blank");
+                    window.location.assign(location);
                   } else {
                     toast.error("This template is currently unavailable");
                     return;
