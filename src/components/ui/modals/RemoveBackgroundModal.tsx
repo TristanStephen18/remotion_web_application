@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import toast from "react-hot-toast";
+import { backendPrefix } from "../../../config";
 
 interface RemoveBackgroundModalProps {
   isOpen: boolean;
@@ -192,7 +193,7 @@ export const RemoveBackgroundModal: React.FC<RemoveBackgroundModalProps> = ({
       formData.append("edgeSmoothing", String(edgeSmoothing));
 
       // 4. Call backend: /api/picture/remove-background
-      const res = await fetch("/api/picture/remove-background", {
+      const res = await fetch(`${backendPrefix}/api/picture/remove-background`, {
         method: "POST",
         body: formData,
       });
