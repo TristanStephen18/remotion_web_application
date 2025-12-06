@@ -74,7 +74,8 @@ const ConditionalFooter = () => {
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
-import ViralMotionLanding from "./pages/LandingPage.tsx";
+import { LandingPage } from "./pages/LandingPage.tsx";
+// import ViralMotionLanding from "./pages/LandingPage.tsx";
 
 function App() {
   return (
@@ -457,7 +458,7 @@ function App() {
         <Route path="/initializing-login" element={<LoginLoading />} />
 
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<ViralMotionLanding />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/templates" element={<VideoTemplatesPage />} />
         <Route path="/templates/fake-text-conversation" element={<FakeTextConversationPage />} />

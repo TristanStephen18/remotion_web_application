@@ -9,7 +9,7 @@ export const GoogleButton = () => (
     className="
       w-full flex items-center justify-center gap-3 py-3 mt-3 
       bg-white text-gray-700 font-medium text-base rounded-lg shadow-md
-      transition-all duration-300 cursor-pointer relative overflow-hidden
+      transition-all duration-300 cursor-pointer relative overflow-hidden`
       hover:scale-[1.03] hover:shadow-[0_0_15px_rgba(59,130,246,0.4)]
       active:scale-[0.98]
     "
