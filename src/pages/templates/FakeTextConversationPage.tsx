@@ -8,7 +8,7 @@ import FTC from '../../assets/image/FTC.jpeg';
 const FakeTextConversationPage: React.FC = () => {
   const [featuresDropdownOpen, setFeaturesDropdownOpen] = useState(false);
   const [templatesDropdownOpen, setTemplatesDropdownOpen] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
+  // const [currentStep, setCurrentStep] = useState(0);
 
   const featureItems = [
     { name: 'Video Templates', path: '/templates' },
