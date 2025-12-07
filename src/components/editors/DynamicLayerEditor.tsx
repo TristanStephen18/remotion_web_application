@@ -2918,24 +2918,24 @@ const handleReorderTracks = useCallback(
                   <div style={gridStyles.section}>
                     <div style={gridStyles.sectionTitle}>Utilities</div>
                     <div style={gridStyles.grid}>
-                      <ToolCard
+                      {/* <ToolCard
                         icon={<Icons.Shuffle />}
                         title="Remix Shorts"
                         color="#3b82f6"
                         onClick={() => setShowRemixShortsModal(true)}
-                      />
+                      /> */}
                       <ToolCard
                         icon={<Icons.Smile />}
                         title="Emoji"
                         color="#f59e0b"
                         onClick={() => setShowEmojiPickerModal(true)}
                       />
-                      <ToolCard
+                      {/* <ToolCard
                         icon={<Icons.Download />}
                         title="YT Download"
                         color="#ef4444"
                         onClick={() => setShowYoutubeDownloaderModal(true)}
-                      />
+                      /> */}
                     </div>
                   </div>
                 </div>

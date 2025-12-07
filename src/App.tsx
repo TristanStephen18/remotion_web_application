@@ -38,14 +38,14 @@ import GoogleLoading from "./pages/auth/GoogleLoading.tsx";
 import { AIToolsPanel } from "./components/ui/dsahboard/sections/tools/AIToolsPanel.tsx";
 import DynamicLayerEditor from "./components/editors/DynamicLayerEditor.tsx";
 import LoginLoading from "./pages/auth/LoginLoader.tsx";
-import VideoTemplatesPage from "./pages/features/VideoTemplatesPage.tsx"
-import AIToolsPage from "./pages/features/AIToolsPage.tsx"
-import DownloaderPage from "./pages/features/DownloaderPage.tsx"
-import FakeTextConversationPage from "./pages/templates/FakeTextConversationPage.tsx"
-import RelatableQuotesPage from "./pages/templates/RelatableQuotesPage.tsx"
-import ReactionVideoPage from "./pages/templates/ReactionVideoPage.tsx"
-import CollageEditPage from "./pages/templates/CollageEditPage.tsx"
-import KenBurnsCarouselPage from "./pages/templates/KenBurnsCarouselPage.tsx"
+import VideoTemplatesPage from "./pages/features/VideoTemplatesPage.tsx";
+import AIToolsPage from "./pages/features/AIToolsPage.tsx";
+import DownloaderPage from "./pages/features/DownloaderPage.tsx";
+import FakeTextConversationPage from "./pages/templates/FakeTextConversationPage.tsx";
+import RelatableQuotesPage from "./pages/templates/RelatableQuotesPage.tsx";
+import ReactionVideoPage from "./pages/templates/ReactionVideoPage.tsx";
+import CollageEditPage from "./pages/templates/CollageEditPage.tsx";
+import KenBurnsCarouselPage from "./pages/templates/KenBurnsCarouselPage.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
 import PrivacyPolicyPage from "./pages/legal/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/legal/TermsOfServicePage";
@@ -57,34 +57,43 @@ import ScrollToTop from "./components/ScrollToTop";
 const ConditionalFooter = () => {
   const location = useLocation();
 
-  // Pages that should NOT show the footer
-  const noFooterPaths = [
-    '/template/',
-    '/project/',
-    '/dashboard',
-    '/loading',
-    '/tester',
-    '/qtester'
+  // Pages that SHOULD show the footer (whitelist approach)
+  const showFooterPaths = [
+    "/",
+    "/login",
+    "/signup",
+    "/pricing",
+    "/templates",
+    "/ai-tools",
+    "/downloader",
+    "/privacy-policy",
+    "/terms-of-service",
+    "/refund-policy",
+    "/forgot-password",
   ];
 
-  const shouldShowFooter = !noFooterPaths.some(path => location.pathname.startsWith(path));
+  // Check for exact matches or if current path starts with /templates/ (for template detail pages)
+  const shouldShowFooter =
+    showFooterPaths.includes(location.pathname) ||
+    (location.pathname.startsWith("/templates/") &&
+      !location.pathname.includes("/template/"));
 
   return shouldShowFooter ? <Footer /> : null;
 };
 
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
-import LandingPage  from "./pages/LandingPage";
+// import LandingPage  from "./pages/LandingPage";
+import ViralMotionLanding from "./pages/LandingPage";
 // import ViralMotionLanding from "./pages/LandingPage.tsx";
 
 function App() {
   return (
-
     <ThemeProvider>
-    <BrowserRouter>
-    <ScrollToTop />
-      <Routes>
-        {/* <Route
+      <BrowserRouter>
+        <ScrollToTop />
+        <Routes>
+          {/* <Route
           path="/template/quotetemplate"
           element={
             <RequireAuth>
@@ -100,175 +109,175 @@ function App() {
             </RequireAuth>
           }
         /> */}
-        <Route
-          path="/template/quotetemplate/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <QuoteSpotlightBatchRendering />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/splitscreen"
-          element={
-            <RequireAuth>
-              <SplitScreenEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/splitscreen"
-          element={
-            <RequireAuth>
-              <SplitScreenEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/newtexttyping/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <TextTypingTemplateBatchRendering />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/quotetemplate/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <QuoteSpotlightBatchRendering />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/splitscreen"
+            element={
+              <RequireAuth>
+                <SplitScreenEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/splitscreen"
+            element={
+              <RequireAuth>
+                <SplitScreenEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/newtexttyping/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <TextTypingTemplateBatchRendering />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/project/:id/texttypingtemplate"
-          element={
-            <RequireAuth>
-              <NewTypingEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/project/:id/texttypingtemplate"
+            element={
+              <RequireAuth>
+                <NewTypingEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/kinetictext"
-          element={
-            <RequireAuth>
-              <KineticEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/kinetictext"
-          element={
-            <RequireAuth>
-              <KineticEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/kinetictext"
+            element={
+              <RequireAuth>
+                <KineticEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/kinetictext"
+            element={
+              <RequireAuth>
+                <KineticEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/flipcards"
-          element={
-            <RequireAuth>
-              <FlipCardsEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/flipcards"
-          element={
-            <RequireAuth>
-              <FlipCardsEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/flipcards"
+            element={
+              <RequireAuth>
+                <FlipCardsEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/flipcards"
+            element={
+              <RequireAuth>
+                <FlipCardsEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/factcards"
-          element={
-            <RequireAuth>
-              <FactCardsEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/factcards"
-          element={
-            <RequireAuth>
-              <FactCardsEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/factcards/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <FactCardsBatchRendering />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/factcards"
+            element={
+              <RequireAuth>
+                <FactCardsEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/factcards"
+            element={
+              <RequireAuth>
+                <FactCardsEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/factcards/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <FactCardsBatchRendering />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/bargraph"
-          element={
-            <RequireAuth>
-              <BarGraphEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/bargraph"
-          element={
-            <RequireAuth>
-              <BarGraphEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/bargraph/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <BarGraphBatchRendering />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/bargraph"
+            element={
+              <RequireAuth>
+                <BarGraphEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/bargraph"
+            element={
+              <RequireAuth>
+                <BarGraphEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/bargraph/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <BarGraphBatchRendering />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/retroneon"
-          element={
-            <RequireAuth>
-              <DynamicTextEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/retroneon"
-          element={
-            <RequireAuth>
-              <DynamicTextEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/kpiflipcards"
-          element={
-            <RequireAuth>
-              <KpiFlipCardEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/retroneon"
+            element={
+              <RequireAuth>
+                <DynamicTextEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/retroneon"
+            element={
+              <RequireAuth>
+                <DynamicTextEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/kpiflipcards"
+            element={
+              <RequireAuth>
+                <KpiFlipCardEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/project/:id/kpiflipcards"
-          element={
-            <RequireAuth>
-              <KpiFlipCardEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/project/:id/kpiflipcards"
+            element={
+              <RequireAuth>
+                <KpiFlipCardEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/kpiflipcards/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <KpiFlipBatchRendering />
-            </RequireAuth>
-          }
-        />
-        {/* <Route
+          <Route
+            path="/template/kpiflipcards/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <KpiFlipBatchRendering />
+              </RequireAuth>
+            }
+          />
+          {/* <Route
           path="/template/kenburnscarousel"
           element={
             <RequireAuth>
@@ -276,7 +285,7 @@ function App() {
             </RequireAuth>
           }
         /> */}
-        {/* <Route
+          {/* <Route
           path="/project/:id/kenburnscarousel"
           element={
             <RequireAuth>
@@ -292,40 +301,40 @@ function App() {
             </RequireAuth>
           }
         /> */}
-        <Route
-          path="/template/kenburnscarousel/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <KenBurnsSwipeBatchRendering />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/curvelinetrend"
-          element={
-            <RequireAuth>
-              <CurveLineTrendEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/curvelinetrend"
-          element={
-            <RequireAuth>
-              <CurveLineTrendEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/curvelinetrend/mode/batchrendering"
-          element={
-            <RequireAuth>
-              <CurveLineTrendBatchRendering />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/kenburnscarousel/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <KenBurnsSwipeBatchRendering />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/curvelinetrend"
+            element={
+              <RequireAuth>
+                <CurveLineTrendEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/curvelinetrend"
+            element={
+              <RequireAuth>
+                <CurveLineTrendEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/curvelinetrend/mode/batchrendering"
+            element={
+              <RequireAuth>
+                <CurveLineTrendBatchRendering />
+              </RequireAuth>
+            }
+          />
 
-        {/* <Route
+          {/* <Route
           path="/template/faketextconversation"
           element={
             <RequireAuth>
@@ -341,184 +350,196 @@ function App() {
             </RequireAuth>
           }
         /> */}
-        <Route
-          path="/template/redditvideo"
-          element={
-            <RequireAuth>
-              <RedditVideoEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/redditvideo"
-          element={
-            <RequireAuth>
-              <RedditVideoEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/storytelling"
-          element={
-            <RequireAuth>
-              <StoryTellingVideoEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/storytelling"
-          element={
-            <RequireAuth>
-              <StoryTellingVideoEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/template/newtexttyping"
-          element={
-            <RequireAuth>
-              <NewTypingEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/redditvideo"
+            element={
+              <RequireAuth>
+                <RedditVideoEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/redditvideo"
+            element={
+              <RequireAuth>
+                <RedditVideoEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/storytelling"
+            element={
+              <RequireAuth>
+                <StoryTellingVideoEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/storytelling"
+            element={
+              <RequireAuth>
+                <StoryTellingVideoEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/template/newtexttyping"
+            element={
+              <RequireAuth>
+                <NewTypingEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/neonflicker"
-          element={
-            <RequireAuth>
-              <NeonFlickerEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/neonflicker"
+            element={
+              <RequireAuth>
+                <NeonFlickerEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/project/:id/neonflicker"
-          element={
-            <RequireAuth>
-              <NeonFlickerEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/project/:id/neonflicker"
+            element={
+              <RequireAuth>
+                <NeonFlickerEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/logoanimation"
-          element={
-            <RequireAuth>
-              <LogoAnimationEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/logoanimation"
+            element={
+              <RequireAuth>
+                <LogoAnimationEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/project/:id/logoanimation"
-          element={
-            <RequireAuth>
-              <LogoAnimationEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/project/:id/logoanimation"
+            element={
+              <RequireAuth>
+                <LogoAnimationEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/heatmap"
-          element={
-            <RequireAuth>
-              <HeatmapEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/heatmap"
-          element={
-            <RequireAuth>
-              <HeatmapEditor />
-            </RequireAuth>
-          }
-        />
+          <Route
+            path="/template/heatmap"
+            element={
+              <RequireAuth>
+                <HeatmapEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/heatmap"
+            element={
+              <RequireAuth>
+                <HeatmapEditor />
+              </RequireAuth>
+            }
+          />
 
-        <Route
-          path="/template/neontube"
-          element={
-            <RequireAuth>
-              <NeonTubeFlickerEditor />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/project/:id/neontube"
-          element={
-            <RequireAuth>
-              <NeonTubeFlickerEditor />
-            </RequireAuth>
-          }
-        />
-        <Route path="/loading" element={<GoogleLoading />} />
+          <Route
+            path="/template/neontube"
+            element={
+              <RequireAuth>
+                <NeonTubeFlickerEditor />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/project/:id/neontube"
+            element={
+              <RequireAuth>
+                <NeonTubeFlickerEditor />
+              </RequireAuth>
+            }
+          />
+          <Route path="/loading" element={<GoogleLoading />} />
 
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/initializing-login" element={<LoginLoading />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/initializing-login" element={<LoginLoading />} />
 
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/templates" element={<VideoTemplatesPage />} />
-        <Route path="/templates/fake-text-conversation" element={<FakeTextConversationPage />} />
-        <Route path="/templates/relatable-quotes" element={<RelatableQuotesPage />} />
-        <Route path="/templates/reaction-video" element={<ReactionVideoPage />} />
-        <Route path="/templates/collage-edit" element={<CollageEditPage />} />
-        <Route path="/templates/ken-burns-carousel" element={<KenBurnsCarouselPage />} />
-        <Route path="/ai-tools" element={<AIToolsPage />} />
-        <Route path="/downloader" element={<DownloaderPage />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
-        <Route path="/refund-policy" element={<RefundPolicyPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<ViralMotionLanding />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/templates" element={<VideoTemplatesPage />} />
+          <Route
+            path="/templates/fake-text-conversation"
+            element={<FakeTextConversationPage />}
+          />
+          <Route
+            path="/templates/relatable-quotes"
+            element={<RelatableQuotesPage />}
+          />
+          <Route
+            path="/templates/reaction-video"
+            element={<ReactionVideoPage />}
+          />
+          <Route path="/templates/collage-edit" element={<CollageEditPage />} />
+          <Route
+            path="/templates/ken-burns-carousel"
+            element={<KenBurnsCarouselPage />}
+          />
+          <Route path="/ai-tools" element={<AIToolsPage />} />
+          <Route path="/downloader" element={<DownloaderPage />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+          <Route path="/refund-policy" element={<RefundPolicyPage />} />
 
-        <Route path="/signup" element={<SignupPage />} />
-        <Route
-          path="/dashboard"
-          element={
-            <RequireAuth>
-              <Dashboard />
-            </RequireAuth>
-          }
-        />
-        <Route
-          path="/editor"
-          element={
-            <RequireAuth>
-              <DynamicLayerEditor />
-            </RequireAuth>
-          }
-        />
-        <Route path="/tester" element={<QuoteGenerator />} />
-        <Route path="/qtester" element={<QuoteTester />} />
-        <Route
-          path="/tools/ai-image"
-          element={
-            <RequireAuth>
-              <AIToolsPanel />
-            </RequireAuth>
-          }
-        />
-        {/* <Route path="/testpage" element={<QuoteTemplateEditor2 />} /> */}
-      </Routes>
-      <ConditionalFooter />
-      {/* 👇 Must be rendered globally */}
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          style: {
-            background: "#fff",
-            color: "#333",
-          },
-          success: {
-            iconTheme: {
-              primary: "#4f46e5", // Indigo
-              secondary: "#fff",
+          <Route path="/signup" element={<SignupPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireAuth>
+                <Dashboard />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/editor"
+            element={
+              <RequireAuth>
+                <DynamicLayerEditor />
+              </RequireAuth>
+            }
+          />
+          <Route path="/tester" element={<QuoteGenerator />} />
+          <Route path="/qtester" element={<QuoteTester />} />
+          <Route
+            path="/tools/ai-image"
+            element={
+              <RequireAuth>
+                <AIToolsPanel />
+              </RequireAuth>
+            }
+          />
+          {/* <Route path="/testpage" element={<QuoteTemplateEditor2 />} /> */}
+        </Routes>
+        <ConditionalFooter />
+        {/* 👇 Must be rendered globally */}
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            style: {
+              background: "#fff",
+              color: "#333",
             },
-          },
-        }}
-      />
-    </BrowserRouter>
+            success: {
+              iconTheme: {
+                primary: "#4f46e5", // Indigo
+                secondary: "#fff",
+              },
+            },
+          }}
+        />
+      </BrowserRouter>
     </ThemeProvider>
   );
 }
