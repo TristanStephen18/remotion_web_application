@@ -99,7 +99,7 @@ export function useProjectSave<T>({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          ...renderProps,
+          inputProps: {config: renderProps},
           format: "mp4",
         }),
       });

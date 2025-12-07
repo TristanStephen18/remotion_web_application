@@ -82,6 +82,7 @@ import {
   type TemplateDefinition,
 } from "../../utils/simpleTemplateRegistry";
 import { renderVideoUsingLambda } from "../../utils/lambdarendering";
+import { backendPrefix } from "../../config";
 
 // ============================================================================
 // ICONS & STYLES
@@ -913,18 +914,18 @@ const DynamicLayerEditor: React.FC = () => {
     } else if (projectIdParam) {
       setProjectId(projectIdParam);
       setIsLoading(true);
-      fetch(`/api/projects/${projectIdParam}`)
+      fetch(`${backendPrefix}/api/projects/${projectIdParam}`)
         .then((res) => res.json())
         .then((data) => {
           const templateDef = getTemplate(data.templateId);
           if (templateDef) setTemplate(templateDef);
-          pushState(data.layers || []);
+          pushState(data.props.layers || []);
           setProjectTitle(data.title || "");
-          if (data.duration) setDuration(data.duration);
+          if (data.props.duration) setDuration(data.props.duration);
 
           // Initialize chat name
           if (data.templateId === 9) {
-            const firstBubble = data.layers.find(
+            const firstBubble = data.props.layers.find(
               (l: any) => l.type === "chat-bubble"
             );
             if (firstBubble)
@@ -964,7 +965,7 @@ const DynamicLayerEditor: React.FC = () => {
       currentFrame,
       templateId: template?.id || 1,
     }),
-    videoEndpoint: template?.compositionId || "DynamicLayerComposition",
+    videoEndpoint: `${backendPrefix}/generatevideo/render-video/lambda`,
   });
 
   const selectedLayer = useMemo(

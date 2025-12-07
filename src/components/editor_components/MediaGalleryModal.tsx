@@ -5,9 +5,7 @@ import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
 
 //lipat mo to sa ennv
 const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
-// ============================================================================
-// TYPES
-// ============================================================================
+
 
 interface MediaGalleryModalProps {
   isOpen: boolean;
@@ -76,7 +74,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     if (storedTheme) {
       setTheme(storedTheme);
     }
-  }, [isOpen]);
+  }, []);
 
   // Clean up previews on unmount
   useEffect(() => {
