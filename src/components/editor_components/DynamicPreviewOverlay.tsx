@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import type { Layer, ImageLayer, TextLayer } from "../remotion_compositions/DynamicLayerComposition";
+import { measureTextDimensions } from "../../utils/textAutoResize";
 
 type DragMode = "move" | "rotate" | "resize-tl" | "resize-tr" | "resize-bl" | "resize-br" | null;
 
@@ -106,8 +107,21 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   }, [onSelectLayer, onEditingLayerChange]);
 
   const handleInput = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>, layerId: string) => {
-    onLayerUpdate(layerId, { content: e.target.value } as Partial<TextLayer>);
-  }, [onLayerUpdate]);
+  const layer = layers.find(l => l.id === layerId);
+  if (!layer || !isTextLayer(layer)) return;
+  
+  const newContent = e.target.value;
+  const tempLayer = { ...layer, content: newContent };
+  const newSize = measureTextDimensions(tempLayer, 1080, 1920);
+  
+  onLayerUpdate(layerId, { 
+    content: newContent,
+    size: {
+      width: newSize.width,
+      height: newSize.height,
+    }
+  } as Partial<TextLayer>);
+}, [layers, onLayerUpdate]);
 
   const handleEditBlur = useCallback(() => onEditingLayerChange(null), [onEditingLayerChange]);
 

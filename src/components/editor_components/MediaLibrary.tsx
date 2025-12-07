@@ -14,8 +14,7 @@ interface MediaLibraryProps {
 }
 
 /**
- * MediaLibrary Component with Upload Buttons and Uploaded Files Display
- * Now integrates with useUploadHooks to fetch and display uploaded files
+ * MediaLibrary Component with Canva-style Grid Layout
  */
 export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   activeTab,
@@ -25,14 +24,12 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
 }) => {
   const { colors } = useTheme();
   
-  // Use upload hooks to fetch uploaded files
   const {
     uploads,
     fetchUploads,
     loadingUploads,
   } = useUploadHooks();
 
-  // Fetch uploads when component mounts
   useEffect(() => {
     fetchUploads();
   }, []);
@@ -54,211 +51,193 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   const handleUploadedAssetClick = (asset: any) => {
     console.log('📤 MediaLibrary passing uploaded asset:', asset);
     
-    // Convert the upload format to layer format
     const mediaObject = {
       id: asset.id,
       name: asset.url.split('/').pop() || 'Uploaded file',
-      type: asset.type, // 'image' or 'video'
+      type: asset.type,
       url: asset.url,
-      thumbnail: asset.url, // For images, use URL as thumbnail
+      thumbnail: asset.url,
       preview: asset.url,
     };
     
     onAddLayer(mediaObject);
   };
 
-  const cardStyle: React.CSSProperties = {
-    padding: "12px",
-    marginBottom: "8px",
-    background: colors.bgSecondary,
-    borderRadius: "6px",
+  // Canva-style grid container
+  const gridStyle: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))",
+    gap: "8px",
+    padding: "0",
+  };
+
+  // Grid item style
+  const gridItemStyle: React.CSSProperties = {
+    position: "relative",
+    aspectRatio: "1",
+    borderRadius: "8px",
+    overflow: "hidden",
     cursor: "pointer",
-    border: `1px solid ${colors.borderLight || 'rgba(255,255,255,0.08)'}`,
-    transition: "all 0.2s",
+    backgroundColor: colors.bgSecondary,
+    border: "1px solid rgba(255,255,255,0.05)",
+    transition: "all 0.2s ease",
   };
 
   const uploadButtonStyle: React.CSSProperties = {
     width: "100%",
-    padding: "12px",
+    padding: "14px",
     background: "#3b82f6",
     color: "#fff",
     border: "none",
-    borderRadius: "6px",
+    borderRadius: "8px",
     cursor: "pointer",
-    fontWeight: 500,
+    fontWeight: 600,
     fontSize: "13px",
     transition: "all 0.2s",
-    marginBottom: "16px",
+    marginBottom: "20px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
   };
 
   const sectionHeaderStyle: React.CSSProperties = {
-    color: "#888", 
-    marginBottom: "12px", 
+    color: colors.textMuted,
+    marginBottom: "12px",
+    marginTop: "24px",
     fontSize: "11px",
     fontWeight: 600,
     textTransform: "uppercase",
-    letterSpacing: "1px"
+    letterSpacing: "1px",
   };
 
-  // Filter uploaded assets by type from useUploadHooks
   const getUploadedAssetsByType = (type: string) => {
     if (type === 'image') {
-      // For images/media tab, only show image types
       return uploads.filter(upload => 
         upload.type === 'image' || 
-        (upload.url && (
-          upload.url.endsWith('.jpg') || 
-          upload.url.endsWith('.jpeg') || 
-          upload.url.endsWith('.png') || 
-          upload.url.endsWith('.gif') || 
-          upload.url.endsWith('.webp') ||
-          upload.url.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-        ))
+        (upload.url && upload.url.match(/\.(jpg|jpeg|png|gif|webp)$/i))
       );
     } else if (type === 'video') {
-      // For video tab, only show video types
       return uploads.filter(upload => 
         upload.type === 'video' || 
-        (upload.url && (
-          upload.url.endsWith('.mp4') || 
-          upload.url.endsWith('.mov') || 
-          upload.url.endsWith('.webm') || 
-          upload.url.endsWith('.avi') ||
-          upload.url.match(/\.(mp4|mov|webm|avi)$/i)
-        ))
+        (upload.url && upload.url.match(/\.(mp4|mov|webm|avi)$/i))
       );
     } else if (type === 'audio') {
-      // For audio tab, only show audio types
       return uploads.filter(upload => 
         upload.type === 'audio' || 
-        (upload.url && (
-          upload.url.endsWith('.mp3') || 
-          upload.url.endsWith('.wav') || 
-          upload.url.endsWith('.aac') || 
-          upload.url.endsWith('.ogg') ||
-          upload.url.match(/\.(mp3|wav|aac|ogg)$/i)
-        ))
+        (upload.url && upload.url.match(/\.(mp3|wav|aac|ogg)$/i))
       );
     }
     return uploads.filter(upload => upload.type === type);
   };
 
   // ============================================================================
-  // AUDIO TAB
+  // AUDIO TAB (List style - better for audio)
   // ============================================================================
   if (activeTab === "audio") {
     const uploadedAudio = getUploadedAssetsByType('audio');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
-        {/* Upload Button */}
         <button
           onClick={() => onOpenGallery("audio")}
           style={uploadButtonStyle}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#3b82f6";
             e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
-          📤 Upload Audio File
+          <span>📤</span>
+          <span>Upload Audio</span>
         </button>
 
-        {/* My Uploads */}
         {loadingUploads ? (
-          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+          <div style={{ textAlign: 'center', color: colors.textMuted, padding: '40px 20px' }}>
             Loading uploads...
           </div>
         ) : uploadedAudio.length > 0 ? (
-          <div style={{ marginBottom: "20px" }}>
+          <>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedAudio.length})</h3>
-            {uploadedAudio.map((audio) => (
-              <div
-                key={`uploaded-audio-${audio.id}`}
-                onClick={() => handleUploadedAssetClick(audio)}
-                style={cardStyle}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#252525";
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = colors.bgTertiary;
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                }}
-              >
-                <div style={{ 
-                  color: "#e5e5e5", 
-                  fontWeight: 500, 
-                  fontSize: "13px", 
-                  marginBottom: "4px",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap"
-                }}>
-                  🎵 {audio.url.split('/').pop()}
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginBottom: "20px" }}>
+              {uploadedAudio.map((audio) => (
+                <div
+                  key={`uploaded-audio-${audio.id}`}
+                  onClick={() => handleUploadedAssetClick(audio)}
+                  style={{
+                    padding: "10px 12px",
+                    background: colors.bgSecondary,
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    border: "1px solid rgba(255,255,255,0.05)",
+                    transition: "all 0.15s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = colors.bgTertiary;
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.transform = "translateX(2px)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = colors.bgSecondary;
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.transform = "translateX(0)";
+                  }}
+                >
+                  <div style={{ 
+                    color: colors.textPrimary,
+                    fontWeight: 500,
+                    fontSize: "12px",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    marginBottom: "2px"
+                  }}>
+                    🎵 {audio.url.split('/').pop()}
+                  </div>
+                  <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
+                    ✓ Uploaded
+                  </div>
                 </div>
-                <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
-                  ✓ Uploaded
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         ) : null}
 
-        {/* Stock Music */}
-        <div style={{ marginBottom: "20px" }}>
-          <h3 style={sectionHeaderStyle}>Stock Music</h3>
-          
+        <h3 style={sectionHeaderStyle}>Stock Music</h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {AUDIO_LIBRARY.stockMusic.map((audio) => (
             <div
               key={audio.id}
               onClick={() => handlePredefinedClick(audio, "audio")}
-              style={cardStyle}
+              style={{
+                padding: "10px 12px",
+                background: colors.bgSecondary,
+                borderRadius: "6px",
+                cursor: "pointer",
+                border: "1px solid rgba(255,255,255,0.05)",
+                transition: "all 0.15s",
+              }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
+                e.currentTarget.style.backgroundColor = colors.bgTertiary;
                 e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.transform = "translateX(2px)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = colors.bgSecondary;
-                e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.transform = "translateX(0)";
               }}
             >
-              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
+              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "12px", marginBottom: "2px" }}>
                 🎵 {audio.name}
               </div>
-              <div style={{ color: colors.textMuted, fontSize: "11px" }}>
+              <div style={{ color: colors.textMuted, fontSize: "10px" }}>
                 {audio.duration}
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Sound Effects */}
-        <div>
-          <h3 style={sectionHeaderStyle}>Sound Effects</h3>
-          
-          {AUDIO_LIBRARY.soundEffects.map((sfx) => (
-            <div
-              key={sfx.id}
-              onClick={() => handlePredefinedClick(sfx, "audio")}
-              style={cardStyle}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-                e.currentTarget.style.borderColor = "#3b82f6";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = colors.bgSecondary;
-                e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
-              }}
-            >
-              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "4px" }}>
-                🔊 {sfx.name}
-              </div>
-              <div style={{ color: colors.textMuted, fontSize: "11px" }}>
-                {sfx.duration}
               </div>
             </div>
           ))}
@@ -268,286 +247,325 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   }
 
   // ============================================================================
-  // VIDEO TAB
+  // VIDEO TAB - CANVA STYLE GRID
   // ============================================================================
   if (activeTab === "video") {
     const uploadedVideos = getUploadedAssetsByType('video');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
-        {/* Upload Button */}
         <button
           onClick={() => onOpenGallery("video")}
           style={uploadButtonStyle}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#3b82f6";
             e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
-          📤 Upload Video File
+          <span>📤</span>
+          <span>Upload Video</span>
         </button>
 
-        {/* My Uploads */}
         {loadingUploads ? (
-          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+          <div style={{ textAlign: 'center', color: colors.textMuted, padding: '40px 20px' }}>
             Loading uploads...
           </div>
         ) : uploadedVideos.length > 0 ? (
-          <div style={{ marginBottom: "20px" }}>
+          <>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedVideos.length})</h3>
-            {uploadedVideos.map((video) => (
-              <div
-                key={`uploaded-video-${video.id}`}
-                onClick={() => handleUploadedAssetClick(video)}
-                style={{
-                  ...cardStyle,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#252525";
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = colors.bgTertiary;
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                }}
-              >
-                <div style={{
-                  width: "48px",
-                  height: "36px",
-                  flexShrink: 0,
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                  backgroundColor: "#000"
-                }}>
-                  <video 
-                    src={video.url} 
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
+            <div style={gridStyle}>
+              {uploadedVideos.map((video) => (
+                <div
+                  key={`uploaded-video-${video.id}`}
+                  onClick={() => handleUploadedAssetClick(video)}
+                  style={gridItemStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.zIndex = "10";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.zIndex = "1";
+                  }}
+                >
+                  <video
+                    src={video.url}
+                    style={{
+                      width: "100%",
+                      height: "100%",
                       objectFit: "cover",
-                      display: "block"
                     }}
                   />
-                </div>
-                <div style={{ 
-                  flex: 1, 
-                  minWidth: 0,
-                  overflow: "hidden"
-                }}>
-                  <div style={{ 
-                    color: "#e5e5e5", 
-                    fontWeight: 500, 
-                    fontSize: "13px", 
-                    marginBottom: "4px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
+                  {/* Overlay with play icon */}
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.7))",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
                   }}>
-                    📹 {video.url.split('/').pop()}
+                    <div style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "50%",
+                      background: "rgba(255,255,255,0.9)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                    }}>
+                      <div style={{
+                        width: 0,
+                        height: 0,
+                        borderLeft: "8px solid #000",
+                        borderTop: "5px solid transparent",
+                        borderBottom: "5px solid transparent",
+                        marginLeft: "2px",
+                      }} />
+                    </div>
                   </div>
-                  <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
-                    ✓ Uploaded
+                  {/* Green checkmark badge */}
+                  <div style={{
+                    position: "absolute",
+                    top: "6px",
+                    right: "6px",
+                    background: "#10b981",
+                    borderRadius: "50%",
+                    width: "18px",
+                    height: "18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "10px",
+                  }}>
+                    ✓
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         ) : null}
 
-        {/* Stock Videos */}
         <h3 style={sectionHeaderStyle}>Stock Videos</h3>
-        
-        {CLOUDINARY_VIDEOS.backgroundVideos.map((video) => (
-          <div
-            key={video.id}
-            onClick={() => handlePredefinedClick(video, "video")}
-            style={{
-              ...cardStyle,
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.borderColor = "#3b82f6";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = colors.bgSecondary;
-              e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
-            }}
-          >
-            {video.thumbnail && (
-              <img 
-                src={video.thumbnail} 
-                alt={video.name}
-                style={{ 
-                  width: "48px",
-                  height: "36px", 
-                  objectFit: "cover", 
-                  borderRadius: "4px",
-                  backgroundColor: "#000",
-                  border: `1px solid ${colors.borderLight}`
-                }}
-              />
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px", marginBottom: "2px" }}>
-                📹 {video.name}
-              </div>
-              <div style={{ color: "#666", fontSize: "11px" }}>
-                {video.duration}
+        <div style={gridStyle}>
+          {[...CLOUDINARY_VIDEOS.backgroundVideos, ...CLOUDINARY_VIDEOS.visualEffects].map((video: any) => ( 
+            <div
+              key={video.id}
+              onClick={() => handlePredefinedClick(video, "video")}
+              style={gridItemStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                e.currentTarget.style.zIndex = "10";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.zIndex = "1";
+              }}
+            >
+              {video.thumbnail ? (
+                <img
+                  src={video.thumbnail}
+                  alt={video.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontSize: "24px",
+                }}>
+                  📹
+                </div>
+              )}
+              {/* Overlay with play icon */}
+              <div style={{
+                position: "absolute",
+                inset: 0,
+                background: "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.7))",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}>
+                <div style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  background: "rgba(255,255,255,0.9)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}>
+                  <div style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: "8px solid #000",
+                    borderTop: "5px solid transparent",
+                    borderBottom: "5px solid transparent",
+                    marginLeft: "2px",
+                  }} />
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
 
   // ============================================================================
-  // MEDIA (IMAGES) TAB
+  // IMAGES TAB - CANVA STYLE GRID (Separate from Videos)
   // ============================================================================
   if (activeTab === "media") {
     const uploadedImages = getUploadedAssetsByType('image');
     
     return (
       <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
-        {/* Upload Button */}
         <button
           onClick={() => onOpenGallery("media")}
           style={uploadButtonStyle}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#3b82f6";
             e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
-          📤 Upload Image File
+          <span>📤</span>
+          <span>Upload Image</span>
         </button>
 
-        {/* My Uploads */}
         {loadingUploads ? (
-          <div style={{ textAlign: 'center', color: '#888', padding: '20px' }}>
+          <div style={{ textAlign: 'center', color: colors.textMuted, padding: '40px 20px' }}>
             Loading uploads...
           </div>
         ) : uploadedImages.length > 0 ? (
-          <div style={{ marginBottom: "20px" }}>
+          <>
             <h3 style={sectionHeaderStyle}>My Uploads ({uploadedImages.length})</h3>
-            {uploadedImages.map((image) => (
-              <div
-                key={`uploaded-image-${image.id}`}
-                onClick={() => handleUploadedAssetClick(image)}
-                style={{
-                  ...cardStyle,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "12px",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#252525";
-                  e.currentTarget.style.borderColor = "#3b82f6";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = colors.bgTertiary;
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                }}
-              >
-                <div style={{
-                  width: "60px",
-                  height: "60px",
-                  flexShrink: 0,
-                  borderRadius: "4px",
-                  overflow: "hidden",
-                  backgroundColor: "#000"
-                }}>
-                  <img 
-                    src={image.url} 
+            <div style={gridStyle}>
+              {uploadedImages.map((image) => (
+                <div
+                  key={`uploaded-image-${image.id}`}
+                  onClick={() => handleUploadedAssetClick(image)}
+                  style={gridItemStyle}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.zIndex = "10";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.zIndex = "1";
+                  }}
+                >
+                  <img
+                    src={image.url}
                     alt="Uploaded"
-                    style={{ 
-                      width: "100%", 
-                      height: "100%", 
+                    style={{
+                      width: "100%",
+                      height: "100%",
                       objectFit: "cover",
-                      display: "block"
                     }}
                   />
-                </div>
-                <div style={{ 
-                  flex: 1, 
-                  minWidth: 0,
-                  overflow: "hidden"
-                }}>
-                  <div style={{ 
-                    color: "#e5e5e5", 
-                    fontWeight: 500, 
-                    fontSize: "13px", 
-                    marginBottom: "4px",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap"
+                  {/* Green checkmark badge */}
+                  <div style={{
+                    position: "absolute",
+                    top: "6px",
+                    right: "6px",
+                    background: "#10b981",
+                    borderRadius: "50%",
+                    width: "18px",
+                    height: "18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: "10px",
+                    color: "#fff",
                   }}>
-                    🖼️ {image.url.split('/').pop()}
-                  </div>
-                  <div style={{ color: "#10b981", fontSize: "10px", fontWeight: 500 }}>
-                    ✓ Uploaded
+                    ✓
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </>
         ) : null}
 
-        {/* Stock Images */}
         <h3 style={sectionHeaderStyle}>Stock Images</h3>
-        
-        {CLOUD_UPLOADS.filter(item => item.type === "image").map((image) => (
-          <div
-            key={image.id}
-            onClick={() => handlePredefinedClick(image, "image")}
-            style={{
-              ...cardStyle,
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = colors.bgHover || 'rgba(255,255,255,0.1)';
-              e.currentTarget.style.borderColor = "#3b82f6";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = colors.bgSecondary;
-              e.currentTarget.style.borderColor = colors.borderLight || 'rgba(255,255,255,0.08)';
-            }}
-          >
-            {image.thumbnail && (
-              <img 
-                src={image.thumbnail} 
-                alt={image.name}
-                style={{ 
-                  width: "60px", 
-                  height: "60px", 
-                  objectFit: "cover", 
-                  borderRadius: "4px",
-                  backgroundColor: "#000"
-                }}
-              />
-            )}
-            <div style={{ flex: 1 }}>
-              <div style={{ color: colors.textPrimary, fontWeight: 500, fontSize: "13px" }}>
-                🖼️ {image.name}
-              </div>
+        <div style={gridStyle}>
+          {CLOUD_UPLOADS.filter(item => item.type === "image").map((image) => (
+            <div
+              key={image.id}
+              onClick={() => handlePredefinedClick(image, "image")}
+              style={gridItemStyle}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.05)";
+                e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                e.currentTarget.style.zIndex = "10";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.boxShadow = "none";
+                e.currentTarget.style.zIndex = "1";
+              }}
+            >
+              {image.thumbnail ? (
+                <img
+                  src={image.thumbnail}
+                  alt={image.name}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: "100%",
+                  height: "100%",
+                  background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "#fff",
+                  fontSize: "24px",
+                }}>
+                  🖼️
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   }
@@ -562,39 +580,32 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
         
         <button
           onClick={onAddText}
-          style={{
-            width: "100%",
-            padding: "14px",
-            background: "#3b82f6",
-            color: "#fff",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontWeight: 500,
-            fontSize: "13px",
-            transition: "all 0.2s",
-          }}
+          style={uploadButtonStyle}
           onMouseEnter={(e) => {
             e.currentTarget.style.background = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = "#3b82f6";
             e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
-          ➕ Add Text Layer
+          <span>➕</span>
+          <span>Add Text Layer</span>
         </button>
 
         <div style={{ 
-          marginTop: "16px", 
-          padding: "12px", 
-          background: colors.bgTertiary, 
-          borderRadius: "6px",
+          marginTop: "16px",
+          padding: "12px",
+          background: colors.bgSecondary,
+          borderRadius: "8px",
           fontSize: "11px",
-          color: "#666"
+          color: colors.textMuted,
+          border: "1px solid rgba(255,255,255,0.05)",
         }}>
-          💡 Click to add a new text layer
+          💡 Click to add a new text layer to your composition
         </div>
       </div>
     );

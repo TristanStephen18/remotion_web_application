@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { useUploadHooks } from "../../hooks/dashboardhooks/UploadHooks";
 
 // ============================================================================
@@ -31,8 +31,8 @@ const Icons = {
   Play: () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="currentColor"
       stroke="none"
@@ -57,23 +57,6 @@ const Icons = {
       <circle cx="18" cy="16" r="3" />
     </svg>
   ),
-  Image: () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-      <circle cx="8.5" cy="8.5" r="1.5" />
-      <polyline points="21 15 16 10 5 21" />
-    </svg>
-  ),
   Cloud: () => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -87,22 +70,6 @@ const Icons = {
       strokeLinejoin="round"
     >
       <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
-    </svg>
-  ),
-  Video: () => (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polygon points="23 7 16 12 23 17 23 7" />
-      <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
     </svg>
   ),
   Refresh: () => (
@@ -125,7 +92,7 @@ const Icons = {
 };
 
 // ============================================================================
-// STYLES
+// STYLES - CANVA-STYLE
 // ============================================================================
 
 const styles = {
@@ -143,16 +110,16 @@ const styles = {
   },
   uploadButton: {
     flex: 1,
-    padding: "12px 16px",
+    padding: "14px 16px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: "8px",
     fontSize: "13px",
-    fontWeight: "500" as const,
-    color: "#e5e5e5",
-    backgroundColor: "rgba(59, 130, 246, 0.12)",
-    border: "1px solid rgba(59, 130, 246, 0.3)",
+    fontWeight: "600" as const,
+    color: "#fff",
+    backgroundColor: "#3b82f6",
+    border: "none",
     borderRadius: "8px",
     cursor: "pointer",
     transition: "all 0.2s",
@@ -216,10 +183,11 @@ const styles = {
     textAlign: "center" as const,
     color: "#888",
   },
+  // CANVA-STYLE GRID - Responsive, auto-fills based on container width
   mediaGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(2, 1fr)",
-    gap: "12px",
+    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
+    gap: "8px",
   },
   mediaItem: {
     position: "relative" as const,
@@ -227,63 +195,67 @@ const styles = {
     borderRadius: "8px",
     overflow: "hidden",
     cursor: "pointer",
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.05)",
     backgroundColor: "#1a1a1a",
-    transition: "all 0.2s",
-  },
-  mediaItemHover: {
-    transform: "translateY(-2px)",
-    borderColor: "rgba(59, 130, 246, 0.5)",
-    boxShadow: "0 8px 16px rgba(0,0,0,0.4)",
+    transition: "all 0.2s ease",
   },
   mediaThumbnail: {
     width: "100%",
     height: "100%",
     objectFit: "cover" as const,
   },
-  mediaOverlay: {
+  playButton: {
     position: "absolute" as const,
-    bottom: 0,
-    left: 0,
-    right: 0,
-    padding: "10px",
-    background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 70%, transparent 100%)",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: "40px",
+    height: "40px",
+    borderRadius: "50%",
+    backgroundColor: "rgba(255, 255, 255, 0.95)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#000",
+    opacity: 0.9,
+    transition: "all 0.2s",
   },
-  mediaName: {
+  videoOverlay: {
+    position: "absolute" as const,
+    inset: 0,
+    background: "linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.7))",
+    pointerEvents: "none" as const,
+  },
+  uploadBadge: {
+    position: "absolute" as const,
+    top: "6px",
+    right: "6px",
+    width: "20px",
+    height: "20px",
+    borderRadius: "50%",
+    backgroundColor: "#10b981",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     fontSize: "11px",
-    fontWeight: "500" as const,
+    fontWeight: "600" as const,
     color: "#fff",
-    whiteSpace: "nowrap" as const,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    marginBottom: "2px",
-  },
-  mediaDuration: {
-    fontSize: "9px",
-    color: "rgba(255,255,255,0.7)",
   },
   audioItem: {
     padding: "12px",
     borderRadius: "8px",
     backgroundColor: "rgba(255,255,255,0.03)",
-    border: "1px solid rgba(255,255,255,0.08)",
+    border: "1px solid rgba(255,255,255,0.05)",
     cursor: "pointer",
-    marginBottom: "10px",
-    transition: "all 0.2s",
-  },
-  audioItemHover: {
-    backgroundColor: "rgba(255,255,255,0.06)",
-    borderColor: "rgba(245, 158, 11, 0.4)",
-    transform: "translateX(2px)",
-  },
-  audioContent: {
+    marginBottom: "8px",
+    transition: "all 0.15s",
     display: "flex",
     alignItems: "center",
     gap: "12px",
   },
   audioIcon: {
-    width: "36px",
-    height: "36px",
+    width: "40px",
+    height: "40px",
     borderRadius: "8px",
     backgroundColor: "rgba(245, 158, 11, 0.15)",
     display: "flex",
@@ -297,56 +269,26 @@ const styles = {
     minWidth: 0,
   },
   audioName: {
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: "500" as const,
     color: "#e5e5e5",
     whiteSpace: "nowrap" as const,
     overflow: "hidden",
     textOverflow: "ellipsis",
-    marginBottom: "4px",
+    marginBottom: "2px",
   },
   audioDuration: {
-    fontSize: "11px",
+    fontSize: "10px",
     color: "#888",
   },
-  playButton: {
-    position: "absolute" as const,
-    top: "50%",
-    left: "50%",
-    transform: "translate(-50%, -50%)",
-    width: "40px",
-    height: "40px",
-    borderRadius: "50%",
-    backgroundColor: "rgba(0,0,0,0.75)",
-    border: "2px solid rgba(255,255,255,0.9)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    color: "white",
-    opacity: 0,
-    transition: "opacity 0.2s",
-    paddingLeft: "3px",
-  },
-  durationBadge: {
-    position: "absolute" as const,
-    top: "8px",
-    right: "8px",
-    padding: "3px 8px",
-    fontSize: "10px",
-    fontWeight: "700" as const,
-    color: "white",
-    backgroundColor: "rgba(0,0,0,0.85)",
-    borderRadius: "4px",
-    backdropFilter: "blur(4px)",
-  },
   sectionTitle: {
-    fontSize: "12px",
+    fontSize: "11px",
     fontWeight: "600" as const,
     color: "#888",
     textTransform: "uppercase" as const,
-    letterSpacing: "0.5px",
+    letterSpacing: "1px",
     marginBottom: "12px",
-    marginTop: "8px",
+    marginTop: "20px",
   },
 };
 
@@ -359,16 +301,14 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
   onMediaSelect,
   onUploadClick,
 }) => {
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  // const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  // Use upload hooks for project uploads
   const {
     uploads,
     fetchUploads,
     loadingUploads,
   } = useUploadHooks();
 
-  // Fetch uploads when component mounts
   useEffect(() => {
     fetchUploads();
   }, []);
@@ -421,13 +361,22 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
               {videos.map((item) => (
                 <div
                   key={item.id}
-                  style={{
-                    ...styles.mediaItem,
-                    ...(hoveredItem === item.id ? styles.mediaItemHover : {}),
-                  }}
+                  style={styles.mediaItem}
                   onClick={() => onMediaSelect(item)}
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
+                  onMouseEnter={(e) => {
+                    // setHoveredItem(item.id);
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.zIndex = "10";
+                  }}
+                  onMouseLeave={(e) => {
+                    // setHoveredItem(null);
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.zIndex = "1";
+                  }}
                 >
                   {item.thumbnail && (
                     <video
@@ -436,21 +385,14 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                       muted
                     />
                   )}
-                  <div
-                    style={{
-                      ...styles.playButton,
-                      ...(hoveredItem === item.id ? { opacity: 1 } : {}),
-                    }}
-                  >
+                  {/* Gradient overlay */}
+                  <div style={styles.videoOverlay} />
+                  {/* Play button */}
+                  <div style={styles.playButton}>
                     <Icons.Play />
                   </div>
-                  {item.duration && (
-                    <div style={styles.durationBadge}>{item.duration}</div>
-                  )}
-                  <div style={styles.mediaOverlay}>
-                    <div style={styles.mediaName}>{item.name}</div>
-                    {item.duration && <div style={styles.mediaDuration}>{item.duration}</div>}
-                  </div>
+                  {/* Upload badge */}
+                  <div style={styles.uploadBadge}>✓</div>
                 </div>
               ))}
             </div>
@@ -464,13 +406,22 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
               {images.map((item) => (
                 <div
                   key={item.id}
-                  style={{
-                    ...styles.mediaItem,
-                    ...(hoveredItem === item.id ? styles.mediaItemHover : {}),
-                  }}
+                  style={styles.mediaItem}
                   onClick={() => onMediaSelect(item)}
-                  onMouseEnter={() => setHoveredItem(item.id)}
-                  onMouseLeave={() => setHoveredItem(null)}
+                  onMouseEnter={(e) => {
+                    // setHoveredItem(item.id);
+                    e.currentTarget.style.transform = "scale(1.05)";
+                    e.currentTarget.style.borderColor = "#3b82f6";
+                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                    e.currentTarget.style.zIndex = "10";
+                  }}
+                  onMouseLeave={(e) => {
+                    // setHoveredItem(null);
+                    e.currentTarget.style.transform = "scale(1)";
+                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                    e.currentTarget.style.boxShadow = "none";
+                    e.currentTarget.style.zIndex = "1";
+                  }}
                 >
                   {item.thumbnail && (
                     <img
@@ -479,9 +430,8 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                       style={styles.mediaThumbnail}
                     />
                   )}
-                  <div style={styles.mediaOverlay}>
-                    <div style={styles.mediaName}>{item.name}</div>
-                  </div>
+                  {/* Upload badge */}
+                  <div style={styles.uploadBadge}>✓</div>
                 </div>
               ))}
             </div>
@@ -500,22 +450,27 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
         {audioMedia.map((item) => (
           <div
             key={item.id}
-            style={{
-              ...styles.audioItem,
-              ...(hoveredItem === item.id ? styles.audioItemHover : {}),
-            }}
+            style={styles.audioItem}
             onClick={() => onMediaSelect(item)}
-            onMouseEnter={() => setHoveredItem(item.id)}
-            onMouseLeave={() => setHoveredItem(null)}
+            onMouseEnter={(e) => {
+              // setHoveredItem(item.id);
+              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+              e.currentTarget.style.borderColor = "#3b82f6";
+              e.currentTarget.style.transform = "translateX(2px)";
+            }}
+            onMouseLeave={(e) => {
+              // setHoveredItem(null);
+              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+              e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+              e.currentTarget.style.transform = "translateX(0)";
+            }}
           >
-            <div style={styles.audioContent}>
-              <div style={styles.audioIcon}>
-                <Icons.Music />
-              </div>
-              <div style={styles.audioInfo}>
-                <div style={styles.audioName}>{item.name}</div>
-                {item.duration && <div style={styles.audioDuration}>{item.duration}</div>}
-              </div>
+            <div style={styles.audioIcon}>
+              <Icons.Music />
+            </div>
+            <div style={styles.audioInfo}>
+              <div style={styles.audioName}>{item.name}</div>
+              {item.duration && <div style={styles.audioDuration}>{item.duration}</div>}
             </div>
           </div>
         ))}
@@ -552,12 +507,14 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
           style={styles.uploadButton}
           onClick={onUploadClick}
           onMouseOver={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.22)";
+            e.currentTarget.style.backgroundColor = "#2563eb";
             e.currentTarget.style.transform = "translateY(-1px)";
+            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
           }}
           onMouseOut={(e) => {
-            e.currentTarget.style.backgroundColor = "rgba(59, 130, 246, 0.12)";
+            e.currentTarget.style.backgroundColor = "#3b82f6";
             e.currentTarget.style.transform = "translateY(0)";
+            e.currentTarget.style.boxShadow = "none";
           }}
         >
           <Icons.Cloud />

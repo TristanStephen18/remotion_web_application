@@ -531,7 +531,7 @@ const ChatBubbleComponent: React.FC<{
 const TextLayerComponent: React.FC<{ layer: TextLayer; relativeFrame: number; fps: number; width: number; height: number }> = ({ layer, relativeFrame, fps, height }) => {
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
   const scaledFontSize = (layer.fontSize / 100) * height;
-  const words = layer.content.split(" ");
+  const words = layer.content.split(/\s+/).filter(Boolean);
   const rotation = layer.rotation || 0;
 
   // Helper function to check if a word should be highlighted
@@ -554,6 +554,7 @@ const TextLayerComponent: React.FC<{ layer: TextLayer; relativeFrame: number; fp
   }
 
   const highlightColor = layer.highlightColor || 'rgba(255, 215, 0, 0.4)';
+  const hasHighlights = layer.highlightWords && layer.highlightWords.length > 0;
 
   return (
     <div style={{
@@ -563,23 +564,34 @@ const TextLayerComponent: React.FC<{ layer: TextLayer; relativeFrame: number; fp
       lineHeight: layer.lineHeight, letterSpacing: layer.letterSpacing, textTransform: layer.textTransform,
       textShadow: layer.textShadow ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}` : "none",
       transform: `rotate(${rotation}deg) ${entrance.transform}`, 
-      transformOrigin: "center center", display: "flex", alignItems: "center",
-      justifyContent: layer.textAlign === "center" ? "center" : layer.textAlign === "right" ? "flex-end" : "flex-start", flexWrap: "wrap", gap: "0.3em",
+      transformOrigin: "center center", 
+      whiteSpace: "pre-wrap",
+wordWrap: "break-word",
+overflowWrap: "break-word",
+display: "block",
+padding: "0",
     }}>
-      {words.map((word, i) => (
-        <span 
-          key={i} 
-          style={{ 
-            display: "inline-block", 
-            opacity: layer.opacity * entrance.opacity,
+ 
+{hasHighlights ? (
+  words.map((word, i) => (
+    <React.Fragment key={i}>
+      <span 
+         style={{ 
             backgroundColor: shouldHighlight(word) ? highlightColor : 'transparent',
             padding: shouldHighlight(word) ? '2px 4px' : '0',
             borderRadius: shouldHighlight(word) ? '3px' : '0',
-          }}
-        >
-          {word}
-        </span>
-      ))}
+          
+       }}>
+        {word}
+      </span>
+      {i < words.length - 1 && " "}
+    </React.Fragment>
+  ))
+) : (
+  layer.content
+)}
+    
+    
     </div>
   );
 };

@@ -4,6 +4,7 @@ import { type TextLayer } from "../remotion_compositions/DynamicLayerComposition
 import { FONTS, FONT_WEIGHTS, DESIGN_PRESETS } from "../../data/editor_constants";
 import { EditorIcons } from "./EditorIcons";
 import { useTheme } from "../../contexts/ThemeContext";
+import { measureTextDimensions } from "../../utils/textAutoResize";
 
 // Simple alignment icons
 const AlignIcons = {
@@ -273,8 +274,22 @@ export const TextEditor: React.FC<TextEditorProps> = ({
     onUpdate(layer.id, { content: e.target.value });
   };
 
+
+  const updateWithAutoResize = (updates: Partial<TextLayer>) => {
+    const affectsDimensions = ['fontSize', 'fontFamily', 'fontWeight', 'fontStyle', 'lineHeight', 'letterSpacing', 'textTransform', 'content'];
+    const shouldResize = Object.keys(updates).some(key => affectsDimensions.includes(key));
+    
+    if (shouldResize) {
+      const tempLayer = { ...layer, ...updates };
+      const newSize = measureTextDimensions(tempLayer, 1080, 1920);
+      onUpdate(layer.id, { ...updates, size: { width: newSize.width, height: newSize.height } });
+    } else {
+      onUpdate(layer.id, updates);
+    }
+  };
+
   const applyPreset = (preset: typeof DESIGN_PRESETS[0]) => {
-    onUpdate(layer.id, {
+    updateWithAutoResize({
       fontFamily: preset.style.fontFamily,
       fontSize: preset.style.fontSize,
       fontColor: preset.style.fontColor,
@@ -322,7 +337,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               fontFamily: layer.fontFamily,
             }}
             value={layer.fontFamily}
-            onChange={(e) => onUpdate(layer.id, { fontFamily: e.target.value })}
+            onChange={(e) => updateWithAutoResize({ fontFamily: e.target.value })}
           >
             {FONTS.map((font) => (
               <option 
@@ -347,7 +362,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                 max="30"
                 step="0.5"
                 value={layer.fontSize}
-                onChange={(e) => onUpdate(layer.id, { fontSize: parseFloat(e.target.value) })}
+                onChange={(e) => updateWithAutoResize({ fontSize: parseFloat(e.target.value) })}
               />
               <span style={styles.sliderValue}>{layer.fontSize}</span>
             </div>
@@ -358,7 +373,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
             <select
               style={styles.select}
               value={layer.fontWeight}
-              onChange={(e) => onUpdate(layer.id, { fontWeight: e.target.value })}
+              onChange={(e) => updateWithAutoResize({ fontWeight: e.target.value })}
             >
               {FONT_WEIGHTS.map((weight) => (
                 <option key={weight.value} value={weight.value}>{weight.label}</option>
@@ -651,7 +666,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   step="0.1"
                   min="0.5"
                   max="3"
-                  onChange={(e) => onUpdate(layer.id, { lineHeight: parseFloat(e.target.value) })}
+                  onChange={(e) => updateWithAutoResize({ lineHeight: parseFloat(e.target.value) })}
                 />
               </div>
 
@@ -662,7 +677,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   style={styles.input}
                   value={layer.letterSpacing || 0}
                   step="0.5"
-                  onChange={(e) => onUpdate(layer.id, { letterSpacing: parseFloat(e.target.value) })}
+                  onChange={(e) => updateWithAutoResize({ letterSpacing: parseFloat(e.target.value) })}
                 />
               </div>
             </div>
@@ -672,7 +687,7 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               <select
                 style={styles.select}
                 value={layer.textTransform || "none"}
-                onChange={(e) => onUpdate(layer.id, { textTransform: e.target.value as any })}
+                onChange={(e) => updateWithAutoResize({ textTransform: e.target.value as any })}
               >
                 <option value="none">None</option>
                 <option value="uppercase">UPPERCASE</option>
