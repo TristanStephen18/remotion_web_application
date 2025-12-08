@@ -977,10 +977,6 @@ const DynamicLayerEditor: React.FC = () => {
   });
 
 
-  const handleCropClick = useCallback(() => {
-    setCropMode(true);
-    setIsPlaying(false); 
-  }, []);
 
   const handleCropChange = useCallback((crop: CropData) => {
     if (selectedLayerId) {
@@ -2459,15 +2455,13 @@ const DynamicLayerEditor: React.FC = () => {
       style={gridStyles.card}
       onClick={onClick}
       onMouseOver={(e) => {
-        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-      }}
+  e.currentTarget.style.backgroundColor = colors.bgHover;
+  e.currentTarget.style.borderColor = colors.borderLight;
+}}
+onMouseOut={(e) => {
+  e.currentTarget.style.backgroundColor = colors.bgSecondary;
+  e.currentTarget.style.borderColor = colors.border;
+}}
     >
       <div style={{ marginBottom: "4px", color }}>{icon}</div>
       <div style={gridStyles.cardTitle}>{title}</div>
@@ -2490,15 +2484,13 @@ const DynamicLayerEditor: React.FC = () => {
       style={gridStyles.compactCard}
       onClick={onClick}
       onMouseOver={(e) => {
-        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.08)";
-        e.currentTarget.style.transform = "translateY(-2px)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.2)";
-      }}
-      onMouseOut={(e) => {
-        e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.04)";
-        e.currentTarget.style.transform = "translateY(0)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)";
-      }}
+  e.currentTarget.style.backgroundColor = colors.bgHover;
+  e.currentTarget.style.borderColor = colors.borderLight;
+}}
+onMouseOut={(e) => {
+  e.currentTarget.style.backgroundColor = colors.bgSecondary;
+  e.currentTarget.style.borderColor = colors.border;
+}}
     >
       <div style={{ color }}>{icon}</div>
       <div style={gridStyles.cardTitle}>{title}</div>
@@ -2786,6 +2778,7 @@ const DynamicLayerEditor: React.FC = () => {
                                   flexDirection: "column",
                                   alignItems: "center",
                                   gap: "8px",
+                                  color: colors.textPrimary,
                                 }}
                               >
                                 <Icons.Music />
@@ -2846,7 +2839,7 @@ const DynamicLayerEditor: React.FC = () => {
                           </div>
                         ))}
                         <div
-                          style={gridStyles.card}
+                          style={{...gridStyles.card, color: colors.textPrimary} }
                           onClick={() => {
                             if (watchCategory === "watches")
                               watchImageInputRef.current?.click();
@@ -2857,7 +2850,7 @@ const DynamicLayerEditor: React.FC = () => {
                           }}
                         >
                           <Icons.Download />
-                          <span style={{ fontSize: "11px" }}>
+                          <span style={{ fontSize: "11px", color: colors.textSecondary }}>
                             Upload Custom
                           </span>
                         </div>

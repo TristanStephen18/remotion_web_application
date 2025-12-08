@@ -22,6 +22,10 @@ type DragMode =
   | "crop-sw"
   | "crop-se"
   | "crop-move"
+  | "resize-t"
+  | "resize-r"
+  | "resize-b"
+  | "resize-l"
   | null;
 
 export interface DynamicPreviewOverlayProps {
@@ -406,7 +410,22 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
           newHeight = Math.max(5, dragStartPos.height - deltaHeightPercent);
           newX = dragStartPos.x + deltaWidthPercent / 2;
           newY = dragStartPos.y + deltaHeightPercent / 2;
+        } else if (corner === "r") {
+          // Right edge
+          newWidth = Math.max(5, dragStartPos.width + deltaWidthPercent);
+        } else if (corner === "l") {
+          // Left edge
+          newWidth = Math.max(5, dragStartPos.width - deltaWidthPercent);
+          newX = dragStartPos.x + deltaWidthPercent / 2;
+        } else if (corner === "b") {
+          // Bottom edge
+          newHeight = Math.max(5, dragStartPos.height + deltaHeightPercent);
+        } else if (corner === "t") {
+          // Top edge
+          newHeight = Math.max(5, dragStartPos.height - deltaHeightPercent);
+          newY = dragStartPos.y + deltaHeightPercent / 2;
         }
+        
 
         if (isTextLayer(layer)) {
           const scale = Math.sqrt(
@@ -419,9 +438,17 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
             fontSize: newFontSize,
           } as Partial<TextLayer>);
         } else {
-          onLayerUpdate(dragLayerId, {
-            size: { width: newWidth, height: newHeight },
-          });
+          // Update position for edges that change it (left/top)
+          if (newX !== dragStartPos.x || newY !== dragStartPos.y) {
+            onLayerUpdate(dragLayerId, {
+              position: { x: newX, y: newY },
+              size: { width: newWidth, height: newHeight },
+            });
+          } else {
+            onLayerUpdate(dragLayerId, {
+              size: { width: newWidth, height: newHeight },
+            });
+          }
         }
       } else if (dragMode && dragMode.startsWith("crop-") && dragLayerId) {
         // CROP LOGIC - NOW AT THE CORRECT LEVEL
@@ -918,6 +945,59 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
                     cursor: "se-resize",
                   }}
                   onMouseDown={(e) => handleResizeStart(e, layer, "br")}
+                />
+                {/* Edge handles */}
+                <div
+                  style={{
+                    ...styles.resizeHandle,
+                    top: -4,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "40px",
+                    height: "8px",
+                    borderRadius: "2px",
+                    cursor: "ns-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, layer, "t")}
+                />
+                <div
+                  style={{
+                    ...styles.resizeHandle,
+                    bottom: -4,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: "40px",
+                    height: "8px",
+                    borderRadius: "2px",
+                    cursor: "ns-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, layer, "b")}
+                />
+                <div
+                  style={{
+                    ...styles.resizeHandle,
+                    left: -4,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "8px",
+                    height: "40px",
+                    borderRadius: "2px",
+                    cursor: "ew-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, layer, "l")}
+                />
+                <div
+                  style={{
+                    ...styles.resizeHandle,
+                    right: -4,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    width: "8px",
+                    height: "40px",
+                    borderRadius: "2px",
+                    cursor: "ew-resize",
+                  }}
+                  onMouseDown={(e) => handleResizeStart(e, layer, "r")}
                 />
                 <span
                   style={{
