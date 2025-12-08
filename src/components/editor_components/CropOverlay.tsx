@@ -84,15 +84,6 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
     };
   }, [rendered]);
 
-  // Convert pixels to percentage
-  const pixelsToCrop = useCallback((px: { x: number; y: number; width: number; height: number }) => {
-    return {
-      x: ((px.x - rendered.offsetX) / rendered.width) * 100,
-      y: ((px.y - rendered.offsetY) / rendered.height) * 100,
-      width: (px.width / rendered.width) * 100,
-      height: (px.height / rendered.height) * 100,
-    };
-  }, [rendered]);
 
   // Handle mouse down on resize handles
   const handleMouseDown = useCallback(

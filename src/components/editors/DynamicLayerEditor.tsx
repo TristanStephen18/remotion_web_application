@@ -3088,7 +3088,6 @@ const DynamicLayerEditor: React.FC = () => {
                   onReplace={() =>
                     openMediaGallery("media", selectedLayer.id, "image")
                   }
-                  onCropClick={handleCropClick}
                 />
               )}
               {selectedVideoLayer && (

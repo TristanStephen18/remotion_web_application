@@ -3,7 +3,6 @@ import type {
   Layer,
   ImageLayer,
   TextLayer,
-  CropData,
 } from "../remotion_compositions/DynamicLayerComposition";
 import { measureTextDimensions } from "../../utils/textAutoResize";
 
