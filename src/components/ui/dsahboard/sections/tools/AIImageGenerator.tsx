@@ -1,21 +1,24 @@
+
 // src/components/ui/dashboard/sections/tools/AIImageGenerator.tsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Sparkles,
   Download,
   Wand2,
   ChevronDown,
   ImageIcon,
+  Edit3,
 } from "lucide-react";
 import type { Generation } from "../../../../../models/imagegenandbgremove";
 
 interface AIImageGeneratorInterface {
   pollinationsModel: string;
   setPollinationsModel: React.Dispatch<React.SetStateAction<string>>;
-  aspectRatio: "9:16" | "16:9" | "1:1" | "4:5";
-  setAspectRatio: React.Dispatch<
-    React.SetStateAction<"9:16" | "16:9" | "1:1" | "4:5">
-  >;
+aspectRatio: "9:16" | "16:9" | "1:1" | "4:5";
+setAspectRatio: React.Dispatch<
+  React.SetStateAction<"9:16" | "16:9" | "1:1" | "4:5">
+>;
   prompt: string;
   setPrompt: React.Dispatch<React.SetStateAction<string>>;
   imageLoading: boolean;
@@ -48,6 +51,8 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
   currentImage,
   setCurrentImage,
 }) => {
+  const navigate = useNavigate();
+
   const pollinationsModels = [
     { id: "flux", name: "Flux (Best Quality)" },
     { id: "flux-realism", name: "Flux Realism (Photorealistic)" },
@@ -107,6 +112,19 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
     const seed = Math.floor(Math.random() * 1_000_000);
     const encodedPrompt = encodeURIComponent(prompt);
     return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=${pollinationsModel}&nologo=true&enhance=false`;
+  };
+
+  const handleEdit = (imageUrl: string, ratio: string) => {
+    navigate('/editor', {
+      state: {
+        fromAIImage: true,
+        imageData: {
+          url: imageUrl,
+          aspectRatio: ratio,
+          model: pollinationsModel,
+        }
+      }
+    });
   };
 
   const getAspectRatioClass = (ratio: string) => {
@@ -250,22 +268,35 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
                       )} object-cover transition-all duration-500 hover:scale-[1.02]`}
                     />
 
-                    <button
-                      onClick={() => downloadImage(currentImage)}
-                      className="mt-4 w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
-                    >
-                      <Download
-                        size={18}
-                        className="group-hover:animate-bounce"
-                      />
-                      Download Image
-                    </button>
+                    <div className="flex gap-3 mt-4">
+                      <button
+                        onClick={() => handleEdit(currentImage, aspectRatio)}
+                        className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+                      >
+                        <Edit3
+                          size={18}
+                          className="group-hover:rotate-12 transition-transform"
+                        />
+                        Edit in Editor
+                      </button>
+
+                      <button
+                        onClick={() => downloadImage(currentImage)}
+                        className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+                      >
+                        <Download
+                          size={18}
+                          className="group-hover:animate-bounce"
+                        />
+                        Download
+                      </button>
+                    </div>
                   </div>
                 )}
 
                 {!loading && !currentImage && (
                   <div className="text-center z-10 animate-fadeIn">
-                    <div className="relative inline-mb-4">
+                    <div className="relative inline-block mb-4">
                       <Sparkles
                         className="text-indigo-400 animate-pulse"
                         size={48}
@@ -376,19 +407,32 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
                           className="w-full h-full object-cover"
                         />
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
                         <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           {item.model}
                         </div>
 
-                        <button
-                          onClick={() => downloadImage(item.url)}
-                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-white/90 backdrop-blur-sm text-indigo-600 text-xs px-3 py-2 rounded-full shadow-lg hover:bg-white font-semibold flex items-center gap-1"
-                        >
-                          <Download size={14} />
-                          Save
-                        </button>
+                        {/* Action buttons */}
+                        <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          {/* Edit Button */}
+                          <button
+                            onClick={() => handleEdit(item.url, item.aspectRatio)}
+                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-full shadow-lg font-semibold flex items-center gap-1.5 transition-all duration-200 hover:scale-105"
+                          >
+                            <Edit3 size={14} />
+                            Edit
+                          </button>
+
+                          {/* Download Button */}
+                          <button
+                            onClick={() => downloadImage(item.url)}
+                            className="bg-white/90 hover:bg-white backdrop-blur-sm text-indigo-600 text-xs px-3 py-2 rounded-full shadow-lg font-semibold flex items-center gap-1.5 transition-all duration-200 hover:scale-105"
+                          >
+                            <Download size={14} />
+                            Save
+                          </button>
+                        </div>
                       </div>
                     ))}
 
