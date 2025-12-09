@@ -1,8 +1,9 @@
+
 import React, { useRef, useState } from "react";
-import { Upload, X, Download, Trash2, Image } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Upload, X, Download, Trash2, Image, Edit3 } from "lucide-react";
 import { backendPrefix } from "../../../../../config";
 import type { UploadedFile } from "../../../../../models/brremover";
-
 
 interface BackgroundRemoverInterface {
   uploadedFiles: UploadedFile[] | [];
@@ -21,6 +22,7 @@ export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
   originalFiles,
   setOriginalFiles
 }) => {
+  const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<UploadedFile | null>(null);
   const [sliderPosition, setSliderPosition] = useState(50);
   const sliderRef = useRef<HTMLDivElement>(null);
@@ -107,6 +109,19 @@ export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
       );
     }
   };
+
+  const handleEdit = (imageUrl: string, fileName: string) => {
+    navigate('/editor', {
+      state: {
+        fromBgRemoval: true,
+        imageData: {
+          url: imageUrl,
+          name: fileName,
+        }
+      }
+    });
+  };
+
   const handleDownload = async (file: UploadedFile) => {
     if (!file.processedUrl) return;
 
@@ -350,23 +365,27 @@ export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
 
                   {file.processedUrl && (
                     <div className="space-y-2">
-                      <div className="flex gap-2">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           onClick={() => setSelectedImage(file)}
-                          className="flex-1 py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
+                          className="py-2 sm:py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-indigo-700 hover:to-indigo-800 transition-all duration-200 shadow-sm hover:shadow-md active:scale-95"
                         >
                           Compare
                         </button>
                         <button
+                          onClick={() => handleEdit(file.processedUrl!, file.name)}
+                          className="py-2 sm:py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-amber-600 hover:to-orange-600 transition-all duration-200 flex items-center justify-center gap-1 shadow-sm hover:shadow-md active:scale-95"
+                        >
+                          <Edit3 size={14} />
+                          Edit
+                        </button>
+                        <button
                           onClick={() => handleDownload(file)}
-                          className="flex-1 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-1 shadow-sm hover:shadow-md active:scale-95"
+                          className="py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg text-xs sm:text-sm font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-1 shadow-sm hover:shadow-md active:scale-95"
                         >
                           <Download size={14} />
-                          Download
                         </button>
                       </div>
-
-                     
                     </div>
                   )}
 
@@ -482,15 +501,21 @@ export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
                 </div>
               </div>
 
-              <div className="mt-3 sm:mt-4 flex flex-col sm:flex-row gap-2">
+              <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => handleEdit(selectedImage.processedUrl!, selectedImage.name)}
+                  className="py-2 sm:py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-sm font-medium hover:from-amber-600 hover:to-orange-600 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95"
+                >
+                  <Edit3 size={18} />
+                  Edit in Editor
+                </button>
                 <button
                   onClick={() => handleDownload(selectedImage)}
-                  className="flex-1 py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95"
+                  className="py-2 sm:py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg text-sm font-medium hover:from-purple-700 hover:to-purple-800 transition-all duration-200 flex items-center justify-center gap-2 shadow-md hover:shadow-lg active:scale-95"
                 >
                   <Download size={18} />
                   Download
                 </button>
-                
               </div>
             </div>
           </div>

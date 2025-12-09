@@ -1,3 +1,4 @@
+
 import React, {
   useState,
   useRef,
@@ -5,7 +6,7 @@ import React, {
   useEffect,
   useMemo,
 } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import toast from "react-hot-toast";
 import { useTheme } from "../../contexts/ThemeContext";
 import { ThemeToggle } from "../../components/ui/theme/ThemeToggle";
@@ -386,75 +387,6 @@ const Icons = {
   ),
 };
 
-// const gridStyles = {
-//   container: {
-//     display: "flex",
-//     flexDirection: "column" as const,
-//     gap: "20px",
-//     padding: "20px",
-//     overflowY: "auto" as const,
-//     height: "100%",
-//   },
-//   section: { display: "flex", flexDirection: "column" as const, gap: "10px" },
-//   sectionTitle: {
-//     fontSize: "11px",
-//     fontWeight: 700,
-//     color: "#666",
-//     textTransform: "uppercase" as const,
-//     letterSpacing: "0.05em",
-//     paddingLeft: "4px",
-//   },
-//   grid: { display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" },
-//   card: {
-//     display: "flex",
-//     flexDirection: "column" as const,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: "rgba(255, 255, 255, 0.03)",
-//     border: "1px solid rgba(255, 255, 255, 0.08)",
-//     borderRadius: "12px",
-//     padding: "16px 8px",
-//     cursor: "pointer",
-//     transition: "all 0.2s ease",
-//     height: "100px",
-//     gap: "8px",
-//   },
-//   compactCard: {
-//     display: "flex",
-//     flexDirection: "column" as const,
-//     alignItems: "center",
-//     justifyContent: "center",
-//     backgroundColor: "rgba(255, 255, 255, 0.04)",
-//     border: "1px solid rgba(255, 255, 255, 0.08)",
-//     borderRadius: "8px",
-//     padding: "12px",
-//     cursor: "pointer",
-//     transition: "all 0.2s ease",
-//     height: "80px",
-//     gap: "6px",
-//     textAlign: "center" as const,
-//   },
-//   cardTitle: {
-//     fontSize: "12px",
-//     fontWeight: 500,
-//     color: "#e5e5e5",
-//     textAlign: "center" as const,
-//     lineHeight: "1.2",
-//   },
-//   sleekInput: {
-//     width: "100%",
-//     padding: "10px 12px",
-//     marginBottom: "8px",
-//     borderRadius: "6px",
-//     border: "1px solid rgba(255,255,255,0.1)",
-//     backgroundColor: "rgba(0,0,0,0.2)",
-//     color: "white",
-//     fontSize: "13px",
-//     outline: "none",
-//     transition: "border-color 0.2s",
-//   },
-// };
-
 // --- MOCK CLOUDINARY ASSETS ---
 const CloudinaryAssets = {
   watches: [
@@ -514,181 +446,6 @@ const CloudinaryAssets = {
     },
   ],
 };
-
-// ============================================================================
-// COMPOSITION DURATION MANAGEMENT
-// ============================================================================
-
-// const useCompositionDuration = (
-//   layers: Layer[],
-//   duration: number,
-//   setDuration: (duration: number) => void,
-//   fps: number = 30
-// ) => {
-//   const maxLayerFrame = useMemo(() => {
-//     if (layers.length === 0) return duration * fps;
-//     return Math.max(...layers.map((layer) => layer.endFrame));
-//   }, [layers, duration, fps]);
-
-//   const recommendedDuration = useMemo(() => {
-//     const durationFromLayers = Math.ceil(maxLayerFrame / fps);
-//     return Math.max(durationFromLayers + 2, 5);
-//   }, [maxLayerFrame, fps]);
-
-//   const autoExtendComposition = useCallback(() => {
-//     const currentTotalFrames = duration * fps;
-//     if (maxLayerFrame > currentTotalFrames) {
-//       const newDuration = Math.ceil(maxLayerFrame / fps) + 2;
-//       setDuration(Math.max(newDuration, 5));
-//       toast.success("Timeline extended to fit layers");
-//       return true;
-//     }
-//     return false;
-//   }, [maxLayerFrame, duration, fps, setDuration]);
-
-//   const shrinkToFitLayers = useCallback(() => {
-//     const newDuration = Math.ceil(maxLayerFrame / fps) + 1;
-//     setDuration(Math.max(newDuration, 5));
-//     toast.success(`Timeline trimmed to ${Math.max(newDuration, 5)}s`);
-//   }, [maxLayerFrame, fps, setDuration]);
-
-//   const needsExtension = useMemo(() => {
-//     const currentTotalFrames = duration * fps;
-//     return maxLayerFrame > currentTotalFrames - fps;
-//   }, [maxLayerFrame, duration, fps]);
-
-//   return {
-//     maxLayerFrame,
-//     recommendedDuration,
-//     autoExtendComposition,
-//     shrinkToFitLayers,
-//     needsExtension,
-//   };
-// };
-
-// const CompositionDurationControls: React.FC<{
-//   duration: number;
-//   setDuration: (duration: number) => void;
-//   maxLayerFrame: number;
-//   autoExtendComposition: () => void;
-//   shrinkToFitLayers: () => void;
-//   needsExtension: boolean;
-//   fps: number;
-// }> = ({
-//   duration,
-//   setDuration,
-//   maxLayerFrame,
-//   autoExtendComposition,
-//   shrinkToFitLayers,
-//   needsExtension,
-//   fps,
-// }) => {
-//   const styles = {
-//     container: {
-//       display: "flex",
-//       alignItems: "center",
-//       gap: "8px",
-//       padding: "8px 12px",
-//       backgroundColor: "rgba(0, 0, 0, 0.3)",
-//       borderRadius: "8px",
-//       border: needsExtension
-//         ? "1px solid #ef4444"
-//         : "1px solid rgba(255, 255, 255, 0.1)",
-//     } as React.CSSProperties,
-//     label: {
-//       fontSize: "12px",
-//       color: "#9ca3af",
-//       fontWeight: 500,
-//     } as React.CSSProperties,
-//     input: {
-//       width: "70px",
-//       padding: "4px 8px",
-//       backgroundColor: "rgba(0, 0, 0, 0.4)",
-//       border: "1px solid rgba(255, 255, 255, 0.1)",
-//       borderRadius: "4px",
-//       color: "white",
-//       fontSize: "13px",
-//       outline: "none",
-//     } as React.CSSProperties,
-//     button: {
-//       padding: "4px 10px",
-//       backgroundColor: "rgba(59, 130, 246, 0.2)",
-//       border: "1px solid rgba(59, 130, 246, 0.3)",
-//       borderRadius: "4px",
-//       color: "#60a5fa",
-//       fontSize: "11px",
-//       cursor: "pointer",
-//       transition: "all 0.15s",
-//       fontWeight: 500,
-//     } as React.CSSProperties,
-//     warningButton: {
-//       backgroundColor: "rgba(239, 68, 68, 0.2)",
-//       border: "1px solid rgba(239, 68, 68, 0.3)",
-//       color: "#f87171",
-//     } as React.CSSProperties,
-//     info: {
-//       fontSize: "11px",
-//       color: "#6b7280",
-//     } as React.CSSProperties,
-//   };
-
-//   return (
-//     <div style={styles.container}>
-//       <span style={styles.label}>Duration:</span>
-//       <input
-//         type="number"
-//         value={duration}
-//         onChange={(e) => {
-//           const newDuration = parseFloat(e.target.value);
-//           if (newDuration > 0 && newDuration <= 300) {
-//             setDuration(newDuration);
-//           }
-//         }}
-//         min="1"
-//         max="300"
-//         step="1"
-//         style={styles.input}
-//       />
-//       <span style={styles.info}>sec</span>
-
-//       {needsExtension && (
-//         <button
-//           style={{ ...styles.button, ...styles.warningButton }}
-//           onClick={autoExtendComposition}
-//           title="Layers exceed composition duration"
-//         >
-//           ⚠ Extend
-//         </button>
-//       )}
-
-//       <button
-//         style={styles.button}
-//         onClick={shrinkToFitLayers}
-//         title="Shrink composition to fit all layers"
-//       >
-//         Fit to Layers
-//       </button>
-
-//       <button
-//         style={styles.button}
-//         onClick={() => setDuration(duration + 5)}
-//         title="Add 5 seconds"
-//       >
-//         +5s
-//       </button>
-
-//       <button
-//         style={styles.button}
-//         onClick={() => setDuration(duration + 10)}
-//         title="Add 10 seconds"
-//       >
-//         +10s
-//       </button>
-
-//       <span style={styles.info}>Max: {(maxLayerFrame / fps).toFixed(1)}s</span>
-//     </div>
-//   );
-// };
 
 // ============================================================================
 // MAIN COMPONENT
@@ -894,71 +651,207 @@ const DynamicLayerEditor: React.FC = () => {
   const activeSlotId = useRef<string | null>(null);
 
   const hasLoadedProject = useRef(false);
+  const location = useLocation();
 
-  useEffect(() => {
-    const templateIdParam = searchParams.get("template");
-    const projectIdParam = searchParams.get("project");
 
-    if (templateIdParam && !hasLoadedTemplate.current) {
-      hasLoadedTemplate.current = true;
-      const templateId = parseInt(templateIdParam);
-      const templateDef = getTemplate(templateId);
-      if (templateDef) {
-        setTemplate(templateDef);
-        const defaultLayers = templateDef.createDefaultLayers();
-        pushState(defaultLayers);
-        if (templateDef.calculateDuration) {
-          setDuration(
-            Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS)
-          );
-        }
+
+ useEffect(() => {
+  const templateIdParam = searchParams.get("template");
+  const projectIdParam = searchParams.get("project");
+
+  // ✅ Handle VEO redirect FIRST (before template/project loading)
+  if (location.state?.fromVEO && location.state?.videoData && !hasLoadedTemplate.current) {
+    hasLoadedTemplate.current = true;
+    const videoData = location.state.videoData;
+    
+    // Create video layer from VEO
+    const newLayer: VideoLayer = {
+      id: generateId(),
+      type: "video",
+      name: `VEO: ${videoData.prompt.substring(0, 30)}...`,
+      visible: true,
+      locked: false,
+      startFrame: 0,
+      endFrame: Math.round(videoData.duration * FPS),
+      position: { x: 50, y: 50 },
+      size: { width: 100, height: 100 },
+      rotation: 0,
+      opacity: 1,
+      src: videoData.url,
+      volume: 0.8,
+      loop: false,
+      playbackRate: 1,
+      objectFit: "cover",
+      filter: "",
+      fadeIn: 0,
+      fadeOut: 0,
+      animation: { entrance: "fade", entranceDuration: 30 },
+    };
+
+    // Set project title from VEO prompt
+    setProjectTitle(`VEO: ${videoData.prompt.substring(0, 40)}...`);
+    
+    // Start with ONLY the video layer
+    pushState([newLayer]);
+    setSelectedLayerId(newLayer.id);
+    setDuration(Math.max(videoData.duration + 2, 5)); // Add 2s buffer
+    
+    toast.success("VEO video loaded in editor! 🎬");
+    
+    // Clear navigation state to prevent re-triggering
+    navigate(location.pathname, { replace: true, state: {} });
+    
+    // Don't load template or project
+    return;
+  }
+
+  // ✅ Handle AI Image redirect
+  if (location.state?.fromAIImage && location.state?.imageData && !hasLoadedTemplate.current) {
+    hasLoadedTemplate.current = true;
+    const imageData = location.state.imageData;
+    
+    // Determine size based on aspect ratio
+    let layerSize = { width: 80, height: 60 }; // Default
+    if (imageData.aspectRatio === "9:16") {
+      layerSize = { width: 50, height: 90 }; // Portrait
+    } else if (imageData.aspectRatio === "16:9") {
+      layerSize = { width: 90, height: 50 }; // Landscape
+    } else if (imageData.aspectRatio === "1:1") {
+      layerSize = { width: 70, height: 70 }; // Square
+    } else if (imageData.aspectRatio === "4:5") {
+      layerSize = { width: 60, height: 75 }; // Portrait-ish
+    }
+    
+    // Create image layer from AI generation
+    const newLayer: ImageLayer = {
+      id: generateId(),
+      type: "image",
+      name: `AI Image: ${imageData.model}`,
+      visible: true,
+      locked: false,
+      startFrame: 0,
+      endFrame: 300, // 10 seconds at 30fps
+      position: { x: 50, y: 50 },
+      size: layerSize,
+      rotation: 0,
+      opacity: 1,
+      src: imageData.url,
+      isBackground: false,
+      objectFit: "contain",
+      filter: "",
+      animation: { entrance: "fade", entranceDuration: 30 },
+    };
+
+    setProjectTitle(`AI Image: ${imageData.model}`);
+    pushState([newLayer]);
+    setSelectedLayerId(newLayer.id);
+    setDuration(10); // Default 10 seconds
+    
+    toast.success("AI Image loaded in editor! 🎨");
+    navigate(location.pathname, { replace: true, state: {} });
+    return;
+  }
+
+  // ✅ Handle Background Removal redirect
+  if (location.state?.fromBgRemoval && location.state?.imageData && !hasLoadedTemplate.current) {
+    hasLoadedTemplate.current = true;
+    const imageData = location.state.imageData;
+    
+    // Create image layer from background removal
+    const newLayer: ImageLayer = {
+      id: generateId(),
+      type: "image",
+      name: imageData.name ? `BG Removed: ${imageData.name.substring(0, 20)}` : "Background Removed",
+      visible: true,
+      locked: false,
+      startFrame: 0,
+      endFrame: 300, // 10 seconds
+      position: { x: 50, y: 50 },
+      size: { width: 60, height: 80 }, // Portrait by default (most bg removal images)
+      rotation: 0,
+      opacity: 1,
+      src: imageData.url,
+      isBackground: false,
+      objectFit: "contain",
+      filter: "",
+      animation: { entrance: "fade", entranceDuration: 30 },
+    };
+
+    setProjectTitle(imageData.name ? `Edited: ${imageData.name}` : "Background Removed Image");
+    pushState([newLayer]);
+    setSelectedLayerId(newLayer.id);
+    setDuration(10);
+    
+    toast.success("Image loaded! Background removed ✨");
+    navigate(location.pathname, { replace: true, state: {} });
+    return;
+  }
+
+  // ✅ Normal template loading
+  if (templateIdParam && !hasLoadedTemplate.current) {
+    hasLoadedTemplate.current = true;
+    const templateId = parseInt(templateIdParam);
+    const templateDef = getTemplate(templateId);
+    if (templateDef) {
+      setTemplate(templateDef);
+      const defaultLayers = templateDef.createDefaultLayers();
+      pushState(defaultLayers);
+      if (templateDef.calculateDuration) {
+        setDuration(
+          Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS)
+        );
+      }
+      // Initialize chat name
+      if (templateId === 9) {
+        const firstBubble = defaultLayers.find(
+          (l: any) => l.type === "chat-bubble"
+        );
+        if (firstBubble)
+          setChatPartnerName((firstBubble as any).senderName || "User");
+      }
+    } else {
+      toast.error("Template not found");
+    }
+  } 
+  // ✅ Normal project loading
+  else if (projectIdParam && !hasLoadedProject.current) {
+    hasLoadedProject.current = true;
+    setProjectId(projectIdParam);
+    setIsLoading(true);
+    fetch(`${backendPrefix}/projects/${projectIdParam}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        const templateDef = getTemplate(data.templateId);
+        if (templateDef) setTemplate(templateDef);
+        pushState(data.props.layers || []);
+        setProjectTitle(data.title || "");
+        if (data.props.duration) setDuration(data.props.duration);
+
         // Initialize chat name
-        if (templateId === 9) {
-          const firstBubble = defaultLayers.find(
+        if (data.templateId === 9) {
+          const firstBubble = data.props.layers.find(
             (l: any) => l.type === "chat-bubble"
           );
           if (firstBubble)
             setChatPartnerName((firstBubble as any).senderName || "User");
         }
-      } else {
-        toast.error("Template not found");
-      }
-    } else if (projectIdParam && !hasLoadedProject.current) {
-      hasLoadedProject.current = true;
-      setProjectId(projectIdParam);
-      setIsLoading(true);
-      fetch(`${backendPrefix}/projects/${projectIdParam}`, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        toast.success("Project loaded!");
       })
-        .then((res) => res.json())
-        .then((data) => {
-          const templateDef = getTemplate(data.templateId);
-          if (templateDef) setTemplate(templateDef);
-          pushState(data.props.layers || []);
-          setProjectTitle(data.title || "");
-          if (data.props.duration) setDuration(data.props.duration);
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to load project");
+      })
+      .finally(() => setIsLoading(false));
+  }
+}, [searchParams, location.state, pushState, navigate]);
 
-          // Initialize chat name
-          if (data.templateId === 9) {
-            const firstBubble = data.props.layers.find(
-              (l: any) => l.type === "chat-bubble"
-            );
-            if (firstBubble)
-              setChatPartnerName((firstBubble as any).senderName || "User");
-          }
-          toast.success("Project loaded!");
-        })
-        .catch((err) => {
-          console.error(err);
-          toast.error("Failed to load project");
-        })
-        .finally(() => setIsLoading(false));
-    }
-  }, [searchParams, pushState]);
+
 
   const {
     addTextLayer,
@@ -2214,12 +2107,6 @@ const DynamicLayerEditor: React.FC = () => {
     [layers, pushState]
   );
 
-  //   const handleCutTrack = useCallback(
-  //   (trackId: string, frame: number) => {
-  //     splitLayer(trackId, frame);
-  //   },
-  //   [splitLayer]
-  // );
 
   const handleFrameChange = useCallback((frame: number) => {
     setCurrentFrame(frame);
@@ -2517,13 +2404,17 @@ onMouseOut={(e) => {
           }}
           onPanelToggle={() => {}}
           templateId={template?.id}
+          style={{ zIndex: 100 }} // ← Add this if not already set
         />
 
         {/* --- LAYERS PANEL --- */}
         <div
           style={{
             ...editorStyles.layersPanel,
-            backgroundColor: colors.bgPrimary, // ← ADD THIS LINE
+            backgroundColor: colors.bgPrimary,
+             // ← ADD THIS LINE
+                 zIndex: 50, // ← Ensure this is set
+    pointerEvents: "auto", // ← Allow clicks
             ...(isPanelOpen ? {} : editorStyles.layersPanelClosed),
           }}
         >
@@ -3018,9 +2909,12 @@ onMouseOut={(e) => {
 
         {/* --- EDIT PANEL --- */}
         <div
+
           style={{
             ...editorStyles.editPanel,
-            backgroundColor: colors.bgPrimary, // ← ADD THIS
+            backgroundColor: colors.bgPrimary,
+            zIndex: 50, // ← ADD THIS - Same as layers panel
+            pointerEvents: showEditPanel && !isPanelOpen ? "auto" : "none", // ← ADD THIS
             ...(showEditPanel && !isPanelOpen
               ? {}
               : editorStyles.editPanelHidden),
@@ -3166,6 +3060,8 @@ onMouseOut={(e) => {
                 overflow: "hidden",
                 padding: "20px",
                 minHeight: 0, 
+                position: "relative", // ← Important
+                pointerEvents: "auto", // ← Allow clicks
             }}
             ref={previewContainerRef}
           >
@@ -3176,64 +3072,67 @@ onMouseOut={(e) => {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
+                   position: "relative", // ← Important
+                     pointerEvents: "none", 
            }
            }>
-  <div style={{ position: 'relative', display: 'inline-block' }}>
-    <RemotionPreview
-      key={`preview-${layers.length}-${layers
-        .map((l) => l.id)
-        .join(",")}`}
-      ref={previewRef}
-      component={template?.composition || DynamicLayerComposition}
-      inputProps={previewInputProps}
-      durationInFrames={totalFrames}
-      fps={FPS}
-      onFrameUpdate={handlePreviewFrameUpdate}
-      onPlayingChange={(playing) => setIsPlaying(playing)}
-      containerWidth="100%"
-      containerHeight="100%"
-      phoneFrameWidth={`${previewDimensions.width}px`}
-      phoneFrameHeight={`${previewDimensions.height}px`}
-    />
+            <div style={{ position: 'relative', display: 'inline-block', pointerEvents : "auto" }}>
+              <RemotionPreview
+                key={`preview-${layers.length}-${layers
+                  .map((l) => l.id)
+                  .join(",")}`}
+                ref={previewRef}
+                component={template?.composition || DynamicLayerComposition}
+                inputProps={previewInputProps}
+                durationInFrames={totalFrames}
+                fps={FPS}
+                onFrameUpdate={handlePreviewFrameUpdate}
+                onPlayingChange={(playing) => setIsPlaying(playing)}
+                containerWidth="100%"
+                containerHeight="100%"
+                phoneFrameWidth={`${previewDimensions.width}px`}
+                phoneFrameHeight={`${previewDimensions.height}px`}
+              />
 
-     {cropMode && selectedLayer && isImageLayer(selectedLayer) && (
-      <div style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: "100%",
-        height: "100%",
-        pointerEvents: "none",
-      }}>
-        <CropOverlay
-          layer={selectedLayer}
-          containerWidth={previewDimensions.width}
-          containerHeight={previewDimensions.height}
-          compositionWidth={1080}
-          compositionHeight={1920}
-          onCropChange={handleCropChange}
-          onCropComplete={handleCropComplete}
-        />
-      </div>
-    )}
-    
-    {template?.id !== 8 &&  (
-      <DynamicPreviewOverlay
-        layers={layers}
-        currentFrame={currentFrame}
-        selectedLayerId={selectedLayerId}
-        editingLayerId={editingLayerId}
-        onSelectLayer={selectLayerAndCloseTab}
-        onLayerUpdate={updateLayer}
-        containerWidth={previewDimensions.width}
-        containerHeight={previewDimensions.height}
-        onEditingLayerChange={setEditingLayerId}
-        isPlaying={isPlaying}
-        onPlayingChange={setIsPlaying}
-      />
-    )}
-  </div>
-</div>
+              {cropMode && selectedLayer && isImageLayer(selectedLayer) && (
+                <div style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  width: "100%",
+                  height: "100%",
+              pointerEvents: "auto", // ← Change from "none" to "auto" only when cropMode is active
+              zIndex: 1000, // ← Ensure it's on top
+                }}>
+                  <CropOverlay
+                    layer={selectedLayer}
+                    containerWidth={previewDimensions.width}
+                    containerHeight={previewDimensions.height}
+                    compositionWidth={1080}
+                    compositionHeight={1920}
+                    onCropChange={handleCropChange}
+                    onCropComplete={handleCropComplete}
+                  />
+                </div>
+              )}
+              
+              {template?.id !== 8 &&  (
+                <DynamicPreviewOverlay
+                  layers={layers}
+                  currentFrame={currentFrame}
+                  selectedLayerId={selectedLayerId}
+                  editingLayerId={editingLayerId}
+                  onSelectLayer={selectLayerAndCloseTab}
+                  onLayerUpdate={updateLayer}
+                  containerWidth={previewDimensions.width}
+                  containerHeight={previewDimensions.height}
+                  onEditingLayerChange={setEditingLayerId}
+                  isPlaying={isPlaying}
+                  onPlayingChange={setIsPlaying}
+                />
+              )}
+            </div>
+          </div>
           </div>
 
           <Timeline
@@ -3481,3 +3380,4 @@ onMouseOut={(e) => {
 };
 
 export default DynamicLayerEditor;
+
