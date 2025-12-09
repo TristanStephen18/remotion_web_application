@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { templateCategories } from '../data/DashboardCardsData';
+import Footer from '../components/Footer';
 
 interface Avatar {
   id: number;
@@ -166,17 +167,25 @@ const ViralMotionLanding: React.FC = () => {
 
   // Dropdown items
   const featureItems = [
-    { name: 'Video Templates', path: '/templates' },
-    { name: 'AI Tools', path: '/ai-tools' },
-    { name: 'Video & Audio Downloader', path: '/downloader' },
+    // { name: 'Video Templates', path: '/templates' },
+    // { name: 'AI Tools', path: '/ai-tools' },
+    // { name: 'Video & Audio Downloader', path: '/downloader' },
+    { name: 'Video Templates', path: '/login' },
+    { name: 'AI Tools', path: '/login' },
+    { name: 'Video & Audio Downloader', path: '/login' },
   ];
 
   const templateItems = [
-    { name: 'Fake Text Conversation', path: '/templates/fake-text-conversation' },
-    { name: 'Relatable Quotes + Viral Sound', path: '/templates/relatable-quotes' },
-    { name: 'Reaction Video', path: '/templates/reaction-video' },
-    { name: 'Image / Video Collage Edit', path: '/templates/collage-edit' },
-    { name: 'Ken Burns Carousel', path: '/templates/ken-burns-carousel' },
+    // { name: 'Fake Text Conversation', path: '/templates/fake-text-conversation' },
+    // { name: 'Relatable Quotes + Viral Sound', path: '/templates/relatable-quotes' },
+    // { name: 'Reaction Video', path: '/templates/reaction-video' },
+    // { name: 'Image / Video Collage Edit', path: '/templates/collage-edit' },
+    // { name: 'Ken Burns Carousel', path: '/templates/ken-burns-carousel' },
+    { name: 'Fake Text Conversation', path: '/login' },
+    { name: 'Relatable Quotes + Viral Sound', path: '/login' },
+    { name: 'Reaction Video', path: '/login' },
+    { name: 'Image / Video Collage Edit', path: '/login' },
+    { name: 'Ken Burns Carousel', path: '/login' },
   ];
 
   const getFilteredTemplates = (): Template[] => {
@@ -421,39 +430,39 @@ const ViralMotionLanding: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <section className="py-12 pr-8 pb-24 max-w-[1200px] mx-auto">
-        <div className="grid grid-cols-2 gap-20 items-center">
-          <div className="max-w-[520px]">
-            <div className="inline-flex items-center gap-2 bg-gradient-to-br from-[rgba(139,92,246,0.1)] to-[rgba(236,72,153,0.1)] py-2 px-4 rounded-[100px] text-[0.8rem] text-[#8b5cf6] font-semibold mb-6 border border-[rgba(139,92,246,0.15)] animate-[fadeInDown_0.6s_ease-out] tracking-wide">
+      <section className="py-8 md:py-12 px-4 md:px-8 pb-16 md:pb-24 max-w-[1200px] mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+          <div className="max-w-[520px] mx-auto lg:mx-0 text-center lg:text-left">
+            <div className="inline-flex items-center gap-2 bg-gradient-to-br from-[rgba(139,92,246,0.1)] to-[rgba(236,72,153,0.1)] py-2 px-4 rounded-[100px] text-[0.75rem] md:text-[0.8rem] text-[#8b5cf6] font-semibold mb-6 border border-[rgba(139,92,246,0.15)] animate-[fadeInDown_0.6s_ease-out] tracking-wide">
               <span>AI-Powered Video Creation</span>
             </div>
-            <h1 className="text-[3.4rem] font-bold leading-[1.15] mb-5 text-[#111827] animate-[fadeInUp_0.8s_ease-out_0.2s_both] tracking-tight">
+            <h1 className="text-[2rem] md:text-[2.8rem] lg:text-[3.4rem] font-bold leading-[1.15] mb-5 text-[#111827] animate-[fadeInUp_0.8s_ease-out_0.2s_both] tracking-tight">
               Create <span className="bg-gradient-to-r from-[#8b5cf6] via-[#ec4899] to-[#f97316] bg-clip-text text-transparent">Viral Videos </span>in Seconds
             </h1>
-            <p className="text-[#6b7280] text-[1.08rem] leading-[1.7] mb-8 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
+            <p className="text-[#6b7280] text-base md:text-[1.08rem] leading-[1.7] mb-8 animate-[fadeInUp_0.8s_ease-out_0.4s_both]">
               Transform your ideas into stunning short-form videos with our AI-powered
               templates. Perfect for TikTok, Instagram Reels, and YouTube Shorts.
             </p>
-            <div className="flex gap-3 mb-10 animate-[fadeInUp_0.8s_ease-out_0.6s_both]">
-              <a href="/get-started" className="bg-[#111827] text-white py-3.5 px-6 rounded-[10px] font-medium text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 border-none cursor-pointer hover:bg-[#8b5cf6] hover:-translate-y-px">
+            <div className="flex gap-3 mb-10 animate-[fadeInUp_0.8s_ease-out_0.6s_both] justify-center lg:justify-start">
+              <a href="/get-started" className="bg-[#111827] text-white py-3 md:py-3.5 px-5 md:px-6 rounded-[10px] font-medium text-[0.85rem] md:text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 border-none cursor-pointer hover:bg-[#8b5cf6] hover:-translate-y-px">
                 Start Creating Free
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
                 </svg>
               </a>
             </div>
-            <div className="flex gap-10 animate-[fadeInUp_0.8s_ease-out_0.8s_both]">
+            <div className="flex gap-6 md:gap-10 animate-[fadeInUp_0.8s_ease-out_0.8s_both] justify-center lg:justify-start">
               {stats.map((stat) => (
                 <div key={stat.label} className="flex flex-col gap-0.5">
-                  <span className="text-2xl font-bold text-[#111827]">{stat.value}</span>
-                  <span className="text-[0.8rem] text-[#9ca3af] font-medium">{stat.label}</span>
+                  <span className="text-xl md:text-2xl font-bold text-[#111827]">{stat.value}</span>
+                  <span className="text-[0.75rem] md:text-[0.8rem] text-[#9ca3af] font-medium">{stat.label}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Video Container with Floating Avatars */}
-          <div className="relative animate-[fadeInUp_0.8s_ease-out_0.4s_both] p-1">
+          <div className="relative animate-[fadeInUp_0.8s_ease-out_0.4s_both] p-1 hidden lg:block">
             <div className="relative p-10 overflow-visible min-w-[550px]">
               {/* Floating Avatars */}
               <div className="absolute inset-0 pointer-events-none z-10">
@@ -508,23 +517,23 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20 px-8 max-w-[1200px] mx-auto" id="features">
+      <section className="py-12 md:py-20 px-4 md:px-8 max-w-[1200px] mx-auto" id="features">
         <div className="text-center">
-          <div className="inline-block text-[#8b5cf6] text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Features</div>
-          <h2 className="text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Everything You Need to Go Viral</h2>
-          <p className="text-[#6b7280] text-base mb-12">Powerful tools designed for creators</p>
+          <div className="inline-block text-[#8b5cf6] text-[0.75rem] md:text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Features</div>
+          <h2 className="text-[1.5rem] md:text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Everything You Need to Go Viral</h2>
+          <p className="text-[#6b7280] text-sm md:text-base mb-8 md:mb-12">Powerful tools designed for creators</p>
 
-          <div className="grid grid-cols-3 gap-6 max-w-[1000px] mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 max-w-[1000px] mx-auto">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="bg-white rounded-xl p-7 text-left border border-[#f3f4f6] transition-all duration-200 hover:border-[#e5e7eb] hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)]"
+                className="bg-white rounded-xl p-5 md:p-7 text-left border border-[#f3f4f6] transition-all duration-200 hover:border-[#e5e7eb] hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)]"
               >
-                <div className={`w-11 h-11 rounded-[10px] flex items-center justify-center mb-4 text-white ${feature.iconBg}`}>
+                <div className={`w-10 md:w-11 h-10 md:h-11 rounded-[10px] flex items-center justify-center mb-4 text-white ${feature.iconBg}`}>
                   {feature.icon}
                 </div>
-                <h3 className="text-base font-semibold mb-2 text-[#111827]">{feature.title}</h3>
-                <p className="text-sm text-[#6b7280] leading-[1.6]">{feature.description}</p>
+                <h3 className="text-sm md:text-base font-semibold mb-2 text-[#111827]">{feature.title}</h3>
+                <p className="text-xs md:text-sm text-[#6b7280] leading-[1.6]">{feature.description}</p>
               </div>
             ))}
           </div>
@@ -532,14 +541,14 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* Templates Section */}
-      <section className="py-20 px-8 max-w-[1200px] mx-auto" id="templates">
+      <section className="py-12 md:py-20 px-4 md:px-8 max-w-[1200px] mx-auto" id="templates">
         <div className="text-center">
-          <div className="inline-block text-[#8b5cf6] text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Templates</div>
-          <h2 className="text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Ready-to-Use Video Templates</h2>
-          <p className="text-[#6b7280] text-base mb-12">Choose from our collection of professionally designed templates</p>
+          <div className="inline-block text-[#8b5cf6] text-[0.75rem] md:text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Templates</div>
+          <h2 className="text-[1.5rem] md:text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Ready-to-Use Video Templates</h2>
+          <p className="text-[#6b7280] text-sm md:text-base mb-8 md:mb-12">Choose from our collection of professionally designed templates</p>
 
           {/* Templates Grid */}
-          <div className="grid grid-cols-4 gap-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-5">
             {getFilteredTemplates().map((template) => (
               <div key={template.name} className="bg-white rounded-xl overflow-hidden border border-[#f3f4f6] transition-all duration-200 text-left hover:border-[#e5e7eb] hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)] group">
                 <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-[#1e1b4b] via-[#312e81] to-[#581c87]">
@@ -550,12 +559,12 @@ const ViralMotionLanding: React.FC = () => {
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                    <a href="/login" className="bg-white text-[#111827] py-2.5 px-5 rounded-lg font-medium text-[0.8rem] no-underline transition-all duration-200 hover:bg-[#111827] hover:text-white">Try Template</a>
+                    <a href="/login" className="bg-white text-[#111827] py-2 md:py-2.5 px-4 md:px-5 rounded-lg font-medium text-[0.75rem] md:text-[0.8rem] no-underline transition-all duration-200 hover:bg-[#111827] hover:text-white">Try Template</a>
                   </div>
                 </div>
-                <div className="p-3.5 px-4">
-                  <h3 className="text-sm font-semibold text-[#111827] mb-1">{template.name}</h3>
-                  <p className="text-xs text-[#9ca3af] leading-[1.5] line-clamp-2">{template.description}</p>
+                <div className="p-3 md:p-3.5 px-3 md:px-4">
+                  <h3 className="text-xs md:text-sm font-semibold text-[#111827] mb-1">{template.name}</h3>
+                  <p className="text-[0.65rem] md:text-xs text-[#9ca3af] leading-[1.5] line-clamp-2">{template.description}</p>
                 </div>
               </div>
             ))}
@@ -564,24 +573,24 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* Steps Section */}
-      <section className="py-20 px-8 bg-white">
+      <section className="py-12 md:py-20 px-4 md:px-8 bg-white">
         <div className="max-w-[1200px] mx-auto text-center">
-          <div className="inline-block text-[#8b5cf6] text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Steps</div>
-          <h2 className="text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">How It Works</h2>
-          <p className="text-[#6b7280] text-base mb-12">Get from idea to viral video in 4 simple steps</p>
+          <div className="inline-block text-[#8b5cf6] text-[0.75rem] md:text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">Steps</div>
+          <h2 className="text-[1.5rem] md:text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">How It Works</h2>
+          <p className="text-[#6b7280] text-sm md:text-base mb-8 md:mb-12">Get from idea to viral video in 4 simple steps</p>
 
           <div className="max-w-[700px] mx-auto text-left">
             {steps.map((step, index) => (
-              <div key={step.number} className="flex gap-6 relative group">
+              <div key={step.number} className="flex gap-3 md:gap-6 relative group">
                 <div className="flex flex-col items-center shrink-0">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#ec4899] flex items-center justify-center text-white font-bold text-sm shrink-0 shadow-[0_4px_15px_rgba(139,92,246,0.3)]">{step.number}</div>
-                  {index < steps.length - 1 && <div className="w-0.5 flex-1 bg-gradient-to-b from-[#8b5cf6] to-[rgba(139,92,246,0.2)] my-2 min-h-[40px]"></div>}
+                  <div className="w-10 md:w-12 h-10 md:h-12 rounded-full bg-gradient-to-br from-[#8b5cf6] to-[#ec4899] flex items-center justify-center text-white font-bold text-xs md:text-sm shrink-0 shadow-[0_4px_15px_rgba(139,92,246,0.3)]">{step.number}</div>
+                  {index < steps.length - 1 && <div className="w-0.5 flex-1 bg-gradient-to-b from-[#8b5cf6] to-[rgba(139,92,246,0.2)] my-2 min-h-[30px] md:min-h-[40px]"></div>}
                 </div>
-                <div className={`flex gap-4 ${index < steps.length - 1 ? 'pb-10' : 'pb-0'} flex-1`}>
-                  <div className="w-12 h-12 rounded-xl bg-[#fafbfc] border border-[#f3f4f6] flex items-center justify-center text-[#8b5cf6] shrink-0 transition-all duration-200 hover:bg-gradient-to-br hover:from-[rgba(139,92,246,0.15)] hover:to-[rgba(236,72,153,0.15)] hover:border-[rgba(139,92,246,0.4)] cursor-pointer">{step.icon}</div>
+                <div className={`flex gap-3 md:gap-4 ${index < steps.length - 1 ? 'pb-6 md:pb-10' : 'pb-0'} flex-1`}>
+                  <div className="w-10 md:w-12 h-10 md:h-12 rounded-xl bg-[#fafbfc] border border-[#f3f4f6] flex items-center justify-center text-[#8b5cf6] shrink-0 transition-all duration-200 hover:bg-gradient-to-br hover:from-[rgba(139,92,246,0.15)] hover:to-[rgba(236,72,153,0.15)] hover:border-[rgba(139,92,246,0.4)] cursor-pointer">{step.icon}</div>
                   <div className="flex-1">
-                    <h3 className="text-[1.1rem] font-semibold mb-1.5 text-[#111827]">{step.title}</h3>
-                    <p className="text-[0.9rem] text-[#6b7280] leading-[1.6]">{step.description}</p>
+                    <h3 className="text-base md:text-[1.1rem] font-semibold mb-1 md:mb-1.5 text-[#111827]">{step.title}</h3>
+                    <p className="text-xs md:text-[0.9rem] text-[#6b7280] leading-[1.6]">{step.description}</p>
                   </div>
                 </div>
               </div>
@@ -591,17 +600,17 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* About Section */}
-      <section className="py-20 px-8 bg-[#fafbfc]">
+      <section className="py-12 md:py-20 px-4 md:px-8 bg-[#fafbfc]">
         <div className="max-w-[1000px] mx-auto text-center">
-          <div className="inline-block text-[#8b5cf6] text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">About</div>
-          <h2 className="text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Why Choose ViralMotion?</h2>
-          <p className="text-[#6b7280] text-base mb-12">Everything you need to create content that stands out</p>
+          <div className="inline-block text-[#8b5cf6] text-[0.75rem] md:text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">About</div>
+          <h2 className="text-[1.5rem] md:text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Why Choose ViralMotion?</h2>
+          <p className="text-[#6b7280] text-sm md:text-base mb-8 md:mb-12">Everything you need to create content that stands out</p>
 
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             {abouts.map((about) => (
-              <div key={about.title} className="bg-white rounded-xl p-7 text-left border border-[#f3f4f6] transition-all duration-200 hover:border-[#e5e7eb] hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
-                <h3 className="text-base font-semibold mb-2 text-[#111827]">{about.title}</h3>
-                <p className="text-sm text-[#6b7280] leading-[1.6]">{about.description}</p>
+              <div key={about.title} className="bg-white rounded-xl p-5 md:p-7 text-left border border-[#f3f4f6] transition-all duration-200 hover:border-[#e5e7eb] hover:shadow-[0_10px_40px_rgba(0,0,0,0.08)]">
+                <h3 className="text-sm md:text-base font-semibold mb-2 text-[#111827]">{about.title}</h3>
+                <p className="text-xs md:text-sm text-[#6b7280] leading-[1.6]">{about.description}</p>
               </div>
             ))}
           </div>
@@ -609,11 +618,11 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 px-8 bg-white">
+      <section className="py-12 md:py-20 px-4 md:px-8 bg-white">
         <div className="max-w-[800px] mx-auto text-center">
-          <div className="inline-block text-[#8b5cf6] text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">FAQ</div>
-          <h2 className="text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Frequently Asked Questions</h2>
-          <p className="text-[#6b7280] text-base mb-12">Got questions? We've got answers</p>
+          <div className="inline-block text-[#8b5cf6] text-[0.75rem] md:text-[0.8rem] font-semibold mb-3 uppercase tracking-widest">FAQ</div>
+          <h2 className="text-[1.5rem] md:text-[2rem] font-bold mb-2 text-[#111827] tracking-tight">Frequently Asked Questions</h2>
+          <p className="text-[#6b7280] text-sm md:text-base mb-8 md:mb-12">Got questions? We've got answers</p>
 
           <div className="text-left">
             {faqs.map((faq, index) => (
@@ -622,7 +631,7 @@ const ViralMotionLanding: React.FC = () => {
                 className={`border border-[#f3f4f6] rounded-xl mb-3 overflow-hidden transition-all duration-200 hover:border-[#e5e7eb] ${openFaqIndex === index ? 'border-[rgba(139,92,246,0.3)] shadow-[0_4px_15px_rgba(139,92,246,0.08)]' : ''}`}
               >
                 <button
-                  className="w-full flex items-center justify-between gap-4 py-5 px-6 bg-transparent border-none cursor-pointer text-left text-base font-semibold text-[#111827] transition-all duration-200 hover:text-[#8b5cf6]"
+                  className="w-full flex items-center justify-between gap-3 md:gap-4 py-4 md:py-5 px-4 md:px-6 bg-transparent border-none cursor-pointer text-left text-sm md:text-base font-semibold text-[#111827] transition-all duration-200 hover:text-[#8b5cf6]"
                   onClick={() => toggleFaq(index)}
                 >
                   <span>{faq.question}</span>
@@ -639,7 +648,7 @@ const ViralMotionLanding: React.FC = () => {
                   </svg>
                 </button>
                 <div className={`overflow-hidden transition-all duration-300 ${openFaqIndex === index ? 'max-h-[300px]' : 'max-h-0'}`}>
-                  <p className="px-6 pb-5 text-[0.9rem] text-[#6b7280] leading-[1.7]">{faq.answer}</p>
+                  <p className="px-4 md:px-6 pb-4 md:pb-5 text-xs md:text-[0.9rem] text-[#6b7280] leading-[1.7]">{faq.answer}</p>
                 </div>
               </div>
             ))}
@@ -648,20 +657,21 @@ const ViralMotionLanding: React.FC = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-8 pb-20 max-w-[1200px] mx-auto">
-        <div className="bg-[#111827] rounded-2xl py-14 px-8 text-center">
-          <h2 className="text-[1.75rem] font-bold mb-3 text-white tracking-tight">
+      <section className="py-10 md:py-16 px-4 md:px-8 pb-16 md:pb-20 max-w-[1200px] mx-auto">
+        <div className="bg-[#111827] rounded-2xl py-10 md:py-14 px-4 md:px-8 text-center">
+          <h2 className="text-[1.25rem] md:text-[1.75rem] font-bold mb-3 text-white tracking-tight">
             Ready to Create <span className="bg-gradient-to-r from-[#c084fc] via-[#f472b6] to-[#fb923c] bg-clip-text text-transparent">Viral Content</span>?
           </h2>
-          <p className="text-white/70 text-base mb-7 max-w-[450px] mx-auto">
+          <p className="text-white/70 text-sm md:text-base mb-6 md:mb-7 max-w-[450px] mx-auto px-2">
             Join thousands of creators who are already using ViralMotion to grow their audience.
           </p>
-          <div className="flex justify-center gap-3">
-            <Link to="/signup" className="bg-white text-[#111827] py-3.5 px-6 rounded-[10px] font-medium text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 hover:bg-[#8b5cf6] hover:text-white">Start Free Trial</Link>
-            <Link to="/pricing" className="bg-transparent text-white py-3.5 px-6 rounded-[10px] font-medium text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 border border-white/20 hover:bg-white/10 hover:border-white/30">View Pricing</Link>
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <Link to="/signup" className="bg-white text-[#111827] py-3 md:py-3.5 px-5 md:px-6 rounded-[10px] font-medium text-[0.85rem] md:text-[0.9rem] no-underline inline-flex items-center justify-center gap-2 transition-all duration-200 hover:bg-[#8b5cf6] hover:text-white">Start Free Trial</Link>
+            <Link to="/pricing" className="bg-transparent text-white py-3 md:py-3.5 px-5 md:px-6 rounded-[10px] font-medium text-[0.85rem] md:text-[0.9rem] no-underline inline-flex items-center justify-center gap-2 transition-all duration-200 border border-white/20 hover:bg-white/10 hover:border-white/30">View Pricing</Link>
           </div>
         </div>
       </section>
+      <Footer />
     </div>
   );
 };
