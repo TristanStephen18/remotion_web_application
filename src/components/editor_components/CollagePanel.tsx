@@ -10,7 +10,21 @@ export interface CollageLayout {
   name: string;
   description: string;
   slots: CollageSlot[];
-  category: "grid" | "creative" | "split" | "polaroid" | "magazine";
+  category: "grid" | "creative" | "split" | "polaroid" | "magazine" | "animated";
+  animated?: boolean;
+  animationConfig?: {
+    photoDelay: number; // Frames between each photo
+    photoDuration: number; // Duration of each slide animation
+    textStartFrame: number; // When text appears
+  };
+  textOverlay?: {
+    mainText: string;
+    subText: string;
+    mainFont: string;
+    subFont: string;
+    mainSize: number;
+    subSize: number;
+  };
 }
 
 export interface CollageSlot {
@@ -23,6 +37,7 @@ export interface CollageSlot {
   borderRadius?: number; // percentage
   zIndex?: number;
   shadow?: boolean;
+  slideDirection?: "left" | "right" | "up" | "down" | "none";
 }
 
 interface CollagePanelProps {
@@ -31,29 +46,229 @@ interface CollagePanelProps {
 }
 
 // ============================================================================
+// HELPER FUNCTION: CREATE ANIMATED LAYERS
+// ============================================================================
+
+export const createAnimatedCollageStoriesLayers = (
+  layout: CollageLayout,
+  photos: string[],
+  videoWidth: number = 1080,
+  videoHeight: number = 1920,
+  totalDuration: number = 180
+): any[] => {
+  const layers: any[] = [];
+  
+  // Ensure we have enough photos
+  const filledPhotos = [...photos];
+  while (filledPhotos.length < layout.slots.length) {
+    filledPhotos.push("https://via.placeholder.com/540x960/333333/FFFFFF?text=Photo");
+  }
+
+  const config = layout.animationConfig || {
+    photoDelay: 8,
+    photoDuration: 25,
+    textStartFrame: 65,
+  };
+
+  // Create image layers for each photo slot
+  layout.slots.forEach((slot, index) => {
+    const startFrame = index * config.photoDelay;
+    
+    layers.push({
+      id: `collage-photo-${slot.id}`,
+      type: "image",
+      name: `Photo ${index + 1}`,
+      visible: true,
+      locked: false,
+      startFrame: startFrame,
+      endFrame: totalDuration,
+      position: {
+        x: (slot.x / 100) * videoWidth,
+        y: (slot.y / 100) * videoHeight,
+      },
+      size: {
+        width: (slot.width / 100) * videoWidth,
+        height: (slot.height / 100) * videoHeight,
+      },
+      rotation: slot.rotation || 0,
+      opacity: 1,
+      src: filledPhotos[index],
+      objectFit: "cover" as const,
+      animation: {
+        entrance: slot.slideDirection === "left" 
+          ? "slideLeft" 
+          : slot.slideDirection === "right"
+          ? "slideRight"
+          : "fade",
+        entranceDuration: config.photoDuration,
+      },
+    });
+  });
+
+  // Add text layers if text overlay is configured
+  if (layout.textOverlay) {
+    const textOverlay = layout.textOverlay;
+    
+    // Main text layer
+    layers.push({
+      id: "collage-text-main",
+      type: "text",
+      name: "Main Text",
+      visible: true,
+      locked: false,
+      startFrame: config.textStartFrame,
+      endFrame: totalDuration,
+      position: {
+        x: videoWidth / 2,
+        y: videoHeight / 2 - 70,
+      },
+      size: {
+        width: 900,
+        height: 250,
+      },
+      rotation: 0,
+      opacity: 1,
+      content: textOverlay.mainText,
+      fontFamily: textOverlay.mainFont,
+      fontSize: textOverlay.mainSize,
+      fontColor: "#FFFFFF",
+      fontWeight: "bold",
+      fontStyle: "normal",
+      textAlign: "center" as const,
+      lineHeight: 1,
+      letterSpacing: 3,
+      textTransform: "none" as const,
+      textShadow: true,
+      shadowColor: "#000000",
+      shadowX: 4,
+      shadowY: 4,
+      shadowBlur: 12,
+      textOutline: true,
+      outlineColor: "rgba(0, 0, 0, 0.3)",
+      animation: {
+        entrance: "scale" as const,
+        entranceDuration: 20,
+      },
+    });
+
+    // Subtitle text layer
+    layers.push({
+      id: "collage-text-sub",
+      type: "text",
+      name: "Subtitle",
+      visible: true,
+      locked: false,
+      startFrame: config.textStartFrame + 5,
+      endFrame: totalDuration,
+      position: {
+        x: videoWidth / 2,
+        y: videoHeight / 2 + 100,
+      },
+      size: {
+        width: 500,
+        height: 120,
+      },
+      rotation: 0,
+      opacity: 0.98,
+      content: textOverlay.subText,
+      fontFamily: textOverlay.subFont,
+      fontSize: textOverlay.subSize,
+      fontColor: "#FFFFFF",
+      fontWeight: "normal",
+      fontStyle: "italic",
+      textAlign: "center" as const,
+      lineHeight: 1.2,
+      letterSpacing: 1,
+      textTransform: "none" as const,
+      textShadow: true,
+      shadowColor: "#000000",
+      shadowX: 3,
+      shadowY: 3,
+      shadowBlur: 10,
+      animation: {
+        entrance: "fade" as const,
+        entranceDuration: 15,
+      },
+    });
+  }
+
+  return layers;
+};
+
+// ============================================================================
 // TRENDY COLLAGE LAYOUTS
 // ============================================================================
 
 const COLLAGE_LAYOUTS: CollageLayout[] = [
 
-  // ORIGINAL TEMPLATE LAYOUT (3 photos top, text space, 3 photos bottom)
+  // ANIMATED INSTAGRAM STORIES STYLE (Featured Layout)
+  {
+    id: "collage-stories-animated",
+    name: "Collage Stories",
+    description: "Animated 2x3 Instagram style",
+    category: "animated",
+    animated: true,
+    animationConfig: {
+      photoDelay: 8, // 0.27s between photos
+      photoDuration: 25, // 0.83s per slide
+      textStartFrame: 65, // 2.17s for text
+    },
+    textOverlay: {
+      mainText: "collage",
+      subText: "stories",
+      mainFont: "Pacifico, cursive",
+      subFont: "Dancing Script, cursive",
+      mainSize: 140,
+      subSize: 56,
+    },
+    slots: [
+      // Top row (2 photos)
+      { id: "top-left", x: 0, y: 0, width: 50, height: 33.33, slideDirection: "left" },
+      { id: "top-right", x: 50, y: 0, width: 50, height: 33.33, slideDirection: "right" },
+      
+      // Middle row (2 photos)
+      { id: "middle-left", x: 0, y: 33.33, width: 50, height: 33.33, slideDirection: "left" },
+      { id: "middle-right", x: 50, y: 33.33, width: 50, height: 33.33, slideDirection: "right" },
+      
+      // Bottom row (2 photos)
+      { id: "bottom-left", x: 0, y: 66.66, width: 50, height: 33.34, slideDirection: "left" },
+      { id: "bottom-right", x: 50, y: 66.66, width: 50, height: 33.34, slideDirection: "right" },
+    ],
+  },
+
+  // STATIC VERSION (No animation)
+  {
+    id: "collage-stories-static",
+    name: "Collage Stories (Static)",
+    description: "2x3 grid without animation",
+    category: "grid",
+    animated: false,
+    slots: [
+      { id: "top-left", x: 0, y: 0, width: 50, height: 33.33 },
+      { id: "top-right", x: 50, y: 0, width: 50, height: 33.33 },
+      { id: "middle-left", x: 0, y: 33.33, width: 50, height: 33.33 },
+      { id: "middle-right", x: 50, y: 33.33, width: 50, height: 33.33 },
+      { id: "bottom-left", x: 0, y: 66.66, width: 50, height: 33.34 },
+      { id: "bottom-right", x: 50, y: 66.66, width: 50, height: 33.34 },
+    ],
+  },
+
+  // ORIGINAL TEMPLATE LAYOUT
   {
     id: "original-3x2",
     name: "Original Layout",
     description: "Template default",
     category: "grid",
     slots: [
-      // Top row (3 photos at 16.67% from top)
       { id: "top-left", x: 0, y: 0, width: 33.33, height: 33.33 },
       { id: "top-center", x: 33.33, y: 0, width: 33.33, height: 33.33 },
       { id: "top-right", x: 66.66, y: 0, width: 33.34, height: 33.33 },
-      
-      // Bottom row (3 photos at 83.33% from top)
       { id: "bottom-left", x: 0, y: 66.67, width: 33.33, height: 33.33 },
       { id: "bottom-center", x: 33.33, y: 66.67, width: 33.33, height: 33.33 },
       { id: "bottom-right", x: 66.66, y: 66.67, width: 33.34, height: 33.33 },
     ],
   },
+
   // GRID LAYOUTS
   {
     id: "grid-2x1",
@@ -268,6 +483,7 @@ export const CollagePanel: React.FC<CollagePanelProps> = ({
 
   const categories = [
     { id: "all", label: "All Layouts" },
+    { id: "animated", label: "Animated ✨" },
     { id: "grid", label: "Grid" },
     { id: "creative", label: "Creative" },
     { id: "split", label: "Split" },
@@ -329,24 +545,28 @@ export const CollagePanel: React.FC<CollagePanelProps> = ({
       overflowY: "auto",
       padding: "20px",
     },
-   layoutGrid: {
-  display: "grid",
-  gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-  gap: "12px",
-},
-layoutCard: {
-  position: "relative",
-  aspectRatio: "9 / 16",
-  borderRadius: "8px",
-  overflow: "hidden",
-  cursor: "pointer",
-  border: `2px solid ${colors.border}`,
-  backgroundColor: colors.bgSecondary,
-  transition: "all 0.2s",
-},
+    layoutGrid: {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
+      gap: "12px",
+    },
+    layoutCard: {
+      position: "relative",
+      aspectRatio: "9 / 16",
+      borderRadius: "8px",
+      overflow: "hidden",
+      cursor: "pointer",
+      border: `2px solid ${colors.border}`,
+      backgroundColor: colors.bgSecondary,
+      transition: "all 0.2s",
+    },
     layoutCardSelected: {
       borderColor: colors.accent,
       boxShadow: `0 0 0 3px ${colors.accent}33`,
+    },
+    layoutCardAnimated: {
+      borderColor: "#FFD700",
+      boxShadow: "0 0 12px rgba(255, 215, 0, 0.3)",
     },
     layoutPreview: {
       width: "100%",
@@ -359,9 +579,6 @@ layoutCard: {
       backgroundColor: "#1a1a1a",
       border: "1px solid #333",
       transition: "all 0.2s",
-    },
-    slotHover: {
-      backgroundColor: "#252525",
     },
     layoutInfo: {
       position: "absolute",
@@ -382,6 +599,51 @@ layoutCard: {
       fontSize: "9px",
       color: "#aaa",
     },
+    animatedBadge: {
+      position: "absolute",
+      top: "5px",
+      right: "5px",
+      backgroundColor: "#FFD700",
+      color: "#000",
+      fontSize: "9px",
+      fontWeight: 700,
+      padding: "3px 6px",
+      borderRadius: "4px",
+      zIndex: 10,
+      display: "flex",
+      alignItems: "center",
+      gap: "2px",
+    },
+    textOverlayPreview: {
+      position: "absolute",
+      left: "50%",
+      top: "50%",
+      transform: "translate(-50%, -50%)",
+      zIndex: 100,
+      pointerEvents: "none",
+      textAlign: "center",
+      width: "90%",
+    },
+    previewMainText: {
+      fontFamily: "Pacifico, cursive",
+      fontSize: "20px",
+      fontWeight: "bold",
+      color: "#FFFFFF",
+      textShadow: "2px 2px 6px rgba(0, 0, 0, 0.9)",
+      letterSpacing: "1px",
+      textTransform: "none",
+      lineHeight: 1,
+      marginBottom: "4px",
+    },
+    previewSubText: {
+      fontFamily: "Dancing Script, cursive",
+      fontSize: "10px",
+      color: "#FFFFFF",
+      fontStyle: "italic",
+      textShadow: "1px 1px 4px rgba(0, 0, 0, 0.9)",
+      marginTop: "0px",
+      letterSpacing: "0.5px",
+    },
   };
 
   const renderLayoutPreview = (layout: CollageLayout, isSelected: boolean) => {
@@ -391,21 +653,28 @@ layoutCard: {
         style={{
           ...styles.layoutCard,
           ...(isSelected ? styles.layoutCardSelected : {}),
+          ...(layout.animated ? styles.layoutCardAnimated : {}),
         }}
         onClick={() => onLayoutSelect?.(layout)}
         onMouseOver={(e) => {
           if (!isSelected) {
-            e.currentTarget.style.borderColor = colors.textMuted;
+            e.currentTarget.style.borderColor = layout.animated ? "#FFD700" : colors.textMuted;
             e.currentTarget.style.transform = "scale(1.02)";
           }
         }}
         onMouseOut={(e) => {
           if (!isSelected) {
-            e.currentTarget.style.borderColor = colors.border;
+            e.currentTarget.style.borderColor = layout.animated ? "#FFD700" : colors.border;
             e.currentTarget.style.transform = "scale(1)";
           }
         }}
       >
+        {layout.animated && (
+          <div style={styles.animatedBadge}>
+            ⚡ ANIMATED
+          </div>
+        )}
+        
         <div style={styles.layoutPreview}>
           {layout.slots.map((slot) => (
             <div
@@ -425,7 +694,20 @@ layoutCard: {
               }}
             />
           ))}
+          
+          {/* Text overlay preview for animated layouts */}
+          {layout.textOverlay && (
+            <div style={styles.textOverlayPreview}>
+              <div style={styles.previewMainText}>
+                {layout.textOverlay.mainText}
+              </div>
+              <div style={styles.previewSubText}>
+                {layout.textOverlay.subText}
+              </div>
+            </div>
+          )}
         </div>
+        
         <div style={styles.layoutInfo}>
           <div style={styles.layoutName}>{layout.name}</div>
           <div style={styles.layoutDesc}>{layout.description}</div>
@@ -439,7 +721,7 @@ layoutCard: {
       <div style={styles.header}>
         <h2 style={styles.title}>Collage Layouts</h2>
         <p style={styles.subtitle}>
-          Choose a trendy layout for your photos and videos
+          Choose a layout for your photos and videos • ⚡ = Animated
         </p>
         <div style={styles.categoryButtons}>
           {categories.map((cat) => (
@@ -480,4 +762,9 @@ layoutCard: {
   );
 };
 
+// ============================================================================
+// EXPORTS
+// ============================================================================
+
+export { COLLAGE_LAYOUTS };
 export default CollagePanel;

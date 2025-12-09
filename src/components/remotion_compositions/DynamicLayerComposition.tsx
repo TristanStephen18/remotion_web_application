@@ -22,16 +22,18 @@ export interface LayerBase {
   size: { width: number; height: number };
   rotation: number;
   opacity: number;
-  animation?: {
-    entrance?:
-      | "fade"
-      | "slideUp"
-      | "slideDown"
-      | "scale"
-      | "zoomPunch"
-      | "none";
-    entranceDuration?: number;
-  };
+ animation?: {
+  entrance?:
+    | "fade"
+    | "slideUp"
+    | "slideDown"
+    | "slideLeft"
+    | "slideRight"
+    | "scale"
+    | "zoomPunch"
+    | "none";
+  entranceDuration?: number;
+};
 }
 
 export interface TextLayer extends LayerBase {
@@ -454,6 +456,26 @@ const getEntranceAnimation = (
         opacity,
         transform: `translateY(${interpolate(progress, [0, 1], [-50, 0])}px)`,
       };
+
+    case "slideLeft":
+  return {
+    opacity: interpolate(relativeFrame, [0, duration], [0, 1]),
+    transform: `translateX(${interpolate(
+      progress,
+      [0, 1],
+      [100, 0]
+    )}%)`,
+  };
+case "slideRight":
+  return {
+    opacity: interpolate(relativeFrame, [0, duration], [0, 1]),
+    transform: `translateX(${interpolate(
+      progress,
+      [0, 1],
+      [-100, 0]
+    )}%)`,
+  };
+  
     case "scale":
       return {
         opacity,
@@ -1230,13 +1252,17 @@ const ChatBubbleComponent: React.FC<{
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
 
   const rotation = layer.rotation || 0;
-
+  
   const containerStyle: React.CSSProperties = {
     position: "absolute",
-    left: "50%",
+    ...(layer.isSender 
+      ? { right: "1%" } 
+      : { left: "1%" }    
+    ),
     top: `${layer.position.y}%`,
-    width: `${layer.size.width}%`,
-    transform: `translate(-50%, 0%) rotate(${rotation}deg) ${entrance.transform}`,
+    width: "auto",
+    maxWidth: "75%",
+    transform: `translateY(-50%) rotate(${rotation}deg) ${entrance.transform}`,
     opacity: layer.opacity * entrance.opacity,
     display: "flex",
     flexDirection: layer.isSender ? "row-reverse" : "row",
@@ -1266,7 +1292,7 @@ const ChatBubbleComponent: React.FC<{
   let bubbleStyle: React.CSSProperties = {
     maxWidth: "70%", // Decreased Width: Keeps bubbles away from edges
     padding: "20px 32px",
-    fontSize: "42px",
+    fontSize: "32px",
     lineHeight: "1.35",
     position: "relative",
     wordWrap: "break-word",
@@ -1347,7 +1373,7 @@ const ChatBubbleComponent: React.FC<{
       <div
         style={{
           position: "absolute",
-          left: "50%",
+          left: `${layer.position.x}%`,
           top: `${layer.position.y}%`,
           transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
           width: "90%",
@@ -1397,7 +1423,7 @@ const ChatBubbleComponent: React.FC<{
             color: textColor,
             borderRadius: 28,
             padding: "20px 28px",
-            fontSize: 35,
+            fontSize: 30,
             lineHeight: 1.6,
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',

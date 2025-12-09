@@ -3,6 +3,7 @@ import type {
   Layer,
   ImageLayer,
   TextLayer,
+  ChatBubbleLayer,
 } from "../remotion_compositions/DynamicLayerComposition";
 import { measureTextDimensions } from "../../utils/textAutoResize";
 
@@ -49,6 +50,11 @@ function isTextLayer(layer: Layer): layer is TextLayer {
 function isImageLayer(layer: Layer): layer is ImageLayer {
   return layer.type === "image";
 }
+
+function isChatBubbleLayer(layer: Layer): layer is ChatBubbleLayer { 
+  return layer.type === "chat-bubble";
+}
+
 
 export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   layers,
@@ -154,24 +160,29 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   );
 
   const handleInput = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>, layerId: string) => {
-      const layer = layers.find((l) => l.id === layerId);
-      if (!layer || !isTextLayer(layer)) return;
+  (e: React.ChangeEvent<HTMLTextAreaElement>, layerId: string) => {
+    const layer = layers.find((l) => l.id === layerId);
+    if (!layer) return;
 
-      const newContent = e.target.value;
-      const tempLayer = { ...layer, content: newContent };
+    const newValue = e.target.value;
+
+    // Handle Text Layers
+    if (isTextLayer(layer)) {
+      const tempLayer = { ...layer, content: newValue };
       const newSize = measureTextDimensions(tempLayer, 1080, 1920);
 
       onLayerUpdate(layerId, {
-        content: newContent,
+        content: newValue,
         size: {
           width: newSize.width,
           height: newSize.height,
         },
       } as Partial<TextLayer>);
-    },
-    [layers, onLayerUpdate]
-  );
+    }
+
+  },
+  [layers, onLayerUpdate]
+);
 
   const handleEditBlur = useCallback(
     () => onEditingLayerChange(null),
@@ -709,6 +720,12 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
       whiteSpace: "nowrap",
       pointerEvents: "none",
     },
+
+    elementBoxSelectedChat: {
+      border: "2px solid rgba(59, 130, 246, 0.6)",
+      borderRadius: "8px",
+      boxShadow: "0 0 12px rgba(59, 130, 246, 0.4)",
+    },
   };
 
   const renderGhostText = (layer: TextLayer) => {
@@ -802,16 +819,31 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
         const isEditing = editingLayerId === layer.id;
         const rotation = layer.rotation || 0;
         const isText = isTextLayer(layer);
+        const isChat = isChatBubbleLayer(layer);
 
         // CALCULATE DIMENSIONS AND POSITION - ACCOUNTING FOR CROP
         let displayWidth = layer.size.width;
         let displayHeight = layer.size.height;
-        let adjustedCenterX = layer.position.x;
+
+         let adjustedCenterX = layer.position.x;
         let adjustedCenterY = layer.position.y;
         let transformOrigin = "center center";
         
-        // If this is an image layer with crop data, adjust dimensions AND position
-        // If this is an image layer with crop data, adjust dimensions AND position
+
+        if (isChat) {
+  const chatLayer = layer as ChatBubbleLayer;
+  if (chatLayer.chatStyle !== 'fakechatconversation') {
+    if (chatLayer.isSender) {
+      // Sender bubbles: right: 2%
+      adjustedCenterX = 100 - 2 - (displayWidth / 2);
+    } else {
+      // Receiver bubbles: left: 2%
+      adjustedCenterX = 2 + (displayWidth / 2);
+    }
+  }
+}
+        
+
         if (isImageLayer(layer) && layer.crop && cropModeLayerId !== layer.id) {
           const crop = layer.crop;
           displayWidth = layer.size.width * (crop.width / 100);
@@ -855,7 +887,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
               width,
               height,
               zIndex: isSelected ? 100 : baseZIndex,
-              ...(isSelected ? styles.elementBoxSelected : {}),
+              ...(isSelected ? (isChat ? styles.elementBoxSelectedChat : styles.elementBoxSelected) : {}),
               cursor: isEditing
                 ? "text"
                 : isSelected
@@ -899,7 +931,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
               </span>
             )}
 
-            {isSelected && !isEditing && cropModeLayerId !== layer.id && (
+            {isSelected && !isEditing && !isChat && cropModeLayerId !== layer.id && (
               <>
                 {/* Normal resize handles */}
                 <div style={styles.rotateLine} />

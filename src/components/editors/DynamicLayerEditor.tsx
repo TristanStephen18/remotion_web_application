@@ -48,6 +48,7 @@ import {
   isImageLayer,
   isAudioLayer,
   isVideoLayer,
+  isChatBubbleLayer,
 } from "../remotion_compositions/DynamicLayerComposition";
 
 // Hooks
@@ -72,6 +73,7 @@ import { TextEditor } from "../editor_components/TextEditor";
 import { AudioEditor } from "../editor_components/AudioEditor";
 import { ImageEditor } from "../editor_components/ImageEditor";
 import { VideoEditor } from "../editor_components/VideoEditor";
+import { ChatEditor } from "../editor_components/ChatEditor";
 import {
   RemotionPreview,
   type RemotionPreviewHandle,
@@ -1016,11 +1018,15 @@ const DynamicLayerEditor: React.FC = () => {
     selectedLayer && isAudioLayer(selectedLayer) ? selectedLayer : null;
   const selectedVideoLayer =
     selectedLayer && isVideoLayer(selectedLayer) ? selectedLayer : null;
+  const selectedChatLayer = useMemo(() =>
+  selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
+[selectedLayer]);
   const showEditPanel =
     selectedTextLayer !== null ||
     selectedImageLayer !== null ||
     selectedAudioLayer !== null ||
-    selectedVideoLayer !== null;
+    selectedVideoLayer !== null ||
+    selectedChatLayer !== null
 
   const getSelectedVideoElement = useCallback((): HTMLVideoElement | null => {
     if (!selectedLayerId) return null;
@@ -1432,56 +1438,65 @@ const DynamicLayerEditor: React.FC = () => {
       ];
 
       // Animation options for variety
-      const animations = ["fade", "slideUp", "scale", "zoomPunch"];
+      // const animations = ["fade", "slideUp", "scale", "zoomPunch"];
 
       // Timing configuration
-      const collageEndFrame = 90; // Collage shows for 3 seconds
-      const photoStartFrame = 90; // Individual photos start at 3 seconds
+      const photoDelay = 18;
+const slideSpeed = 45;
+const holdTime = 45; // Time to view complete collage after all photos enter
+const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const photoStartFrame = collageEndFrame; 
       const photoDuration = 60; // Each photo shows for 2 seconds
 
-      // 1. CREATE COLLAGE SLOT LAYERS (with aesthetic enhancements)
-      const collageLayers: Layer[] = layout.slots.map((slot, index) => {
-        const layerId = generateId();
-        const animation = animations[index % animations.length];
 
-        const imageLayer: ImageLayer = {
-          id: layerId,
-          name: `Collage Slot ${index + 1}`,
-          visible: true,
-          locked: false,
-          type: "image",
-          startFrame: 0,
-          endFrame: collageEndFrame,
-          position: {
-            x: slot.x + slot.width / 2,
-            y: slot.y + slot.height / 2,
-          },
-          size: {
-            width: slot.width,
-            height: slot.height,
-          },
-          rotation: slot.rotation || 0,
-          opacity: 1,
-          animation: {
-            entrance: animation as
-              | "fade"
-              | "slideUp"
-              | "slideDown"
-              | "scale"
-              | "zoomPunch",
-            entranceDuration: 30,
-          },
-          src: sampleImages[index % sampleImages.length],
-          objectFit: "cover",
-          // Enhanced aesthetic filters
-          filter: slot.shadow
-            ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
-            : "brightness(1.05) contrast(1.05)",
-        };
+const collageLayers: Layer[] = layout.slots.map((slot, index) => {
+  const layerId = generateId();
 
-        return imageLayer;
-      });
+  // Determine slide animation based on slot direction
+  let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
+  if (slot.slideDirection === "left") {
+    slideAnimation = "slideRight"; 
+  } else if (slot.slideDirection === "right") {
+    slideAnimation = "slideLeft";
+  } else if (slot.slideDirection === "up") {
+    slideAnimation = "slideDown";
+  } else if (slot.slideDirection === "down") {
+    slideAnimation = "slideUp";
+  } else {
+    slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
+  }
 
+  const imageLayer: ImageLayer = {
+    id: layerId,
+    name: `Collage Slot ${index + 1}`,
+    visible: true,
+    locked: false,
+    type: "image",
+    startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
+    endFrame: collageEndFrame,
+    position: {
+      x: slot.x + slot.width / 2,
+      y: slot.y + slot.height / 2,
+    },
+    size: {
+      width: slot.width,
+      height: slot.height,
+    },
+    rotation: slot.rotation || 0,
+    opacity: 1,
+    animation: {
+      entrance: slideAnimation,
+      entranceDuration: slideSpeed,
+    },
+    src: sampleImages[index % sampleImages.length],
+    objectFit: "cover",
+    filter: slot.shadow
+      ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
+      : "brightness(1.05) contrast(1.05)",
+  };
+
+  return imageLayer;
+});
       // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS (aesthetic designs)
       const trailingPhotoLayers: ImageLayer[] = [];
       const individualAnimations = ["zoomPunch", "scale", "fade"];
@@ -1514,6 +1529,8 @@ const DynamicLayerEditor: React.FC = () => {
         });
       }
 
+      const textOverlay = layout.textOverlay;
+
       // 3. CREATE AESTHETIC TEXT OVERLAY (only during collage section)
       const textLayer: TextLayer = {
         id: generateId(),
@@ -1523,7 +1540,7 @@ const DynamicLayerEditor: React.FC = () => {
         type: "text",
         startFrame: 0,
         endFrame: collageEndFrame,
-        position: { x: 50, y: 10 }, // Top center
+        position: { x: 50, y: 47 }, // Top center
         size: { width: 85, height: 12 },
         rotation: 0,
         opacity: 1,
@@ -1531,8 +1548,8 @@ const DynamicLayerEditor: React.FC = () => {
           entrance: "slideDown",
           entranceDuration: 30,
         },
-        content: layout.name.toUpperCase(), // Uppercase for style
-        fontFamily: "Poppins",
+        content: textOverlay ? textOverlay.mainText : layout.name.toUpperCase(), // Uppercase for style
+        fontFamily: textOverlay ? textOverlay.mainFont : "Poppins",
         fontSize: 7,
         fontColor: "#ffffff",
         fontWeight: "800",
@@ -1540,7 +1557,7 @@ const DynamicLayerEditor: React.FC = () => {
         textAlign: "center",
         lineHeight: 1.3,
         letterSpacing: 3, // Wide letter spacing for aesthetic
-        textTransform: "uppercase",
+        textTransform: textOverlay ? "none" : "uppercase",
         textOutline: true,
         outlineColor: "#000000",
         textShadow: true,
@@ -1549,6 +1566,40 @@ const DynamicLayerEditor: React.FC = () => {
         shadowY: 4,
         shadowBlur: 12,
       };
+
+      const subtitleLayer: TextLayer | null = textOverlay ? {
+  id: generateId(),
+  name: "Collage Subtitle",
+  visible: true,
+  locked: false,
+  type: "text",
+  startFrame: 10,
+  endFrame: collageEndFrame,
+  position: { x: 50, y: 53 },
+  size: { width: 70, height: 8 },
+  rotation: 0,
+  opacity: 1,
+  animation: {
+    entrance: "fade",
+    entranceDuration: 20,
+  },
+  content: textOverlay.subText,
+  fontFamily: textOverlay.subFont,
+  fontSize: 4,
+  fontColor: "#ffffff",
+  fontWeight: "normal",
+  fontStyle: "italic",
+  textAlign: "center",
+  lineHeight: 1.2,
+  letterSpacing: 1,
+  textTransform: "none",
+  textOutline: false,
+  textShadow: true,
+  shadowColor: "#000000",
+  shadowX: 0,
+  shadowY: 3,
+  shadowBlur: 10,
+} : null;
 
       // 4. CREATE SUBTLE GRADIENT OVERLAY (only during collage for depth)
       const gradientOverlay: ImageLayer = {
@@ -1590,12 +1641,13 @@ const DynamicLayerEditor: React.FC = () => {
 
       // 6. COMBINE ALL LAYERS IN PROPER ORDER
       const allLayers: Layer[] = [
-        ...collageLayers, // Collage slots (appear first)
-        gradientOverlay, // Gradient for collage section
-        textLayer, // Text overlay (only during collage)
-        ...trailingPhotoLayers, // Individual fullscreen photos
-        bottomVignette, // Vignette for individual photos
-      ];
+  ...collageLayers,
+  gradientOverlay,
+  textLayer,
+  ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
+  ...trailingPhotoLayers,
+  bottomVignette,
+];
 
       // Remove ALL old layers and add new composition
       console.log("=== CREATING AESTHETIC COLLAGE COMPOSITION ===");
@@ -2233,23 +2285,37 @@ const DynamicLayerEditor: React.FC = () => {
   // ==========================================
   // TIMELINE TRACKS (Reversed Logic)
   // ==========================================
-  const timelineTracks = useMemo(
-    (): TimelineTrack[] =>
-      layers
-        ? [...layers].reverse().map((layer) => ({
-            id: layer.id,
-            name: layer.name,
-            type: layer.type as any,
-            label: layer.name,
-            startFrame: layer.startFrame,
-            endFrame: layer.endFrame,
-            color: LAYER_COLORS[layer.type] || "#888",
-            visible: layer.visible,
-            locked: layer.locked,
-          }))
-        : [],
-    [layers]
-  );
+ const timelineTracks = useMemo(
+  (): TimelineTrack[] => {
+    if (!layers) return [];
+    
+    // Detect active chat style to filter chat-bg appropriately
+    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as ChatBubbleLayer | undefined;
+    const activeChatStyle = firstChatBubble?.chatStyle;
+    
+    return [...layers]
+      .reverse()
+      .filter((layer) => {
+        // Hide chat-bg layer for non-fakechatconversation styles
+        if (layer.id === 'chat-bg' && activeChatStyle && activeChatStyle !== 'fakechatconversation') {
+          return false;
+        }
+        return true;
+      })
+      .map((layer) => ({
+        id: layer.id,
+        name: layer.name,
+        type: layer.type as any,
+        label: layer.name,
+        startFrame: layer.startFrame,
+        endFrame: layer.endFrame,
+        color: LAYER_COLORS[layer.type] || "#888",
+        visible: layer.visible,
+        locked: layer.locked,
+      }));
+  },
+  [layers]
+);
 
   const handleTrackSelect = useCallback(
     (trackId: string | null) => {
@@ -3131,6 +3197,7 @@ onMouseOut={(e) => {
                   {selectedAudioLayer && "Edit Audio"}
                   {selectedVideoLayer && "Edit Video"}
                   {selectedImageLayer && "Edit Image"}
+                  {selectedChatLayer && "Edit Chat"}
                 </span>
                 <button
                   style={editorStyles.backButton}
@@ -3168,7 +3235,7 @@ onMouseOut={(e) => {
                   }
                 />
               )}
-              {selectedVideoLayer && (
+             {selectedVideoLayer && (
                 <VideoEditor
                   layer={selectedVideoLayer}
                   totalFrames={totalFrames}
@@ -3177,6 +3244,13 @@ onMouseOut={(e) => {
                   onReplace={() =>
                     openMediaGallery("video", selectedVideoLayer.id, "video")
                   }
+                />
+              )}
+              {selectedChatLayer && (
+                <ChatEditor
+                  layer={selectedChatLayer}
+                  onUpdate={updateLayer}
+                  onDelete={deleteLayer}
                 />
               )}
             </>
