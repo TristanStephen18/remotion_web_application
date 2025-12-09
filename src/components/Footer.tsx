@@ -15,7 +15,7 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-sm font-semibold text-white mb-5 max-[480px]:mb-4">Features</h4>
             <ul className="list-none p-0 m-0">
-              <li className="mb-3">
+              {/* <li className="mb-3">
                 <Link to="/templates" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Video Templates</Link>
               </li>
               <li className="mb-3">
@@ -23,6 +23,15 @@ const Footer: React.FC = () => {
               </li>
               <li className="mb-3">
                 <Link to="/downloader" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Video & Audio Downloader</Link>
+              </li> */}
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Video Templates</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">AI Tools</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Video & Audio Downloader</Link>
               </li>
             </ul>
           </div>
@@ -31,7 +40,7 @@ const Footer: React.FC = () => {
           <div>
             <h4 className="text-sm font-semibold text-white mb-5 max-[480px]:mb-4">Templates</h4>
             <ul className="list-none p-0 m-0">
-              <li className="mb-3">
+              {/* <li className="mb-3">
                 <Link to="/templates/fake-text-conversation" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Fake Text Conversation</Link>
               </li>
               <li className="mb-3">
@@ -45,6 +54,21 @@ const Footer: React.FC = () => {
               </li>
               <li className="mb-3">
                 <Link to="/templates/ken-burns-carousel" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Ken Burns Carousel</Link>
+              </li> */}
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Fake Text Conversation</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Relatable Quotes + Viral Sound</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Reaction Video</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Image / Video Collage Edit</Link>
+              </li>
+              <li className="mb-3">
+                <Link to="/login" className="text-white/80 no-underline text-sm transition-colors duration-200 hover:text-white">Ken Burns Carousel</Link>
               </li>
             </ul>
           </div>
@@ -89,7 +113,7 @@ const Footer: React.FC = () => {
 
         {/* Footer Bottom */}
         <div className="flex justify-between items-center pt-8 border-t border-white/20 max-[768px]:flex-col max-[768px]:gap-4 max-[768px]:text-center">
-          <p className="text-white/70 text-[0.8rem] m-0">© 2024 ViralMotion. All rights reserved.</p>
+          <p className="text-white/70 text-[0.8rem] m-0">© 2025 ViralMotion. All rights reserved.</p>
         </div>
       </div>
     </footer>

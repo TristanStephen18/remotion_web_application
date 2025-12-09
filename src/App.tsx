@@ -50,6 +50,7 @@ import QuoteTester from "./trials/quotesapitester.tsx";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
 import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
+import PricingPage from "./pages/PricingPage.tsx";
 
 // ✅ NEW: Auth Provider Component
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -226,10 +227,20 @@ function App() {
                 </PublicOnlyRoute>
               }
             />
+            
+            <Route
+            path="/pricing"
+            element={
+              <PublicOnlyRoute>
+                <PricingPage />
+              </PublicOnlyRoute>
+            }
+          />
 
             {/* Loading pages (no protection needed) */}
             <Route path="/loading" element={<GoogleLoading />} />
             <Route path="/initializing-login" element={<LoginLoading />} />
+            {/* <Route path="/pricing" element={<PricingPage />} /> */}
 
             {/* ========== PROTECTED ROUTES (Require authentication) ========== */}
             <Route
