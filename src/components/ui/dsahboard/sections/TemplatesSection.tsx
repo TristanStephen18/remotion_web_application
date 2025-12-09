@@ -91,7 +91,7 @@ export const TemplatesSection: React.FC<TemplatesSectionProps> = ({ onTry }) => 
 
   return (
     
-    <section className="w-full space-y-0">
+    <section>
       {/* === Explore Templates Header === */}
       <h2 className="text-1xl sm:text-2xl font-bold text-gray-900">
         Explore templates
