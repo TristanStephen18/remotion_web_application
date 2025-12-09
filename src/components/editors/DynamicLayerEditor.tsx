@@ -543,6 +543,7 @@ const DynamicLayerEditor: React.FC = () => {
   const previewRef = useRef<RemotionPreviewHandle>(null);
   const previewContainerRef = useRef<HTMLDivElement>(null);
   const remotionWrapperRef = useRef<HTMLDivElement>(null);
+  const mainAreaRef = useRef<HTMLDivElement>(null);
 
   // AI Tool Modals
   const [showVoiceoverModal, setShowVoiceoverModal] = useState(false);
