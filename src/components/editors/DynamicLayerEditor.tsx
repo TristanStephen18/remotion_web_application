@@ -2458,6 +2458,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         const inputProps = {
           config: {
             layers: layersToRender,
+            duration
           },
         };
         const videoUrl = await renderVideoUsingLambda(
