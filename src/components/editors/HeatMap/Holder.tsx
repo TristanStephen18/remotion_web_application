@@ -274,6 +274,7 @@ export const HeatmapEditor: React.FC = () => {
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={saveNewProject}
+        screenshot="askdhksaj"
       />
       {showModal && (
         <ExportModal

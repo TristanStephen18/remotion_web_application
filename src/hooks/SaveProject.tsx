@@ -88,25 +88,12 @@ export function useProjectSave<T>({
 
   const saveNewProject = async (
     titleFromModal: string,
-    setStatus: (s: string) => void
+    setStatus: (s: string) => void,
+    screenshot: string,
   ) => {
     try {
       setStatus("Saving project...");
       const currentProps = buildProps();
-      const renderProps = filterRenderProps ? filterRenderProps(currentProps) : currentProps;
-
-      const exportRes = await fetch(videoEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inputProps: {config: renderProps},
-          format: "mp4",
-        }),
-      });
-
-      if (!exportRes.ok) throw new Error(await exportRes.text());
-      const exportResult = await exportRes.json();
-      const projectVidUrl = exportResult.url;
 
       const response = await fetch(`${backendPrefix}/projects/save`, {
         method: "POST",
@@ -118,7 +105,7 @@ export function useProjectSave<T>({
           title: titleFromModal,
           templateId,
           props: currentProps, // save full props
-          projectVidUrl,
+          screenshot,
         }),
       });
 

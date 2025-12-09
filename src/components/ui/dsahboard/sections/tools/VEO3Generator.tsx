@@ -1,3 +1,4 @@
+
 // src/components/ui/dashboard/sections/tools/VEO3Generator.tsx
 import React, { useState, useEffect } from "react";
 import {
@@ -9,6 +10,7 @@ import {
   FiTrash2,
   FiVideo,
   FiPlay,
+  FiEdit3,
 } from "react-icons/fi";
 import { HiOutlineDocumentText } from "react-icons/hi";
 import { Wand2 } from "lucide-react";
@@ -17,6 +19,7 @@ import {
   type VEO3Generation,
 } from "../../../../../services/veo3Service";
 import type { CSSProperties } from "react";
+import { useNavigate } from "react-router-dom";
 
 // Sample prompts for the library
 const samplePrompts = [
@@ -73,6 +76,7 @@ const samplePrompts = [
 ];
 
 export const VEO3Generator: React.FC = () => {
+  const navigate = useNavigate();
   const [model, setModel] = useState("veo-3.1-generate-preview");
   const [duration, setDuration] = useState("8");
   const [aspectRatio, setAspectRatio] = useState("16:9");
@@ -90,11 +94,6 @@ export const VEO3Generator: React.FC = () => {
   const [showPromptLibrary, setShowPromptLibrary] = useState(false);
   const [showPromptDocs, setShowPromptDocs] = useState(false);
 
-  // Reference image states (commented out - waiting for Google API support)
-  // const [referenceImageFile, setReferenceImageFile] = useState<File | null>(null);
-  // const [referenceImagePreview, setReferenceImagePreview] = useState<string | null>(null);
-  // const [referenceType, setReferenceType] = useState<"ASSET" | "STYLE">("ASSET");
-  // const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const MAX_RECENT = 6;
 
@@ -163,23 +162,10 @@ export const VEO3Generator: React.FC = () => {
         model,
         duration,
         aspectRatio,
-        // referenceImage: referenceImageFile || undefined,
-        // referenceType: referenceType,
       });
-
       if (response.success) {
         fetchGenerations();
         setPrompt("");
-
-        // Clear reference image if enabled
-        // if (referenceImagePreview) {
-        //   URL.revokeObjectURL(referenceImagePreview);
-        // }
-        // setReferenceImagePreview(null);
-        // setReferenceImageFile(null);
-        // if (fileInputRef.current) {
-        //   fileInputRef.current.value = "";
-        // }
       }
     } catch (error) {
       console.error("Failed to generate video:", error);
@@ -201,6 +187,21 @@ export const VEO3Generator: React.FC = () => {
       console.error("Failed to delete generation:", error);
       alert("Failed to delete video. Please try again.");
     }
+  };
+  const handleEdit = (generation: VEO3Generation) => {
+    // Navigate to editor with video data as state
+    navigate('/editor', {
+      state: {
+        fromVEO: true,
+        videoData: {
+          url: generation.videoUrl,
+          prompt: generation.prompt,
+          duration: parseInt(generation.duration),
+          aspectRatio: generation.aspectRatio,
+          model: generation.model,
+        }
+      }
+    });
   };
 
   const handlePreviewClick = (generation: VEO3Generation) => {
@@ -398,7 +399,6 @@ export const VEO3Generator: React.FC = () => {
                   <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
                   Your Prompt
                 </label>
-
                 <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -406,7 +406,6 @@ export const VEO3Generator: React.FC = () => {
                   rows={6}
                   className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 text-sm text-gray-800 outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
                 />
-
                 <button
                   onClick={handleGenerate}
                   disabled={!prompt.trim() || loading}
@@ -454,7 +453,6 @@ export const VEO3Generator: React.FC = () => {
                     )}
                   </div>
                 </div>
-
                 <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 sm:p-5 min-h-[450px] sm:min-h-[500px]">
                   {generations.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center py-12">
@@ -535,7 +533,6 @@ export const VEO3Generator: React.FC = () => {
                                 </div>
                               )}
                             </button>
-
                             <div className="flex-1 min-w-0 flex flex-col">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
@@ -549,7 +546,6 @@ export const VEO3Generator: React.FC = () => {
                                   {getStatusText(generation.status)}
                                 </span>
                               </div>
-
                               <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 mb-2.5">
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
                                   {generation.model.replace(
@@ -573,14 +569,12 @@ export const VEO3Generator: React.FC = () => {
                                   </>
                                 )}
                               </div>
-
                               {generation.errorMessage && (
                                 <p className="text-xs text-red-600 mb-2 line-clamp-1">
                                   {generation.errorMessage}
                                 </p>
                               )}
-
-                              <div className="flex items-center gap-2 mt-auto">
+                              <div className="flex items-center gap-2 mt-auto flex-wrap">
                                 {generation.status === "completed" &&
                                   generation.videoUrl && (
                                     <>
@@ -605,11 +599,20 @@ export const VEO3Generator: React.FC = () => {
                                           Download
                                         </span>
                                       </a>
+                                      <button
+                                        onClick={() => handleEdit(generation)}
+                                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                                      >
+                                        <FiEdit3 className="text-sm" />
+                                        <span className="hidden sm:inline">
+                                          Edit
+                                        </span>
+                                      </button>
                                     </>
                                   )}
                                 <button
                                   onClick={() => handleDelete(generation.id)}
-                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-all ml-auto border border-red-200"
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-all border border-red-200 ml-auto"
                                 >
                                   <FiTrash2 className="text-sm" />
                                   <span className="hidden sm:inline">
@@ -655,7 +658,6 @@ export const VEO3Generator: React.FC = () => {
                   Close
                 </button>
               </div>
-
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                 {samplePrompts.map((category) => (
                   <div key={category.category}>
@@ -716,7 +718,6 @@ export const VEO3Generator: React.FC = () => {
                   Close
                 </button>
               </div>
-
               <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
                 {/* Best Practices */}
                 <div>
@@ -773,7 +774,6 @@ export const VEO3Generator: React.FC = () => {
                     </li>
                   </ul>
                 </div>
-
                 {/* Example Structure */}
                 <div>
                   <h4 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -801,7 +801,6 @@ export const VEO3Generator: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
                 {/* Quick Tips Grid */}
                 <div>
                   <h4 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -847,7 +846,6 @@ export const VEO3Generator: React.FC = () => {
                     </div>
                   </div>
                 </div>
-
                 {/* Common Mistakes */}
                 <div>
                   <h4 className="text-base font-bold text-gray-800 mb-3 flex items-center gap-2">
@@ -906,7 +904,10 @@ export const VEO3Generator: React.FC = () => {
                   </h4>
                   <p className="text-xs text-gray-600 mt-1 flex flex-wrap gap-1.5">
                     <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
-                      {activeGeneration.model.replace("-generate-preview", "")}
+                      {activeGeneration.model.replace(
+                        "-generate-preview",
+                        ""
+                      )}
                     </span>
                     <span>{activeGeneration.duration}</span>
                     <span>•</span>
@@ -930,7 +931,6 @@ export const VEO3Generator: React.FC = () => {
                   Close
                 </button>
               </div>
-
               <div className="flex-1 min-h-0 bg-black flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-auto rounded-b-2xl">
                 {activeGeneration.videoUrl ? (
                   <video
@@ -983,7 +983,6 @@ export const VEO3Generator: React.FC = () => {
                   Close
                 </button>
               </div>
-
               <div className="flex-1 min-h-0 overflow-y-auto bg-gradient-to-br from-indigo-50 to-purple-50 p-4 sm:p-6 rounded-b-2xl">
                 {loadingAllGenerations ? (
                   <div className="flex items-center justify-center py-12 text-gray-600">
@@ -1047,7 +1046,6 @@ export const VEO3Generator: React.FC = () => {
                                 </div>
                               )}
                             </button>
-
                             <div className="flex-1 min-w-0 flex flex-col">
                               <div className="flex items-start justify-between gap-2 mb-2">
                                 <p className="text-sm font-medium text-gray-900 line-clamp-2 leading-snug">
@@ -1061,7 +1059,6 @@ export const VEO3Generator: React.FC = () => {
                                   {getStatusText(generation.status)}
                                 </span>
                               </div>
-
                               <div className="flex flex-wrap items-center gap-1.5 text-xs text-gray-500 mb-2.5">
                                 <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 font-medium">
                                   {generation.model.replace(
@@ -1077,7 +1074,6 @@ export const VEO3Generator: React.FC = () => {
                                 <span className="hidden sm:inline text-xs">
                                   {formatDateTime(generation.createdAt)}
                                 </span>
-
                                 {generation.referenceImageUrl && (
                                   <>
                                     <span className="hidden sm:inline">•</span>
@@ -1090,14 +1086,12 @@ export const VEO3Generator: React.FC = () => {
                                   </>
                                 )}
                               </div>
-
                               {generation.errorMessage && (
                                 <p className="text-xs text-red-600 mb-2 line-clamp-2">
                                   {generation.errorMessage}
                                 </p>
                               )}
-
-                              <div className="flex items-center gap-2 mt-auto">
+                              <div className="flex items-center gap-2 mt-auto flex-wrap">
                                 {generation.status === "completed" &&
                                   generation.videoUrl && (
                                     <>
@@ -1122,11 +1116,20 @@ export const VEO3Generator: React.FC = () => {
                                           Download
                                         </span>
                                       </a>
+                                      <button
+                                        onClick={() => handleEdit(generation)}
+                                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                                      >
+                                        <FiEdit3 className="text-sm" />
+                                        <span className="hidden sm:inline">
+                                          Edit
+                                        </span>
+                                      </button>
                                     </>
                                   )}
                                 <button
                                   onClick={() => handleDelete(generation.id)}
-                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-all ml-auto border border-red-200"
+                                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-lg text-xs font-medium hover:bg-red-100 transition-all border border-red-200 ml-auto"
                                 >
                                   <FiTrash2 className="text-sm" />
                                   <span className="hidden sm:inline">

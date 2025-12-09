@@ -49,6 +49,7 @@ import QuoteTester from "./trials/quotesapitester.tsx";
 // Theme
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
+import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 
 // ✅ NEW: Auth Provider Component
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -596,6 +597,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/ss" element={<VideoEditorDemo/>} />
+
 
             {/* ========== 404 FALLBACK ========== */}
             <Route path="*" element={<Navigate to="/" replace />} />

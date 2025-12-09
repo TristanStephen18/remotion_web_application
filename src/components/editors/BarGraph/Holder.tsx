@@ -248,6 +248,7 @@ export const BarGraphEditor: React.FC = () => {
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={saveNewProject}
+        screenshot="hdaskhdksa"
       />
 
       <div style={{ display: "flex", flex: 1, marginTop: "60px" }}>

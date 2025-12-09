@@ -310,6 +310,7 @@ export const StoryTellingVideoEditor: React.FC = () => {
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={saveNewProject}
+        screenshot="askdhksaj"
       />
 
       <div style={{ display: "flex", flex: 1, marginTop: "60px" }}>

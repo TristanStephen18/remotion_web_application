@@ -182,6 +182,7 @@ export const LogoAnimationEditor: React.FC = () => {
         open={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={saveNewProject}
+        screenshot="askdhksaj"
       />
 
       {/* This div wraps the main content and adds the top margin */}

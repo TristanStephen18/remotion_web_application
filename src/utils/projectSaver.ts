@@ -34,13 +34,8 @@ export async function saveNewDesign(
   }
 }
 
-export async function saveExistingProject(projectId: string, props: any) {
+export async function saveExistingProject(projectId: string, props: any, screenshot: string) {
   try {
-    const videourl = await renderVideoUsingLambdaWithoutSaving(
-      { config: {layers: props.layers} },
-      "mp4"
-    );
-    if (videourl === "error") throw new Error("Error saving design");
     const saveResponse = await fetch(`${backendPrefix}/projects/update/${projectId}`, {
       method: "PUT",
       headers: {
@@ -49,7 +44,7 @@ export async function saveExistingProject(projectId: string, props: any) {
       },
       body: JSON.stringify({
         props,
-        projectVidUrl: videourl,
+        screenshot
       }),
     });
     if (!saveResponse.ok) throw new Error("Error saving design");

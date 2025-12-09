@@ -139,35 +139,46 @@ export const MyTemplatesSection: React.FC<MyDesignProps> = ({
                   </div>
                 )}
 
-                {/* Video Thumbnail */}
-                <div className="relative h-44 overflow-hidden">
-                  <video
-                    src={project.projectVidUrl}
-                    muted
-                    playsInline
-                    preload="metadata"
-                    className="w-full h-full object-cover"
-                    onMouseOver={(e) => {
-                      e.currentTarget.play();
-                      e.currentTarget.playbackRate = 2.5;
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.pause();
-                      e.currentTarget.currentTime = 0;
-                    }}
-                  />
-                  {hoveredId === project.id && (
-                    <div className="absolute bottom-0 w-full bg-black/60 text-white px-3 py-2 backdrop-blur-sm">
-                      <p className="font-semibold text-sm truncate">
-                        {project.title}
-                      </p>
-                      <p className="text-xs opacity-80">
-                        Updated:{" "}
-                        {new Date(project.lastUpdated).toLocaleDateString()}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <div className="relative h-64 overflow-hidden rounded-lg">
+  {project.projectVidUrl ? (
+    <div className="relative w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
+      <video
+        src={project.projectVidUrl}
+        muted
+        playsInline
+        preload="metadata"
+        className="max-w-full max-h-full object-contain drop-shadow-lg"
+        onMouseOver={(e) => {
+          e.currentTarget.play();
+          e.currentTarget.playbackRate = 2.5;
+        }}
+        onMouseOut={(e) => {
+          e.currentTarget.pause();
+          e.currentTarget.currentTime = 0;
+        }}
+      />
+    </div>
+  ) : (
+    <div className="relative w-full h-full bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-8">
+      <img
+        src={project.screenshot}
+        alt={project.title}
+        className="max-w-full max-h-full object-contain drop-shadow-lg"
+      />
+    </div>
+  )}
+  {hoveredId === project.id && (
+    <div className="absolute bottom-0 w-full bg-gradient-to-t from-black/70 to-transparent text-white px-3 py-3 backdrop-blur-sm">
+      <p className="font-semibold text-sm truncate">
+        {project.title}
+      </p>
+      <p className="text-xs opacity-90">
+        Updated:{" "}
+        {new Date(project.lastUpdated).toLocaleDateString()}
+      </p>
+    </div>
+  )}
+</div>
 
                 {/* Button */}
                 <div className="p-3">
@@ -182,7 +193,7 @@ export const MyTemplatesSection: React.FC<MyDesignProps> = ({
                     }}
                     className="w-full py-2.5 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:opacity-90 transition"
                   >
-                    🚀 Open Templates
+                    Edit design
                   </button>
                 </div>
               </div>
