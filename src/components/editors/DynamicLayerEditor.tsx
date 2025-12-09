@@ -919,7 +919,7 @@ const DynamicLayerEditor: React.FC = () => {
   };
 
   const handleSaveThumbnail = async () => {
-    handleFrameChange((duration-2)*30)
+    handleFrameChange((duration - 2) * 30);
     const blob = await capturePreviewScreenshot();
 
     if (blob) {
@@ -1112,7 +1112,14 @@ const DynamicLayerEditor: React.FC = () => {
 
   // --- CHAT HANDLERS ---
   const handleChatStyleChange = useCallback(
-    (newStyle: "imessage" | "whatsapp" | "instagram" | "messenger" | "fakechatconversation") => {
+    (
+      newStyle:
+        | "imessage"
+        | "whatsapp"
+        | "instagram"
+        | "messenger"
+        | "fakechatconversation"
+    ) => {
       const updatedLayers = layers.map((layer) =>
         layer.type === "chat-bubble" ? { ...layer, chatStyle: newStyle } : layer
       );
@@ -1316,17 +1323,28 @@ const DynamicLayerEditor: React.FC = () => {
 
   const handleGlobalDeselect = useCallback(
     (e: MouseEvent) => {
-      if (!selectedLayerId && !editingLayerId) return; 
+      if (!selectedLayerId && !editingLayerId) return;
 
       const target = e.target as HTMLElement;
-      
-      const isTargetingInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true';
-      const isTargetingButton = target.tagName === 'BUTTON' || target.closest('button');
-      const isTargetingModal = target.closest('.react-modal-overlay') !== null;
-      const isTargetingTimeline = target.closest('[data-timeline="true"]') !== null;
+
+      const isTargetingInput =
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.contentEditable === "true";
+      const isTargetingButton =
+        target.tagName === "BUTTON" || target.closest("button");
+      const isTargetingModal = target.closest(".react-modal-overlay") !== null;
+      const isTargetingTimeline =
+        target.closest('[data-timeline="true"]') !== null;
       const isTargetingPanel = target.closest('[data-panel="true"]') !== null;
-      
-      if (!isTargetingInput && !isTargetingButton && !isTargetingModal && !isTargetingTimeline && !isTargetingPanel) {
+
+      if (
+        !isTargetingInput &&
+        !isTargetingButton &&
+        !isTargetingModal &&
+        !isTargetingTimeline &&
+        !isTargetingPanel
+      ) {
         setSelectedLayerId(null);
         setEditingLayerId(null);
       }
@@ -1337,22 +1355,27 @@ const DynamicLayerEditor: React.FC = () => {
   useEffect(() => {
     const mainAreaElement = mainAreaRef.current;
     if (mainAreaElement) {
-      mainAreaElement.addEventListener('click', handleGlobalDeselect as EventListener);
+      mainAreaElement.addEventListener(
+        "click",
+        handleGlobalDeselect as EventListener
+      );
     }
 
     return () => {
       if (mainAreaElement) {
-        mainAreaElement.removeEventListener('click', handleGlobalDeselect as EventListener);
+        mainAreaElement.removeEventListener(
+          "click",
+          handleGlobalDeselect as EventListener
+        );
       }
     };
   }, [handleGlobalDeselect]);
-
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingVertical) return;
       e.preventDefault();
-      
+
       const mainArea = mainAreaRef.current;
       if (!mainArea) return;
 
@@ -2382,27 +2405,33 @@ const DynamicLayerEditor: React.FC = () => {
   );
 
   async function handleSaveExistingProject() {
-    if (projectId) {
-      setIsPorjectSaving(true);
-      const props = {
-        layers,
-        duration,
-        currentFrame,
-        templateId: template?.id || 1,
-      };
-      const changedprops = await compareProjectProps(projectId, props);
-      console.log(changedprops);
-      if (changedprops === true) {
-        toast.success("Nothing to save. Make some changes before saving");
-      } else {
-        const saveresponse = await saveExistingProject(projectId, props, screenshot as string);
-        if (saveresponse === "error") {
-          toast.error("There was an error saving your project");
+    setTimeout(async () => {
+      if (projectId) {
+        setIsPorjectSaving(true);
+        const props = {
+          layers,
+          duration,
+          currentFrame,
+          templateId: template?.id || 1,
+        };
+        const changedprops = await compareProjectProps(projectId, props);
+        console.log(changedprops);
+        if (changedprops === true) {
+          toast.success("Nothing to save. Make some changes before saving");
         } else {
-          toast.success("Changes saved!");
+          const saveresponse = await saveExistingProject(
+            projectId,
+            props,
+            screenshot as string
+          );
+          if (saveresponse === "error") {
+            toast.error("There was an error saving your project");
+          } else {
+            toast.success("Changes saved!");
+          }
         }
       }
-    }
+    }, 2000);
     setIsPorjectSaving(false);
   }
 
@@ -2687,7 +2716,9 @@ const DynamicLayerEditor: React.FC = () => {
                         icon={<span style={{ fontSize: "18px" }}>🎬</span>}
                         title="Cinematic"
                         color="#0EA5E9"
-                        onClick={() => handleChatStyleChange("fakechatconversation")}
+                        onClick={() =>
+                          handleChatStyleChange("fakechatconversation")
+                        }
                       />
                     </div>
                   </div>
@@ -3219,7 +3250,9 @@ const DynamicLayerEditor: React.FC = () => {
                       setShowSaveModal(true);
                     }
                   } else {
-                    toast.error("There was an error saving your project.\nTry again later.");
+                    toast.error(
+                      "There was an error saving your project.\nTry again later."
+                    );
                   }
                 }}
               >
@@ -3345,18 +3378,24 @@ const DynamicLayerEditor: React.FC = () => {
               cursor: "ns-resize",
               flexShrink: 0,
               zIndex: 5,
-              transition: isResizingVertical ? 'none' : 'background-color 0.15s',
-              boxShadow: isResizingVertical ? '0 0 10px rgba(59, 130, 246, 0.4)' : 'none',
+              transition: isResizingVertical
+                ? "none"
+                : "background-color 0.15s",
+              boxShadow: isResizingVertical
+                ? "0 0 10px rgba(59, 130, 246, 0.4)"
+                : "none",
             }}
             onMouseDown={(e) => {
               e.preventDefault();
               setIsResizingVertical(true);
             }}
             onMouseOver={(e) => {
-              if (!isResizingVertical) e.currentTarget.style.backgroundColor = colors.bgHover;
+              if (!isResizingVertical)
+                e.currentTarget.style.backgroundColor = colors.bgHover;
             }}
             onMouseOut={(e) => {
-              if (!isResizingVertical) e.currentTarget.style.backgroundColor = colors.bgSecondary;
+              if (!isResizingVertical)
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
             }}
           />
 
@@ -3379,7 +3418,7 @@ const DynamicLayerEditor: React.FC = () => {
             canUndo={canUndo}
             canRedo={canRedo}
             // 🎯 NEW: Pass the dynamic height
-            height={`${timelineHeight}px`} 
+            height={`${timelineHeight}px`}
           />
         </div>
       </div>
