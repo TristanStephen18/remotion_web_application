@@ -50,8 +50,6 @@ export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
     { id: "flux", name: "Flux (Best Quality)" },
     { id: "flux-realism", name: "Flux Realism (Photorealistic)" },
     { id: "flux-anime", name: "Flux Anime" },
-    { id: "flux-3d", name: "Flux 3D" },
-    { id: "turbo", name: "Turbo (Fastest)" },
   ];
 
   const MAX_RECENT = 9;
