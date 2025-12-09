@@ -36,6 +36,7 @@ export interface TimelineProps {
   onDeleteTrack?: (trackId: string) => void;
   onCutTrack?: (trackId: string, frame: number) => void;
   onReorderTracks?: (fromIndex: number, toIndex: number) => void;
+  height?: string
 }
 
 // ============================================================================
@@ -96,6 +97,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   onDeleteTrack,
   onCutTrack,
   onReorderTracks,
+  height = "200px",
 }) => {
   const [zoom, setZoom] = useState(1);
   const { colors } = useTheme();
@@ -105,6 +107,9 @@ export const Timeline: React.FC<TimelineProps> = ({
   const rulerRef = useRef<HTMLDivElement>(null);
   
   const isDraggingPlayhead = useRef(false);
+
+  const [labelWidth, setLabelWidth] = useState(180);
+  const [isResizingHorizontal, setIsResizingHorizontal] = useState(false);
   
   const [dragState, setDragState] = useState<{
     trackId: string;
@@ -407,6 +412,43 @@ export const Timeline: React.FC<TimelineProps> = ({
     document.addEventListener("mouseup", handleMouseUp);
   }, [tracks, onReorderTracks, handleTrackSelect]);
 
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingHorizontal) return;
+      e.preventDefault();
+
+      const labelsRect = labelsRef.current?.getBoundingClientRect();
+
+      if (!labelsRect) return;
+
+      const minWidth = 100;
+      const maxWidth = 300;
+      // Calculate new width relative to the left side of the labels container
+      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX - labelsRect.left));
+
+      setLabelWidth(newWidth);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingHorizontal) {
+        setIsResizingHorizontal(false);
+        document.body.style.cursor = "default";
+      }
+    };
+
+    if (isResizingHorizontal) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "ew-resize";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizingHorizontal]);
+
   // Toggle Lock/Visibility
   const handleToggleLock = useCallback((trackId: string) => {
     const updatedTracks = tracks.map(t =>
@@ -476,7 +518,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   // Styles with enhanced visual feedback
   const styles: Record<string, React.CSSProperties> = {
-    container: { display: "flex", flexDirection: "column", height: "200px", backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, },
+    container: { display: "flex", flexDirection: "column", height: height, backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, },
     toolbar: { display: "flex", alignItems: "center", gap: "8px", padding: "4px 16px", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
     toolGroup: { display: "flex", gap: "6px" },
     divider: { width: "1px", height: "24px", backgroundColor: colors.borderLight },
@@ -488,7 +530,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     zoomSlider: { width: "80px", cursor: "pointer" },
     timelineWrapper: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
     rulerRow: { display: "flex", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
-    rulerSpacer: { width: "180px", flexShrink: 0, backgroundColor: colors.bgSecondary },
+    rulerSpacer: { width: `${labelWidth}px`, flexShrink: 0, backgroundColor: colors.bgSecondary },
     rulerContent: { flex: 1, overflow: "hidden", position: "relative" },
    ruler: { position: "relative", height: "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer" },
     rulerInner: { position: "relative", height: "100%", borderLeft: `1px solid ${colors.borderLight}` },
@@ -521,7 +563,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       width: "2px"
     },
     contentWrapper: { flex: 1, display: "flex", overflow: "hidden" },
-    trackLabels: { width: "180px", flexShrink: 0, overflow: "hidden", backgroundColor: colors.bgSecondary, borderRight: `1px solid ${colors.borderLight}` },
+    trackLabels: { width: `${labelWidth}px`, flexShrink: 0, overflow: "hidden", backgroundColor: colors.bgSecondary, borderRight: `1px solid ${colors.borderLight}`, position: 'relative' },
     trackLabel: { 
       height: `${TRACK_ROW_HEIGHT}px`, 
       display: "flex", 
@@ -656,6 +698,30 @@ export const Timeline: React.FC<TimelineProps> = ({
         <div style={styles.contentWrapper}>
           {/* Enhanced Track Labels with click-to-select */}
           <div style={styles.trackLabels} ref={labelsRef} onWheel={handleLabelsWheel}>
+            <div
+              style={{
+                position: "absolute",
+                top: 0,
+                bottom: 0,
+                right: 0,
+                width: "6px",
+                cursor: "ew-resize",
+                zIndex: 10,
+                backgroundColor: isResizingHorizontal ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
+                transition: 'background-color 0.15s',
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setIsResizingHorizontal(true);
+              }}
+              onMouseOver={(e) => {
+                if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+              }}
+              onMouseOut={(e) => {
+                if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'transparent';
+              }}
+            />
             {displayTracks.map((track, index) => {
               const isBeingReordered = reorderState?.isDragging && reorderState?.trackId === track.id;
               const isSelected = selectedTrackId === track.id;

@@ -513,6 +513,10 @@ const DynamicLayerEditor: React.FC = () => {
   const [chatInput, setChatInput] = useState("");
   const [chatPartnerName, setChatPartnerName] = useState("User");
 
+  const [timelineHeight, setTimelineHeight] = useState(200); // Default height
+  const [isResizingVertical, setIsResizingVertical] = useState(false);
+  const verticalResizerRef = useRef<HTMLDivElement>(null);
+
   // Watch State
   const [watchNameInput, setWatchNameInput] = useState("");
   const [captionInput, setCaptionInput] = useState("");
@@ -1034,7 +1038,7 @@ const DynamicLayerEditor: React.FC = () => {
     updateDimensions();
     window.addEventListener("resize", updateDimensions);
     return () => window.removeEventListener("resize", updateDimensions);
-  }, []);
+  }, [timelineHeight]);
 
   // --- SPLIT SCREEN HANDLERS ---
   const getLayoutMode = () => {
@@ -1107,7 +1111,7 @@ const DynamicLayerEditor: React.FC = () => {
 
   // --- CHAT HANDLERS ---
   const handleChatStyleChange = useCallback(
-    (newStyle: "imessage" | "whatsapp" | "instagram" | "messenger") => {
+    (newStyle: "imessage" | "whatsapp" | "instagram" | "messenger" | "fakechatconversation") => {
       const updatedLayers = layers.map((layer) =>
         layer.type === "chat-bubble" ? { ...layer, chatStyle: newStyle } : layer
       );
@@ -1308,6 +1312,79 @@ const DynamicLayerEditor: React.FC = () => {
     },
     [layers, currentFrame, pushState]
   );
+
+  const handleGlobalDeselect = useCallback(
+    (e: MouseEvent) => {
+      if (!selectedLayerId && !editingLayerId) return; 
+
+      const target = e.target as HTMLElement;
+      
+      const isTargetingInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true';
+      const isTargetingButton = target.tagName === 'BUTTON' || target.closest('button');
+      const isTargetingModal = target.closest('.react-modal-overlay') !== null;
+      const isTargetingTimeline = target.closest('[data-timeline="true"]') !== null;
+      const isTargetingPanel = target.closest('[data-panel="true"]') !== null;
+      
+      if (!isTargetingInput && !isTargetingButton && !isTargetingModal && !isTargetingTimeline && !isTargetingPanel) {
+        setSelectedLayerId(null);
+        setEditingLayerId(null);
+      }
+    },
+    [selectedLayerId, editingLayerId]
+  );
+
+  useEffect(() => {
+    const mainAreaElement = mainAreaRef.current;
+    if (mainAreaElement) {
+      mainAreaElement.addEventListener('click', handleGlobalDeselect as EventListener);
+    }
+
+    return () => {
+      if (mainAreaElement) {
+        mainAreaElement.removeEventListener('click', handleGlobalDeselect as EventListener);
+      }
+    };
+  }, [handleGlobalDeselect]);
+
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizingVertical) return;
+      e.preventDefault();
+      
+      const mainArea = mainAreaRef.current;
+      if (!mainArea) return;
+
+      const mainRect = mainArea.getBoundingClientRect();
+      const newTimelineHeight = Math.max(
+        100, // Minimum height
+        Math.min(
+          mainRect.height - 200, // Maximum height (leaves space for preview)
+          mainRect.bottom - e.clientY // Distance from mouse to bottom of mainArea
+        )
+      );
+
+      setTimelineHeight(newTimelineHeight);
+    };
+
+    const handleMouseUp = () => {
+      if (isResizingVertical) {
+        setIsResizingVertical(false);
+        document.body.style.cursor = "default";
+      }
+    };
+
+    if (isResizingVertical) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "ns-resize";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizingVertical]);
 
   // ============================================================================
   // COLLAGE HANDLERS
@@ -2504,6 +2581,7 @@ const DynamicLayerEditor: React.FC = () => {
             pointerEvents: "auto", // ← Allow clicks
             ...(isPanelOpen ? {} : editorStyles.layersPanelClosed),
           }}
+          data-panel="true"
         >
           {isPanelOpen && (
             <>
@@ -2603,6 +2681,12 @@ const DynamicLayerEditor: React.FC = () => {
                         title="Messenger"
                         color="#0084FF"
                         onClick={() => handleChatStyleChange("messenger")}
+                      />
+                      <ToolCard
+                        icon={<span style={{ fontSize: "18px" }}>🎬</span>}
+                        title="Cinematic"
+                        color="#0EA5E9"
+                        onClick={() => handleChatStyleChange("fakechatconversation")}
                       />
                     </div>
                   </div>
@@ -3101,6 +3185,7 @@ const DynamicLayerEditor: React.FC = () => {
             flexDirection: "column",
             height: "100%",
           }}
+          ref={mainAreaRef}
         >
           <div
             style={{
@@ -3249,6 +3334,31 @@ const DynamicLayerEditor: React.FC = () => {
             </div>
           </div>
 
+          <div
+            ref={verticalResizerRef}
+            style={{
+              height: "8px",
+              backgroundColor: colors.bgSecondary,
+              borderTop: `1px solid ${colors.borderLight}`,
+              borderBottom: `1px solid ${colors.borderLight}`,
+              cursor: "ns-resize",
+              flexShrink: 0,
+              zIndex: 5,
+              transition: isResizingVertical ? 'none' : 'background-color 0.15s',
+              boxShadow: isResizingVertical ? '0 0 10px rgba(59, 130, 246, 0.4)' : 'none',
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizingVertical(true);
+            }}
+            onMouseOver={(e) => {
+              if (!isResizingVertical) e.currentTarget.style.backgroundColor = colors.bgHover;
+            }}
+            onMouseOut={(e) => {
+              if (!isResizingVertical) e.currentTarget.style.backgroundColor = colors.bgSecondary;
+            }}
+          />
+
           <Timeline
             tracks={timelineTracks}
             currentFrame={currentFrame}
@@ -3262,10 +3372,13 @@ const DynamicLayerEditor: React.FC = () => {
             onDeleteTrack={deleteLayer}
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}
+            data-timeline="true"
             onUndo={undo}
             onRedo={redo}
             canUndo={canUndo}
             canRedo={canRedo}
+            // 🎯 NEW: Pass the dynamic height
+            height={`${timelineHeight}px`} 
           />
         </div>
       </div>

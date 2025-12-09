@@ -23,7 +23,7 @@ export interface MediaItem {
   id: string;
   type: 'video' | 'image';
   src: string;
-  duration: number; // duration in seconds
+  duration: number;
 }
 
 export const TEMPLATES: Record<number, TemplateDefinition> = {
@@ -231,23 +231,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         objectFit: 'cover',
         animation: { entrance: 'none', entranceDuration: 0 },
       },
-      {
-        id: 'divider',
-        type: 'image',
-        name: 'Divider',
-        startFrame: 0,
-        endFrame: 600,
-        visible: true,
-        locked: false,
-        src: 'data:image/svg+xml,%3Csvg width="1080" height="10" xmlns="http://www.w3.org/2000/svg"%3E%3Crect width="1080" height="10" fill="white"/%3E%3C/svg%3E',
-        position: { x: 50, y: 50 },
-        size: { width: 100, height: 0.5 },
-        rotation: 0,
-        opacity: 0.8,
-        objectFit: 'fill',
-        isBackground: false,
-        animation: { entrance: 'none', entranceDuration: 0 },
-      },
+    
     ] as Layer[],
     layersToProps: (layers) => ({ layers }),
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
@@ -271,18 +255,31 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
 
       // Default sequence if none is provided
       const defaultSequence: MediaItem[] = sequence.length > 0 ? sequence : [
-        {
-          id: generateId(),
-          type: 'video',
-          src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
-          duration: 5
-        },
-        {
-          id: generateId(),
-          type: 'image',
-          src: 'https://images.unsplash.com/photo-1516961642265-531546e84af2?w=600&q=80',
-          duration: 5
-        }
+        // Line ~273
+{
+  id: generateId(),
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1080&q=80',
+  duration: 3
+},
+{
+  id: generateId(),
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1080&q=80',
+  duration: 3
+},
+{
+  id: generateId(),
+  type: 'image',
+  src: 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1080&q=80',
+  duration: 3
+},
+{
+  id: generateId(),
+  type: 'video',
+  src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+  duration: 3
+}
       ];
 
       // 1. Background Layer (uses the first item's source, muted, blurred)
@@ -293,7 +290,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         startFrame: 0,
         endFrame: 0, // Will be updated
         visible: true,
-        locked: true,
+        locked: false,
         src: defaultSequence[0].src,
         objectFit: 'cover',
         position: { x: 50, y: 50 },
@@ -512,21 +509,24 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     composition: DynamicLayerComposition,
     compositionId: 'DynamicLayerComposition',
     createDefaultLayers: () => [
-      {
+     {
         id: 'chat-bg',
-        type: 'image',
-        name: 'Wallpaper',
+        type: 'video',
+        name: 'Background Video',
         startFrame: 0,
         endFrame: 300,
         visible: true,
-        locked: true,
-        src: 'https://images.unsplash.com/photo-1557683316-973673baf926?w=600&q=80',
-        isBackground: true,
-        objectFit: 'cover',
+        locked: false,
+        src: 'https://res.cloudinary.com/dcu9xuof0/video/upload/v1765260195/Subway_Surfers_2024_-_Gameplay_4K_9x16_No_Copyright_n4ym8w.mp4',
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
         rotation: 0,
-        opacity: 1,
+        opacity: 0.4,
+        volume: 0,
+        loop: true,
+        playbackRate: 1,
+        objectFit: 'cover',
+        filter: 'brightness(0.5)',
       },
       {
         id: 'msg-1',
@@ -538,11 +538,11 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         locked: false,
         message: "Hey! Did you see the new update?",
         isSender: false,
-        chatStyle: 'instagram',
+        chatStyle: 'fakechatconversation',
         senderName: 'Sarah_Smith',
         avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        position: { x: 50, y: 20 },
-        size: { width: 100, height: 10 },
+        position: { x: 50, y: 25 },
+        size: { width: 45, height: 12 },
         rotation: 0,
         opacity: 1,
         animation: { entrance: 'slideUp', entranceDuration: 20 },
@@ -558,11 +558,11 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         message: "",
         isSender: true,
         isTyping: true,
-        chatStyle: 'instagram',
+        chatStyle: 'fakechatconversation',
         senderName: 'Sarah_Smith',
         avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        position: { x: 50, y: 32 },
-        size: { width: 100, height: 10 },
+        position: { x: 50, y: 37 },
+        size: { width: 45, height: 12 },
         rotation: 0,
         opacity: 1,
         animation: { entrance: 'slideUp', entranceDuration: 15 },
@@ -577,11 +577,11 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         locked: false,
         message: "Yeah, it looks exactly like the real thing now! 🔥",
         isSender: true,
-        chatStyle: 'instagram',
+        chatStyle: 'fakechatconversation',
         senderName: 'Sarah_Smith',
         avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100',
-        position: { x: 50, y: 32 },
-        size: { width: 100, height: 10 },
+        position: { x: 50, y: 50 },
+        size: { width: 45, height: 12 },
         rotation: 0,
         opacity: 1,
         animation: { entrance: 'slideUp', entranceDuration: 20 },
@@ -608,7 +608,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         startFrame: 0,
         endFrame: 300,
         visible: true,
-        locked: true,
+        locked: false,
         src: 'https://res.cloudinary.com/djnyytyd0/video/upload/v1764558376/the_way_they_got_so_much_aura_so_tuff_song_ilyTOMMY_-_pretty_ho3_..._sar5qk.mp4', 
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
