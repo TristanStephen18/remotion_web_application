@@ -918,8 +918,12 @@ const DynamicLayerEditor: React.FC = () => {
     }
   };
 
-  const handleSaveThumbnail = async () => {
+  const handleSaveThumbnail = async (): Promise<string | null> => {
     handleFrameChange((duration - 2) * 30);
+    
+    // Wait a bit for the frame to render
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const blob = await capturePreviewScreenshot();
 
     if (blob) {
@@ -937,8 +941,11 @@ const DynamicLayerEditor: React.FC = () => {
 
       const data = await response.json();
       console.log("Thumbnail URL:", data.url);
-      setScreenshot(data.url as string);
+      const screenshotUrl = data.url as string;
+      setScreenshot(screenshotUrl);
+      return screenshotUrl;
     }
+    return null;
   };
 
   const {
@@ -2404,10 +2411,9 @@ const DynamicLayerEditor: React.FC = () => {
     [layers, template, getProcessedLayers]
   );
 
-  async function handleSaveExistingProject() {
-    setTimeout(async () => {
+  async function handleSaveExistingProject(screenshoturl: string) {
+     setIsPorjectSaving(true);
       if (projectId) {
-        setIsPorjectSaving(true);
         const props = {
           layers,
           duration,
@@ -2422,7 +2428,7 @@ const DynamicLayerEditor: React.FC = () => {
           const saveresponse = await saveExistingProject(
             projectId,
             props,
-            screenshot as string
+            screenshoturl
           );
           if (saveresponse === "error") {
             toast.error("There was an error saving your project");
@@ -2431,7 +2437,6 @@ const DynamicLayerEditor: React.FC = () => {
           }
         }
       }
-    }, 2000);
     setIsPorjectSaving(false);
   }
 
@@ -3240,11 +3245,11 @@ const DynamicLayerEditor: React.FC = () => {
               <ThemeToggle />
               <button
                 style={editorStyles.addButton}
-                onClick={() => {
-                  handleSaveThumbnail();
+                onClick={async () => {
+                  const screenshoturl = await handleSaveThumbnail();
                   if (screenshot) {
                     if (projectId) {
-                      handleSaveExistingProject();
+                      handleSaveExistingProject(screenshoturl as string);
                       // handleSaveProject();
                     } else {
                       setShowSaveModal(true);
