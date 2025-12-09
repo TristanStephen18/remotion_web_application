@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { TemplatePreviewDialog } from "../TemplatePreviewDialog";
-import { ShowcaseCarousel } from "../../ShowcaseCarousel";
 import { ChooseTemplateModal } from "../../modals/ChooseTemplateModal";
 import { FiPlus, FiLayers, FiZap } from "react-icons/fi";
 import { templateCategories } from "../../../../data/DashboardCardsData";
@@ -228,8 +227,6 @@ interface HomeSectionProps {
 }
 
 export const HomeSection: React.FC<HomeSectionProps> = ({
-  projects = [],
-  renders = [],
   newProjectOpen = false,
   setNewProjectOpen,
   newProjectTab = 0,
@@ -257,11 +254,6 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
     }
   };
 
-  const handleTemplatesClick = () => {
-    if (onNavigate) {
-      onNavigate("templates");
-    }
-  };
 
   const handleToolsClick = () => {
     if (onNavigate) {
@@ -468,7 +460,7 @@ export const HomeSection: React.FC<HomeSectionProps> = ({
                 Bring Your Ideas
                 <br />
                 <span
-                  className="bg-gradient-to-r from-cyan-400 via-fuchsia-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent"
+                  className="bg-gradient-to-r from-cyan-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent"
                   style={{
                     backgroundSize: '200% 100%',
                     animation: 'gradientWave 3s ease-in-out infinite',
