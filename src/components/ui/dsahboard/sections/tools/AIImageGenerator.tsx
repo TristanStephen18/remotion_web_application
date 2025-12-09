@@ -1,57 +1,50 @@
-
 // src/components/ui/dashboard/sections/tools/AIImageGenerator.tsx
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
 import {
   Sparkles,
   Download,
   Wand2,
   ChevronDown,
   ImageIcon,
-  Edit3,
+  Trash2,
 } from "lucide-react";
-import type { Generation } from "../../../../../models/imagegenandbgremove";
+import {
+  imageGenService,
+  type ImageGeneration,
+} from "../../../../../services/imageGenService";
 
-interface AIImageGeneratorInterface {
+interface AIImageGeneratorProps {
   pollinationsModel: string;
   setPollinationsModel: React.Dispatch<React.SetStateAction<string>>;
-aspectRatio: "9:16" | "16:9" | "1:1" | "4:5";
-setAspectRatio: React.Dispatch<
-  React.SetStateAction<"9:16" | "16:9" | "1:1" | "4:5">
->;
+  aspectRatio: "9:16" | "16:9" | "1:1" | "4:5";
+  setAspectRatio: React.Dispatch<
+    React.SetStateAction<"9:16" | "16:9" | "1:1" | "4:5">
+  >;
   prompt: string;
   setPrompt: React.Dispatch<React.SetStateAction<string>>;
-  imageLoading: boolean;
-  setImageLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  recentGenerations: Generation[];
-  setRecentGenerations: React.Dispatch<React.SetStateAction<Generation[]>>;
-  loading: boolean;
-  setLoading: React.Dispatch<React.SetStateAction<boolean>>;
-  error: string | null;
-  setError: React.Dispatch<React.SetStateAction<string | null>>;
-  currentImage: string | null;
-  setCurrentImage: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
-export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
+export const AIImageGenerator: React.FC<AIImageGeneratorProps> = ({
   pollinationsModel,
   setPollinationsModel,
   aspectRatio,
   setAspectRatio,
   prompt,
   setPrompt,
-  imageLoading,
-  setImageLoading,
-  recentGenerations,
-  setRecentGenerations,
-  loading,
-  setLoading,
-  error,
-  setError,
-  currentImage,
-  setCurrentImage,
 }) => {
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [imageLoading, setImageLoading] = useState(false);
+  const [generations, setGenerations] = useState<ImageGeneration[]>([]);
+  const [loadingGenerations, setLoadingGenerations] = useState(false);
+  const [showGenerateNew, setShowGenerateNew] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [allGenerations, setAllGenerations] = useState<ImageGeneration[]>([]);
+  const [loadingAllGenerations, setLoadingAllGenerations] = useState(false);
+  const [viewingImage, setViewingImage] = useState<ImageGeneration | null>(
+    null
+  );
 
   const pollinationsModels = [
     { id: "flux", name: "Flux (Best Quality)" },
@@ -60,6 +53,27 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
     { id: "flux-3d", name: "Flux 3D" },
     { id: "turbo", name: "Turbo (Fastest)" },
   ];
+
+  const MAX_RECENT = 9;
+
+  // Fetch generations on mount
+  useEffect(() => {
+    fetchGenerations();
+  }, []);
+
+  const fetchGenerations = async () => {
+    try {
+      setLoadingGenerations(true);
+      const response = await imageGenService.getGenerations(20, 0);
+      if (response.success) {
+        setGenerations(response.generations);
+      }
+    } catch (error) {
+      console.error("Failed to fetch generations:", error);
+    } finally {
+      setLoadingGenerations(false);
+    }
+  };
 
   const ratioToSize = () => {
     switch (aspectRatio) {
@@ -82,6 +96,7 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
     setLoading(true);
     setError(null);
     setCurrentImage(null);
+    setShowGenerateNew(false); // Reset state
 
     const { width, height } = ratioToSize();
 
@@ -92,16 +107,37 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
 
       setImageLoading(true);
       setCurrentImage(imageUrl);
+      setShowGenerateNew(true); // Show "Generate New" button
 
-      setRecentGenerations((prev) => [
-        { url: imageUrl, aspectRatio, model: pollinationsModel },
-        ...prev.slice(0, 8),
-      ]);
+      // Save to database
+      try {
+        const saveResponse = await imageGenService.saveGeneration({
+          prompt: prompt.trim(),
+          model: pollinationsModel,
+          aspectRatio,
+          imageUrl,
+        });
+
+        if (saveResponse.success) {
+          setGenerations((prev) => [saveResponse.generation, ...prev]);
+          console.log("✅ Image generation saved:", saveResponse.generation.id);
+        }
+      } catch (saveError) {
+        console.error("❌ Failed to save generation:", saveError);
+      }
     } catch (err: any) {
       setError(err.message || "Something went wrong");
+      setShowGenerateNew(false);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGenerateNew = () => {
+    setCurrentImage(null);
+    setShowGenerateNew(false);
+    setPrompt("");
+    setError(null);
   };
 
   const generateWithPollinations = async (
@@ -114,17 +150,45 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
     return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=${pollinationsModel}&nologo=true&enhance=false`;
   };
 
-  const handleEdit = (imageUrl: string, ratio: string) => {
-    navigate('/editor', {
-      state: {
-        fromAIImage: true,
-        imageData: {
-          url: imageUrl,
-          aspectRatio: ratio,
-          model: pollinationsModel,
-        }
+  const fetchAllGenerations = async () => {
+    try {
+      setLoadingAllGenerations(true);
+      const response = await imageGenService.getGenerations(50, 0);
+      if (response.success) {
+        setAllGenerations(response.generations);
       }
-    });
+    } catch (error) {
+      console.error("Failed to fetch all generations:", error);
+    } finally {
+      setLoadingAllGenerations(false);
+    }
+  };
+
+  const handleOpenAll = async () => {
+    setShowAll(true);
+    if (allGenerations.length === 0) {
+      await fetchAllGenerations();
+    }
+  };
+
+  const handleCloseAll = () => {
+    setShowAll(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this image?")) return;
+
+    try {
+      const response = await imageGenService.deleteGeneration(id);
+      if (response.success) {
+        setGenerations((prev) => prev.filter((gen) => gen.id !== id));
+        setAllGenerations((prev) => prev.filter((gen) => gen.id !== id));
+        console.log("✅ Image deleted:", id);
+      }
+    } catch (error) {
+      console.error("❌ Failed to delete image:", error);
+      alert("Failed to delete image. Please try again.");
+    }
   };
 
   const getAspectRatioClass = (ratio: string) => {
@@ -142,19 +206,46 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
     }
   };
 
-  const getGridCols = (ratio: string) => {
-    if (ratio === "16:9") return "grid-cols-1 sm:grid-cols-2";
-    return "grid-cols-2 sm:grid-cols-3";
+  const formatDateTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
-  const totalSlots = aspectRatio === "16:9" ? 6 : 9;
-  const placeholderCount = Math.max(0, totalSlots - recentGenerations.length);
+  const handleDownload = async (url: string, prompt: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
 
-  const downloadImage = (url: string) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ai-image.png";
-    a.click();
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `${prompt.slice(0, 30).replace(/[^a-z0-9]/gi, "_")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed:", error);
+      // Fallback to direct link
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ai-image.png";
+      a.click();
+    }
+  };
+
+  const handleView = (generation: ImageGeneration) => {
+    setViewingImage(generation);
+  };
+
+  const closeViewer = () => {
+    setViewingImage(null);
   };
 
   return (
@@ -268,27 +359,27 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
                       )} object-cover transition-all duration-500 hover:scale-[1.02]`}
                     />
 
-                    <div className="flex gap-3 mt-4">
+                    <div className="mt-4 space-y-2">
                       <button
-                        onClick={() => handleEdit(currentImage, aspectRatio)}
-                        className="flex-1 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
-                      >
-                        <Edit3
-                          size={18}
-                          className="group-hover:rotate-12 transition-transform"
-                        />
-                        Edit in Editor
-                      </button>
-
-                      <button
-                        onClick={() => downloadImage(currentImage)}
-                        className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-semibold rounded-xl shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
+                        onClick={() => handleDownload(currentImage, prompt)}
+                        className="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 group"
                       >
                         <Download
                           size={18}
                           className="group-hover:animate-bounce"
                         />
-                        Download
+                        Download Image
+                      </button>
+
+                      <button
+                        onClick={handleGenerateNew}
+                        className="w-full py-3 bg-white border-2 border-indigo-200 text-indigo-600 text-sm font-semibold rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 flex items-center justify-center gap-2 group"
+                      >
+                        <Wand2
+                          size={18}
+                          className="group-hover:rotate-12 transition-transform"
+                        />
+                        Generate New Image
                       </button>
                     </div>
                   </div>
@@ -315,50 +406,52 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
             </div>
 
             {/* Prompt */}
-            <div className="bg-white rounded-2xl shadow-lg border border-indigo-100 p-5 transition-all duration-300 hover:shadow-xl">
-              <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
-                <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
-                Your Prompt
-              </label>
+            {!showGenerateNew ? (
+              <div className="bg-white rounded-2xl shadow-lg border border-indigo-100 p-5 transition-all duration-300 hover:shadow-xl">
+                <label className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                  <span className="w-2 h-2 bg-indigo-600 rounded-full animate-pulse"></span>
+                  Your Prompt
+                </label>
 
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the image you want to create... Be creative!"
-                rows={4}
-                className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 text-sm text-gray-800 outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
-              />
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the image you want to create... Be creative!"
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border-2 border-indigo-200 text-sm text-gray-800 outline-none resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200"
+                />
 
-              {error && (
-                <div className="mt-3 bg-red-50 border-2 border-red-200 rounded-xl p-4 animate-shake">
-                  <p className="text-sm text-red-700 font-medium flex items-center gap-2">
-                    <span className="text-lg">⚠️</span>
-                    {error}
-                  </p>
-                </div>
-              )}
-
-              <button
-                onClick={handleGenerate}
-                disabled={!prompt.trim() || loading}
-                className="mt-4 w-full py-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2 group"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Wand2
-                      size={20}
-                      className="group-hover:rotate-12 transition-transform"
-                    />
-                    Generate Image
-                  </>
+                {error && (
+                  <div className="mt-3 bg-red-50 border-2 border-red-200 rounded-xl p-4 animate-shake">
+                    <p className="text-sm text-red-700 font-medium flex items-center gap-2">
+                      <span className="text-lg">⚠️</span>
+                      {error}
+                    </p>
+                  </div>
                 )}
-              </button>
-            </div>
+
+                <button
+                  onClick={handleGenerate}
+                  disabled={!prompt.trim() || loading}
+                  className="mt-4 w-full py-4 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2 group"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2
+                        size={20}
+                        className="group-hover:rotate-12 transition-transform"
+                      />
+                      Generate Image
+                    </>
+                  )}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           {/* RIGHT SECTION: RECENT */}
@@ -369,15 +462,29 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
                   <ImageIcon className="text-indigo-600" />
                   Recent Generations
                 </label>
-                {recentGenerations.length > 0 && (
-                  <span className="px-3 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 text-xs font-bold rounded-full">
-                    {recentGenerations.length}
-                  </span>
-                )}
+                <div className="flex items-center gap-2">
+                  {generations.length > 0 && (
+                    <>
+                      <span className="px-2.5 sm:px-3 py-1 bg-gradient-to-r from-indigo-100 to-purple-100 text-indigo-700 text-xs font-bold rounded-full">
+                        {generations.length}
+                      </span>
+                      <button
+                        onClick={handleOpenAll}
+                        className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                      >
+                        View all
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-5 min-h-[500px]">
-                {recentGenerations.length === 0 ? (
+                {loadingGenerations ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : generations.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div className="relative mb-4">
                       <ImageIcon className="text-indigo-300" size={64} />
@@ -391,58 +498,64 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
                     </p>
                   </div>
                 ) : (
-                  <div className={`grid ${getGridCols(aspectRatio)} gap-3`}>
-                    {recentGenerations.map((item, i) => (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    {generations.slice(0, MAX_RECENT).map((item, i) => (
                       <div
-                        key={i}
-                        className={`${getAspectRatioClass(
-                          item.aspectRatio
-                        )} rounded-xl overflow-hidden border-2 border-indigo-200 relative group transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeIn`}
-                        style={{ animationDelay: `${i * 50}ms` }}
+                        key={item.id}
+                        className="relative rounded-xl overflow-hidden border-2 border-indigo-200 group transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeIn bg-white"
+                        style={{
+                          animationDelay: `${i * 50}ms`,
+                          paddingBottom: "100%", // Square container
+                        }}
                       >
                         <img
-                          src={item.url}
+                          src={item.imageUrl}
                           crossOrigin="anonymous"
-                          alt={`AI generation ${i}`}
-                          className="w-full h-full object-cover"
+                          alt={item.prompt}
+                          className="absolute inset-0 w-full h-full object-cover"
                         />
 
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                        <div className="absolute bottom-2 left-2 bg-white/90 backdrop-blur-sm text-gray-800 text-xs px-3 py-1 rounded-full font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="text-xs text-white font-medium line-clamp-2 mb-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
+                            {item.prompt}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleView(item)}
+                              title="View Image"
+                              className="flex-1 flex items-center justify-center px-2 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                            >
+                              <ImageIcon size={16} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDownload(item.imageUrl, item.prompt)
+                              }
+                              title="Download Image"
+                              className="flex-1 flex items-center justify-center px-2 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDelete(item.id)}
+                              title="Delete"
+                              className="flex items-center justify-center px-2 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                           {item.model}
                         </div>
 
-                        {/* Action buttons */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                          {/* Edit Button */}
-                          <button
-                            onClick={() => handleEdit(item.url, item.aspectRatio)}
-                            className="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 backdrop-blur-sm text-white text-xs px-3 py-2 rounded-full shadow-lg font-semibold flex items-center gap-1.5 transition-all duration-200 hover:scale-105"
-                          >
-                            <Edit3 size={14} />
-                            Edit
-                          </button>
-
-                          {/* Download Button */}
-                          <button
-                            onClick={() => downloadImage(item.url)}
-                            className="bg-white/90 hover:bg-white backdrop-blur-sm text-indigo-600 text-xs px-3 py-2 rounded-full shadow-lg font-semibold flex items-center gap-1.5 transition-all duration-200 hover:scale-105"
-                          >
-                            <Download size={14} />
-                            Save
-                          </button>
+                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          {item.aspectRatio}
                         </div>
                       </div>
-                    ))}
-
-                    {Array.from({ length: placeholderCount }).map((_, i) => (
-                      <div
-                        key={`placeholder-${i}`}
-                        className={`${getAspectRatioClass(
-                          aspectRatio
-                        )} bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl border-2 border-dashed border-indigo-300 opacity-50`}
-                      />
                     ))}
                   </div>
                 )}
@@ -452,68 +565,195 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
         </div>
       </div>
 
-      <style>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
+      {viewingImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={closeViewer}
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex-shrink-0 flex items-start justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-2xl">
+              <div className="min-w-0 flex-1">
+                <h4 className="text-base font-bold text-gray-900 line-clamp-2">
+                  {viewingImage.prompt}
+                </h4>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
+                    {viewingImage.model}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-xs font-medium">
+                    {viewingImage.aspectRatio}
+                  </span>
+                  <span className="text-xs text-gray-600">
+                    {formatDateTime(viewingImage.createdAt)}
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closeViewer}
+                className="flex-shrink-0 text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-white/50 transition-all ml-4"
+              >
+                Close
+              </button>
+            </div>
 
-        @keyframes blob {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
+            <div className="flex-1 min-h-0 bg-gray-50 flex items-center justify-center p-6 overflow-auto">
+              <img
+                src={viewingImage.imageUrl}
+                crossOrigin="anonymous"
+                alt={viewingImage.prompt}
+                className="max-h-full max-w-full w-auto h-auto object-contain rounded-lg shadow-2xl"
+              />
+            </div>
 
-        @keyframes shake {
-          0%,
-          100% {
-            transform: translateX(0);
-          }
-          25% {
-            transform: translateX(-5px);
-          }
-          75% {
-            transform: translateX(5px);
-          }
-        }
+            <div className="flex-shrink-0 flex gap-3 px-6 py-4 border-t border-gray-200 bg-gray-50 rounded-b-2xl">
+              <button
+                onClick={() =>
+                  handleDownload(viewingImage.imageUrl, viewingImage.prompt)
+                }
+                className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <Download size={18} />
+                Download Image
+              </button>
+              <button
+                onClick={() => {
+                  handleDelete(viewingImage.id);
+                  closeViewer();
+                }}
+                className="px-6 py-3 bg-red-600 text-white text-sm font-semibold rounded-xl hover:bg-red-700 transition-all flex items-center justify-center gap-2"
+              >
+                <Trash2 size={18} />
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAll && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-3 sm:p-4 backdrop-blur-sm"
+          onClick={handleCloseAll}
+        >
+          <div
+            className="relative w-full max-w-5xl max-h-[85vh] bg-white rounded-2xl shadow-2xl flex flex-col animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex-shrink-0 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-t-2xl">
+              <div>
+                <h4 className="text-sm sm:text-base font-bold text-gray-900">
+                  All Image Generations
+                </h4>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  {allGenerations.length || generations.length} total images
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseAll}
+                className="flex-shrink-0 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-white/50 transition-all"
+              >
+                Close
+              </button>
+            </div>
 
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
+            <div className="flex-1 min-h-0 overflow-y-auto bg-gradient-to-br from-indigo-50 to-purple-50 p-4 sm:p-6 rounded-b-2xl">
+              {loadingAllGenerations ? (
+                <div className="flex items-center justify-center py-12 text-gray-600">
+                  <div className="w-6 h-6 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin mr-3" />
+                  <span className="text-sm">Loading...</span>
+                </div>
+              ) : (allGenerations.length || generations.length) === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <ImageIcon className="text-indigo-300 text-4xl sm:text-5xl mb-3" />
+                  <span className="text-sm text-gray-600">
+                    No generations found.
+                  </span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {(allGenerations.length ? allGenerations : generations).map(
+                    (item, i) => (
+                      <div
+                        key={item.id}
+                        className="relative rounded-xl overflow-hidden border-2 border-indigo-200 group transition-all duration-300 hover:scale-105 hover:shadow-xl animate-fadeIn bg-white"
+                        style={{
+                          animationDelay: `${i * 30}ms`,
+                          paddingBottom: "100%",
+                        }}
+                      >
+                        <img
+                          src={item.imageUrl}
+                          crossOrigin="anonymous"
+                          alt={item.prompt}
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
 
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
+                        <div className="absolute bottom-0 left-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          <p className="text-xs text-white font-medium line-clamp-2 mb-2 bg-black/60 backdrop-blur-sm rounded px-2 py-1">
+                            {item.prompt}
+                          </p>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => {
+                                handleView(item);
+                                handleCloseAll();
+                              }}
+                              title="View Image"
+                              className="flex-1 flex items-center justify-center px-2 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                            >
+                              <ImageIcon size={16} />
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDownload(item.imageUrl, item.prompt)
+                              }
+                              title="Download Image"
+                              className="flex-1 flex items-center justify-center px-2 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
+                            >
+                              <Download size={16} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                handleDelete(item.id);
+                                // Update both lists
+                                setAllGenerations((prev) =>
+                                  prev.filter((gen) => gen.id !== item.id)
+                                );
+                              }}
+                              title="Delete"
+                              className="flex items-center justify-center px-2 py-2 bg-red-600 text-white rounded-lg text-xs font-medium hover:bg-red-700 transition-all"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </div>
 
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
+                        <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          {item.model}
+                        </div>
 
-        .animation-delay-400 {
-          animation-delay: 0.4s;
-        }
+                        <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          {item.aspectRatio}
+                        </div>
 
-        .animate-shake {
-          animation: shake 0.5s ease-out;
-        }
-      `}</style>
+                        <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          {formatDateTime(item.createdAt)}
+                        </div>
+                      </div>
+                    )
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

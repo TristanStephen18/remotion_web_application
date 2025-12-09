@@ -16,16 +16,6 @@ export const AIToolsPanel: React.FC = () => {
     setAspectRatio,
     prompt,
     setPrompt,
-    imageLoading,
-    setImageLoading,
-    recentGenerations,
-    setRecentGenerations,
-    loading,
-    setLoading,
-    error,
-    setError,
-    currentImage,
-    setCurrentImage,
     uploadedFiles,
     setUploadedFiles,
     isDragging,
@@ -82,22 +72,12 @@ export const AIToolsPanel: React.FC = () => {
       <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
         {activeTab === "ai-images" ? (
           <AIImageGenerator
-            aspectRatio={aspectRatio}
-            currentImage={currentImage}
-            error={error}
-            imageLoading={imageLoading}
-            loading={loading}
             pollinationsModel={pollinationsModel}
-            prompt={prompt}
-            recentGenerations={recentGenerations}
-            setAspectRatio={setAspectRatio}
-            setCurrentImage={setCurrentImage}
-            setError={setError}
-            setImageLoading={setImageLoading}
-            setLoading={setLoading}
             setPollinationsModel={setPollinationsModel}
+            aspectRatio={aspectRatio}
+            setAspectRatio={setAspectRatio}
+            prompt={prompt}
             setPrompt={setPrompt}
-            setRecentGenerations={setRecentGenerations}
           />
         ) : (
           <BackgroundRemover
