@@ -85,10 +85,14 @@ function CheckoutForm() {
       });
 
       if (paymentMethodError) {
+        console.error('Stripe PaymentMethod Error:', paymentMethodError);
+        // Show the actual Stripe error message for better debugging
         toast.error(paymentMethodError.message || "Failed to process card information.");
         setIsProcessing(false);
         return;
       }
+
+      console.log('✅ Payment method created:', paymentMethod.id);
 
       // Step 2: Send payment method to backend to create subscription
       const token = localStorage.getItem('token');
