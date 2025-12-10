@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 
 import "../../../assets/Logo.css";
 import { LuSparkles } from "react-icons/lu";
-import { checkSubscriptionStatus } from "../../../utils/subscriptionUtils";
+import { backendPrefix } from "../../../config";
 
 export type DashboardSection =
   | "home"
@@ -52,21 +52,45 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
 
   // Check subscription status
   useEffect(() => {
-    const checkStatus = async () => {
-      try {
-        const status = await checkSubscriptionStatus();
+  const checkStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        navigate("/login");
+        return;
+      }
 
-        // Redirect to subscription page if needed
-        if (status.shouldRedirectToSubscription) {
+      const response = await fetch(`${backendPrefix}/api/subscription/status`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const data = await response.json();
+
+      console.log('🔍 Dashboard subscription check:', data);
+
+      // ✅ NEW: Only redirect if trial expired AND no subscription
+      if (data.success) {
+        if (!data.hasSubscription && data.trialExpired) {
+          toast.error('Your free trial has expired. Please subscribe to continue.', {
+            duration: 5000,
+            icon: '⏰'
+          });
           navigate("/subscription");
         }
-      } catch (error) {
-        console.error('Error checking subscription:', error);
+        // If hasSubscription is true, user can stay (includes free trial)
       }
-    };
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      // Don't redirect on error - fail open
+    }
+  };
 
-    checkStatus();
-  }, [navigate]);
+  checkStatus();
+}, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");

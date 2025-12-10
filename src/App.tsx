@@ -1,4 +1,9 @@
-import { BrowserRouter, Route, Routes, Navigate, useNavigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Navigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { getCurrentUser, tokenManager } from "./services/authService";
@@ -52,7 +57,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
 import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
-import { backendPrefix } from "./config.ts";
+
 
 // ✅ NEW: Auth Provider Component
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -185,53 +190,65 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-function SubscriptionGuard({ children }: { children: React.ReactNode }) {
-  const navigate = useNavigate();
-  const [checking, setChecking] = useState(true);
+// function SubscriptionGuard({ children }: { children: React.ReactNode }) {
+//   const navigate = useNavigate();
+//   const [checking, setChecking] = useState(true);
 
-  useEffect(() => {
-    const checkSub = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${backendPrefix}/api/subscription/status`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        });
+//   useEffect(() => {
+//     const checkSub = async () => {
+//       try {
+//         const token = localStorage.getItem("token");
+//         const response = await fetch(
+//           `${backendPrefix}/api/subscription/status`,
+//           {
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//               "Content-Type": "application/json",
+//             },
+//           }
+//         );
 
-        const data = await response.json();
+//         const data = await response.json();
 
-        // If user already has subscription, redirect to dashboard
-        if (data.success && data.hasSubscription) {
-          console.log('✅ User has subscription, redirecting to dashboard');
-          navigate('/dashboard', { replace: true });
-          return;
-        }
+//         console.log("🔍 SubscriptionGuard check:", data);
 
-        setChecking(false);
-      } catch (error) {
-        console.error('Error checking subscription:', error);
-        setChecking(false);
-      }
-    };
+//         // ✅ FIXED: Only redirect to dashboard if has ACTIVE subscription (not free trial)
+//         // Free trial users should see subscription page to upgrade
+//         if (
+//           data.success &&
+//           data.hasSubscription &&
+//           data.status !== "free_trial"
+//         ) {
+//           console.log(
+//             "✅ User has paid subscription, redirecting to dashboard"
+//           );
+//           navigate("/dashboard", { replace: true });
+//           return;
+//         }
 
-    checkSub();
-  }, [navigate]);
+//         setChecking(false);
+//       } catch (error) {
+//         console.error("Error checking subscription:", error);
+//         setChecking(false);
+//       }
+//     };
 
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking subscription...</p>
-        </div>
-      </div>
-    );
-  }
+//     checkSub();
+//   }, [navigate]);
 
-  return <>{children}</>;
-}
+//   if (checking) {
+//     return (
+//       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+//         <div className="text-center">
+//           <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+//           <p className="text-gray-600">Checking subscription...</p>
+//         </div>
+//       </div>
+//     );
+//   }
+
+//   return <>{children}</>;
+// }
 
 function App() {
   return (
@@ -277,15 +294,15 @@ function App() {
                 </PublicOnlyRoute>
               }
             />
-            
+
             <Route
-            path="/pricing"
-            element={
-              <PublicOnlyRoute>
-                <PricingPage />
-              </PublicOnlyRoute>
-            }
-          />
+              path="/pricing"
+              element={
+                <PublicOnlyRoute>
+                  <PricingPage />
+                </PublicOnlyRoute>
+              }
+            />
 
             {/* Loading pages (no protection needed) */}
             <Route path="/loading" element={<GoogleLoading />} />
@@ -297,9 +314,7 @@ function App() {
               path="/subscription"
               element={
                 <ProtectedRoute>
-                  <SubscriptionGuard>
-                    <SubscriptionPage />
-                  </SubscriptionGuard>
+                  <SubscriptionPage /> {/* ✅ REMOVED SubscriptionGuard */}
                 </ProtectedRoute>
               }
             />
@@ -669,8 +684,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/ss" element={<VideoEditorDemo/>} />
-
+            <Route path="/ss" element={<VideoEditorDemo />} />
 
             {/* ========== 404 FALLBACK ========== */}
             <Route path="*" element={<Navigate to="/" replace />} />
