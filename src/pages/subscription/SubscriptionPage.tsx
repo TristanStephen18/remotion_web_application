@@ -164,7 +164,7 @@ function CheckoutForm() {
   };
 
   const handleBack = () => {
-    navigate("/dashboard");
+    navigate("/");
   };
 
   // Calculate dates
