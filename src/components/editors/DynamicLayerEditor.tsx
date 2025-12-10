@@ -3316,7 +3316,7 @@ const DynamicLayerEditor: React.FC = () => {
                   </div>
                 )}
 
-                {template?.id !== 8 && (
+                {/* {template?.id !== 8 && ( */}
                   <DynamicPreviewOverlay
                     layers={layers}
                     currentFrame={currentFrame}
@@ -3330,7 +3330,7 @@ const DynamicLayerEditor: React.FC = () => {
                     isPlaying={isPlaying}
                     onPlayingChange={setIsPlaying}
                   />
-                )}
+                {/* )} */}
               </div>
             </div>
           </div>
