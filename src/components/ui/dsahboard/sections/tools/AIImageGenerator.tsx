@@ -1,4 +1,5 @@
 
+
 // src/components/ui/dashboard/sections/tools/AIImageGenerator.tsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
@@ -150,11 +151,40 @@ export const AIImageGenerator: React.FC<AIImageGeneratorInterface> = ({
   const totalSlots = aspectRatio === "16:9" ? 6 : 9;
   const placeholderCount = Math.max(0, totalSlots - recentGenerations.length);
 
-  const downloadImage = (url: string) => {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "ai-image.png";
-    a.click();
+  const downloadImage = async (url: string) => {
+    try {
+      // Create a safe filename with timestamp
+      const timestamp = new Date().getTime();
+      const filename = `ai-image-${timestamp}.png`;
+      
+      // Fetch the image as a blob to avoid CORS issues
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      // Create a temporary download link
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to direct download
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'ai-image.png';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   return (

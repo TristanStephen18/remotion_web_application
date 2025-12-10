@@ -1,4 +1,6 @@
 
+
+
 // src/components/ui/dashboard/sections/tools/VEO3Generator.tsx
 import React, { useState, useEffect } from "react";
 import {
@@ -188,6 +190,7 @@ export const VEO3Generator: React.FC = () => {
       alert("Failed to delete video. Please try again.");
     }
   };
+  
   const handleEdit = (generation: VEO3Generation) => {
     // Navigate to editor with video data as state
     navigate('/editor', {
@@ -202,6 +205,44 @@ export const VEO3Generator: React.FC = () => {
         }
       }
     });
+  };
+
+  const handleDownload = async (videoUrl: string, prompt: string) => {
+    try {
+      // Create a safe filename from the prompt
+      const filename = prompt
+        .slice(0, 50) // Limit length
+        .replace(/[^a-z0-9]/gi, '_') // Replace non-alphanumeric chars
+        .toLowerCase() + '_' + Date.now() + '.mp4';
+      
+      // Fetch the video as a blob to avoid CORS issues
+      const response = await fetch(videoUrl);
+      const blob = await response.blob();
+      
+      // Create a temporary download link
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback to direct download
+      const link = document.createElement('a');
+      link.href = videoUrl;
+      link.download = 'video.mp4';
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handlePreviewClick = (generation: VEO3Generation) => {
@@ -589,16 +630,15 @@ export const VEO3Generator: React.FC = () => {
                                           View
                                         </span>
                                       </a>
-                                      <a
-                                        href={generation.videoUrl}
-                                        download
+                                      <button
+                                        onClick={() => handleDownload(generation.videoUrl!, generation.prompt)}
                                         className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
                                       >
                                         <FiDownload className="text-sm" />
                                         <span className="hidden sm:inline">
                                           Download
                                         </span>
-                                      </a>
+                                      </button>
                                       <button
                                         onClick={() => handleEdit(generation)}
                                         className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
@@ -1106,16 +1146,15 @@ export const VEO3Generator: React.FC = () => {
                                           View
                                         </span>
                                       </a>
-                                      <a
-                                        href={generation.videoUrl}
-                                        download
+                                      <button
+                                        onClick={() => handleDownload(generation.videoUrl!, generation.prompt)}
                                         className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"
                                       >
                                         <FiDownload className="text-sm" />
                                         <span className="hidden sm:inline">
                                           Download
                                         </span>
-                                      </a>
+                                      </button>
                                       <button
                                         onClick={() => handleEdit(generation)}
                                         className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-600 to-orange-600 text-white rounded-lg text-xs font-medium hover:shadow-md transition-all"

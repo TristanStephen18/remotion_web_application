@@ -126,18 +126,46 @@ export const BackgroundRemover: React.FC<BackgroundRemoverInterface> = ({
     if (!file.processedUrl) return;
 
     try {
+      // Get file extension from original filename
+      const fileExt = file.name.split('.').pop() || 'png';
+      const timestamp = new Date().getTime();
+      const filename = `bg-removed-${timestamp}.${fileExt}`;
+      
+      // Fetch the image as a blob to avoid CORS issues
       const response = await fetch(file.processedUrl);
+      if (!response.ok) throw new Error('Failed to fetch image');
+      
       const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `bg-removed-${file.name}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      
+      // Create a temporary download link
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filename;
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error("Error downloading image:", error);
+      
+      // Fallback to direct download
+      try {
+        const link = document.createElement("a");
+        link.href = file.processedUrl;
+        link.download = `bg-removed-${file.name}`;
+        link.target = "_blank";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (fallbackError) {
+        console.error("Fallback download also failed:", fallbackError);
+        alert("Failed to download image. Please try right-clicking the image and selecting 'Save image as...'");
+      }
     }
   };
 
