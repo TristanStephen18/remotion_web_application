@@ -957,6 +957,7 @@ const DynamicLayerEditor: React.FC = () => {
     handleVideoUpload,
     updateLayer,
     deleteLayer,
+    splitLayer,
     reorderLayers,
   } = useLayerManagement({
     layers,
@@ -1010,7 +1011,8 @@ const DynamicLayerEditor: React.FC = () => {
     selectedImageLayer !== null ||
     selectedAudioLayer !== null ||
     selectedVideoLayer !== null ||
-    selectedChatLayer !== null
+    selectedChatLayer !== null ||
+    selectedLayerId !== null;
 
   const getSelectedVideoElement = useCallback((): HTMLVideoElement | null => {
     if (!selectedLayerId) return null;
@@ -1949,8 +1951,8 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
 
   const selectLayerAndCloseTab = useCallback((layerId: string | null) => {
     setSelectedLayerId(layerId);
-    if (layerId) setActiveTab(null);
   }, []);
+
   const handleAddText = useCallback(() => {
     addTextLayer();
   }, [addTextLayer]);
@@ -3198,6 +3200,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
 
         {/* --- EDIT PANEL --- */}
         <div
+        data-panel="true"
           style={{
             ...editorStyles.editPanel,
             backgroundColor: colors.bgPrimary,
@@ -3490,6 +3493,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
             onDeleteTrack={deleteLayer}
+            onCutTrack={splitLayer} 
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}
             data-timeline="true"

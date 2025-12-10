@@ -107,6 +107,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   const rulerRef = useRef<HTMLDivElement>(null);
   
   const isDraggingPlayhead = useRef(false);
+  const tracksRef = useRef<TimelineTrack[]>(tracks);
 
   const [labelWidth, setLabelWidth] = useState(180);
   const [isResizingHorizontal, setIsResizingHorizontal] = useState(false);
@@ -129,6 +130,9 @@ export const Timeline: React.FC<TimelineProps> = ({
   
   const [dragDirection, setDragDirection] = useState<"horizontal" | "vertical" | null>(null);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+  tracksRef.current = tracks;
+}, [tracks]);
 
   // Enhanced hover state for better feedback
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
@@ -276,6 +280,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     const reorderStartIndex = trackIndex;
     let reorderCurrentIndex = trackIndex;
 
+
+    // Store temporary track state during drag for smooth updates
+let tempStartFrame = track.startFrame;
+let tempEndFrame = track.endFrame;
+let animationFrameId: number | null = null;
+let hasPendingUpdate = false;
+    
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!trackAreaRef.current || !rect) return;
 
@@ -313,10 +324,23 @@ export const Timeline: React.FC<TimelineProps> = ({
           newEndFrame = Math.min(totalFrames, Math.max(track.startFrame + 5, track.endFrame + deltaFrames));
         }
 
-        const updatedTracks = tracks.map(t =>
-          t.id === track.id ? { ...t, startFrame: newStartFrame, endFrame: newEndFrame } : t
-        );
-        onTracksChange?.(updatedTracks);
+        // Store the new values temporarily
+tempStartFrame = newStartFrame;
+tempEndFrame = newEndFrame;
+
+// Use requestAnimationFrame for smooth updates
+if (!hasPendingUpdate) {
+  hasPendingUpdate = true;
+  animationFrameId = requestAnimationFrame(() => {
+    // Use tracksRef.current to get the latest tracks, not stale closure
+    const currentTracks = tracksRef.current;
+    const updatedTracks = currentTracks.map(t =>
+      t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
+    );
+    onTracksChange?.(updatedTracks);
+    hasPendingUpdate = false;
+  });
+}
       }
       
       // Handle vertical dragging (reordering)
@@ -338,8 +362,21 @@ export const Timeline: React.FC<TimelineProps> = ({
     };
 
     const handleMouseUp = () => {
-      // Use local variables which have the most up-to-date values
-      if (isReordering && reorderCurrentIndex !== reorderStartIndex) {
+  // Cancel any pending animation frame and apply final state
+  if (animationFrameId !== null) {
+    cancelAnimationFrame(animationFrameId);
+    // Apply final update using current tracks from ref
+    if (dragDirection === "horizontal" || (!dragDirection && !isReordering)) {
+      const currentTracks = tracksRef.current;
+      const updatedTracks = currentTracks.map(t =>
+        t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
+      );
+      onTracksChange?.(updatedTracks);
+    }
+  }
+  
+  // Use local variables which have the most up-to-date values
+  if (isReordering && reorderCurrentIndex !== reorderStartIndex) {
         onReorderTracks?.(reorderStartIndex, reorderCurrentIndex);
       }
       
