@@ -52,6 +52,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
 import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
+import { backendPrefix } from "./config.ts";
 
 // ✅ NEW: Auth Provider Component
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -192,7 +193,7 @@ function SubscriptionGuard({ children }: { children: React.ReactNode }) {
     const checkSub = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000'}/api/subscription/status`, {
+        const response = await fetch(`${backendPrefix}/api/subscription/status`, {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
