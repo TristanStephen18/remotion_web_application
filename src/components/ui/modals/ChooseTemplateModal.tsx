@@ -159,10 +159,10 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
                   const templateId = TEMPLATE_NAME_TO_ID[label || ""];
                   if (templateId) {
                     const location = `/editor?template=${templateId}`;
-                    window.open(location, "_blank");
+                    window.location.assign(location);
                   } else {
                     const location = TemplateNavigator(label || "user");
-                    window.open(location, "_blank");
+                    window.location.assign(location);
                   }
                   onClose();
                 }}

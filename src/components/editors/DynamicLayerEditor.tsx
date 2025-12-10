@@ -922,10 +922,10 @@ const DynamicLayerEditor: React.FC = () => {
 
   const handleSaveThumbnail = async (): Promise<string | null> => {
     handleFrameChange((duration - 2) * 30);
-    
+
     // Wait a bit for the frame to render
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const blob = await capturePreviewScreenshot();
 
     if (blob) {
@@ -1003,9 +1003,11 @@ const DynamicLayerEditor: React.FC = () => {
     selectedLayer && isAudioLayer(selectedLayer) ? selectedLayer : null;
   const selectedVideoLayer =
     selectedLayer && isVideoLayer(selectedLayer) ? selectedLayer : null;
-  const selectedChatLayer = useMemo(() =>
-  selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
-[selectedLayer]);
+  const selectedChatLayer = useMemo(
+    () =>
+      selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
+    [selectedLayer]
+  );
   const showEditPanel =
     selectedTextLayer !== null ||
     selectedImageLayer !== null ||
@@ -1451,61 +1453,65 @@ const DynamicLayerEditor: React.FC = () => {
 
       // Timing configuration
       const photoDelay = 18;
-const slideSpeed = 45;
-const holdTime = 45; // Time to view complete collage after all photos enter
-const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
-      const photoStartFrame = collageEndFrame; 
+      const slideSpeed = 45;
+      const holdTime = 45; // Time to view complete collage after all photos enter
+      const collageEndFrame =
+        (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const photoStartFrame = collageEndFrame;
       const photoDuration = 60; // Each photo shows for 2 seconds
 
+      const collageLayers: Layer[] = layout.slots.map((slot, index) => {
+        const layerId = generateId();
 
-const collageLayers: Layer[] = layout.slots.map((slot, index) => {
-  const layerId = generateId();
+        // Determine slide animation based on slot direction
+        let slideAnimation:
+          | "slideUp"
+          | "slideDown"
+          | "slideLeft"
+          | "slideRight";
+        if (slot.slideDirection === "left") {
+          slideAnimation = "slideRight";
+        } else if (slot.slideDirection === "right") {
+          slideAnimation = "slideLeft";
+        } else if (slot.slideDirection === "up") {
+          slideAnimation = "slideDown";
+        } else if (slot.slideDirection === "down") {
+          slideAnimation = "slideUp";
+        } else {
+          slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
+        }
 
-  // Determine slide animation based on slot direction
-  let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
-  if (slot.slideDirection === "left") {
-    slideAnimation = "slideRight"; 
-  } else if (slot.slideDirection === "right") {
-    slideAnimation = "slideLeft";
-  } else if (slot.slideDirection === "up") {
-    slideAnimation = "slideDown";
-  } else if (slot.slideDirection === "down") {
-    slideAnimation = "slideUp";
-  } else {
-    slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
-  }
+        const imageLayer: ImageLayer = {
+          id: layerId,
+          name: `Collage Slot ${index + 1}`,
+          visible: true,
+          locked: false,
+          type: "image",
+          startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
+          endFrame: collageEndFrame,
+          position: {
+            x: slot.x + slot.width / 2,
+            y: slot.y + slot.height / 2,
+          },
+          size: {
+            width: slot.width,
+            height: slot.height,
+          },
+          rotation: slot.rotation || 0,
+          opacity: 1,
+          animation: {
+            entrance: slideAnimation,
+            entranceDuration: slideSpeed,
+          },
+          src: sampleImages[index % sampleImages.length],
+          objectFit: "cover",
+          filter: slot.shadow
+            ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
+            : "brightness(1.05) contrast(1.05)",
+        };
 
-  const imageLayer: ImageLayer = {
-    id: layerId,
-    name: `Collage Slot ${index + 1}`,
-    visible: true,
-    locked: false,
-    type: "image",
-    startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
-    endFrame: collageEndFrame,
-    position: {
-      x: slot.x + slot.width / 2,
-      y: slot.y + slot.height / 2,
-    },
-    size: {
-      width: slot.width,
-      height: slot.height,
-    },
-    rotation: slot.rotation || 0,
-    opacity: 1,
-    animation: {
-      entrance: slideAnimation,
-      entranceDuration: slideSpeed,
-    },
-    src: sampleImages[index % sampleImages.length],
-    objectFit: "cover",
-    filter: slot.shadow
-      ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
-      : "brightness(1.05) contrast(1.05)",
-  };
-
-  return imageLayer;
-});
+        return imageLayer;
+      });
       // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS (aesthetic designs)
       const trailingPhotoLayers: ImageLayer[] = [];
       const individualAnimations = ["zoomPunch", "scale", "fade"];
@@ -1576,39 +1582,41 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         shadowBlur: 12,
       };
 
-      const subtitleLayer: TextLayer | null = textOverlay ? {
-  id: generateId(),
-  name: "Collage Subtitle",
-  visible: true,
-  locked: false,
-  type: "text",
-  startFrame: 10,
-  endFrame: collageEndFrame,
-  position: { x: 50, y: 53 },
-  size: { width: 70, height: 8 },
-  rotation: 0,
-  opacity: 1,
-  animation: {
-    entrance: "fade",
-    entranceDuration: 20,
-  },
-  content: textOverlay.subText,
-  fontFamily: textOverlay.subFont,
-  fontSize: 4,
-  fontColor: "#ffffff",
-  fontWeight: "normal",
-  fontStyle: "italic",
-  textAlign: "center",
-  lineHeight: 1.2,
-  letterSpacing: 1,
-  textTransform: "none",
-  textOutline: false,
-  textShadow: true,
-  shadowColor: "#000000",
-  shadowX: 0,
-  shadowY: 3,
-  shadowBlur: 10,
-} : null;
+      const subtitleLayer: TextLayer | null = textOverlay
+        ? {
+            id: generateId(),
+            name: "Collage Subtitle",
+            visible: true,
+            locked: false,
+            type: "text",
+            startFrame: 10,
+            endFrame: collageEndFrame,
+            position: { x: 50, y: 53 },
+            size: { width: 70, height: 8 },
+            rotation: 0,
+            opacity: 1,
+            animation: {
+              entrance: "fade",
+              entranceDuration: 20,
+            },
+            content: textOverlay.subText,
+            fontFamily: textOverlay.subFont,
+            fontSize: 4,
+            fontColor: "#ffffff",
+            fontWeight: "normal",
+            fontStyle: "italic",
+            textAlign: "center",
+            lineHeight: 1.2,
+            letterSpacing: 1,
+            textTransform: "none",
+            textOutline: false,
+            textShadow: true,
+            shadowColor: "#000000",
+            shadowX: 0,
+            shadowY: 3,
+            shadowBlur: 10,
+          }
+        : null;
 
       // 4. CREATE SUBTLE GRADIENT OVERLAY (only during collage for depth)
       const gradientOverlay: ImageLayer = {
@@ -1650,13 +1658,13 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
 
       // 6. COMBINE ALL LAYERS IN PROPER ORDER
       const allLayers: Layer[] = [
-  ...collageLayers,
-  gradientOverlay,
-  textLayer,
-  ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
-  ...trailingPhotoLayers,
-  bottomVignette,
-];
+        ...collageLayers,
+        gradientOverlay,
+        textLayer,
+        ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
+        ...trailingPhotoLayers,
+        bottomVignette,
+      ];
 
       // Remove ALL old layers and add new composition
       console.log("=== CREATING AESTHETIC COLLAGE COMPOSITION ===");
@@ -2294,19 +2302,24 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
   // ==========================================
   // TIMELINE TRACKS (Reversed Logic)
   // ==========================================
- const timelineTracks = useMemo(
-  (): TimelineTrack[] => {
+  const timelineTracks = useMemo((): TimelineTrack[] => {
     if (!layers) return [];
-    
+
     // Detect active chat style to filter chat-bg appropriately
-    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as ChatBubbleLayer | undefined;
+    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as
+      | ChatBubbleLayer
+      | undefined;
     const activeChatStyle = firstChatBubble?.chatStyle;
-    
+
     return [...layers]
       .reverse()
       .filter((layer) => {
         // Hide chat-bg layer for non-fakechatconversation styles
-        if (layer.id === 'chat-bg' && activeChatStyle && activeChatStyle !== 'fakechatconversation') {
+        if (
+          layer.id === "chat-bg" &&
+          activeChatStyle &&
+          activeChatStyle !== "fakechatconversation"
+        ) {
           return false;
         }
         return true;
@@ -2322,9 +2335,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         visible: layer.visible,
         locked: layer.locked,
       }));
-  },
-  [layers]
-);
+  }, [layers]);
 
   const handleTrackSelect = useCallback(
     (trackId: string | null) => {
@@ -2460,7 +2471,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         const inputProps = {
           config: {
             layers: layersToRender,
-            duration
+            duration,
           },
         };
         const videoUrl = await renderVideoUsingLambda(
@@ -2480,47 +2491,45 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
     [layers, template, getProcessedLayers]
   );
 
-  async function handleSaveExistingProject(screenshoturl: string) {
-     setIsPorjectSaving(true);
-      if (projectId) {
-        const props = {
-          layers,
-          duration,
-          currentFrame,
-          templateId: template?.id || 1,
-        };
-        const changedprops = await compareProjectProps(projectId, props);
-        console.log(changedprops);
-        if (changedprops === true) {
-          toast.success("Nothing to save. Make some changes before saving");
+  async function handleSaveExistingProject() {
+    setIsPorjectSaving(true);
+    const screenshoturl = await handleSaveThumbnail();
+    if (projectId) {
+      const props = {
+        layers,
+        duration,
+        currentFrame,
+        templateId: template?.id || 1,
+      };
+      const changedprops = await compareProjectProps(projectId, props);
+      console.log(changedprops);
+      if (changedprops === true) {
+        toast.success("Nothing to save. Make some changes before saving");
+      } else {
+        const saveresponse = await saveExistingProject(
+          projectId,
+          props,
+          screenshoturl as string
+        );
+        if (saveresponse === "error") {
+          toast.error("There was an error saving your project");
         } else {
-          const saveresponse = await saveExistingProject(
-            projectId,
-            props,
-            screenshoturl
-          );
-          if (saveresponse === "error") {
-            toast.error("There was an error saving your project");
-          } else {
-            toast.success("Changes saved!");
-          }
+          toast.success("Changes saved!");
         }
       }
+    }
     setIsPorjectSaving(false);
   }
 
   const handleSaveProject = useCallback(
-    async (
-      title: string,
-      setStatus: (s: string) => void,
-      screenshot: string
-    ) => {
+    async (title: string, setStatus: (s: string) => void) => {
       setStatus("Saving...");
+      const screenshoturl = await handleSaveThumbnail();
       try {
         const savedProjectId = (await saveNewProject(
           title,
           setStatus,
-          screenshot
+          screenshoturl as string
         )) as unknown as string;
         if (savedProjectId && !projectId) {
           setProjectId(savedProjectId);
@@ -2654,7 +2663,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
   );
 
   return (
-    <>  
+    <>
       <div
         style={{
           ...editorStyles.container,
@@ -3200,7 +3209,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
 
         {/* --- EDIT PANEL --- */}
         <div
-        data-panel="true"
+          data-panel="true"
           style={{
             ...editorStyles.editPanel,
             backgroundColor: colors.bgPrimary,
@@ -3269,7 +3278,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
                   }
                 />
               )}
-             {selectedVideoLayer && (
+              {selectedVideoLayer && (
                 <VideoEditor
                   layer={selectedVideoLayer}
                   totalFrames={totalFrames}
@@ -3323,19 +3332,12 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
               <ThemeToggle />
               <button
                 style={editorStyles.addButton}
-                onClick={async () => {
-                  const screenshoturl = await handleSaveThumbnail();
-                  if (screenshot) {
-                    if (projectId) {
-                      handleSaveExistingProject(screenshoturl as string);
-                      // handleSaveProject();
-                    } else {
-                      setShowSaveModal(true);
-                    }
+                onClick={() => {
+                  if (projectId) {
+                    handleSaveExistingProject();
+                    // handleSaveProject();
                   } else {
-                    toast.error(
-                      "There was an error saving your project.\nTry again later."
-                    );
+                    setShowSaveModal(true);
                   }
                 }}
               >
@@ -3433,19 +3435,19 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
                 )}
 
                 {/* {template?.id !== 8 && ( */}
-                  <DynamicPreviewOverlay
-                    layers={layers}
-                    currentFrame={currentFrame}
-                    selectedLayerId={selectedLayerId}
-                    editingLayerId={editingLayerId}
-                    onSelectLayer={selectLayerAndCloseTab}
-                    onLayerUpdate={updateLayer}
-                    containerWidth={previewDimensions.width}
-                    containerHeight={previewDimensions.height}
-                    onEditingLayerChange={setEditingLayerId}
-                    isPlaying={isPlaying}
-                    onPlayingChange={setIsPlaying}
-                  />
+                <DynamicPreviewOverlay
+                  layers={layers}
+                  currentFrame={currentFrame}
+                  selectedLayerId={selectedLayerId}
+                  editingLayerId={editingLayerId}
+                  onSelectLayer={selectLayerAndCloseTab}
+                  onLayerUpdate={updateLayer}
+                  containerWidth={previewDimensions.width}
+                  containerHeight={previewDimensions.height}
+                  onEditingLayerChange={setEditingLayerId}
+                  isPlaying={isPlaying}
+                  onPlayingChange={setIsPlaying}
+                />
                 {/* )} */}
               </div>
             </div>
@@ -3493,7 +3495,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
             onDeleteTrack={deleteLayer}
-            onCutTrack={splitLayer} 
+            onCutTrack={splitLayer}
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}
             data-timeline="true"

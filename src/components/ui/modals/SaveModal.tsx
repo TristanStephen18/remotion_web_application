@@ -14,7 +14,7 @@ import {
 interface SaveProjectModalProps {
   open: boolean;
   onClose: () => void;
-  onSave: (title: string, setStatus: (s: string) => void, screenshot: string) => Promise<void>;
+  onSave: (title: string, setStatus: (s: string) => void) => Promise<void>;
   initialTitle?: string;
   screenshot: string;
 }
@@ -99,7 +99,7 @@ export const SaveProjectModal: React.FC<SaveProjectModalProps> = ({
     setMessageIndex(0);
 
     try {
-      await onSave(title.trim(), (s) => setStatus(s), screenshot);
+      await onSave(title.trim(), (s) => setStatus(s));
       setStatus("Your design was successfully saved! You can now view it in your templates!");
       setMode("success");
     } catch (err: any) {
