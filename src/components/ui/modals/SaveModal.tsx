@@ -99,6 +99,7 @@ export const SaveProjectModal: React.FC<SaveProjectModalProps> = ({
     setMessageIndex(0);
 
     try {
+      console.log(screenshot);
       await onSave(title.trim(), (s) => setStatus(s));
       setStatus("Your design was successfully saved! You can now view it in your templates!");
       setMode("success");

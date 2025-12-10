@@ -26,12 +26,12 @@ import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/
 import { CurveLineTrendEditor } from "./components/editors/CurveLineTrend/Holder.tsx";
 import { NewTypingEditor } from "./components/editors/NewTextTypingEditor/Holder.tsx";
 import { KineticEditor } from "./components/editors/KineticText/Holder.tsx";
-import { NeonFlickerEditor } from "./components/editors/NeonFlicker/Holder.tsx";
-import { HeatmapEditor } from "./components/editors/HeatMap/Holder.tsx";
+// import { NeonFlickerEditor } from "./components/editors/NeonFlicker/Holder.tsx";
+// import { HeatmapEditor } from "./components/editors/HeatMap/Holder.tsx";
 import { FlipCardsEditor } from "./components/editors/FlipCards/Holder.tsx";
 import { LogoAnimationEditor } from "./components/editors/LogoAnimation/Holder.tsx";
-import { NeonTubeFlickerEditor } from "./components/editors/NeonTubeFlicker/Holder.tsx";
-import { DynamicTextEditor } from "./components/editors/RetroNeonText/Holder.tsx";
+// import { NeonTubeFlickerEditor } from "./components/editors/NeonTubeFlicker/Holder.tsx";
+// import { DynamicTextEditor } from "./components/editors/RetroNeonText/Holder.tsx";
 
 // Batch Rendering
 import { QuoteSpotlightBatchRendering } from "./pages/batchrendering/QuoteSpotlight.tsx";
@@ -407,7 +407,7 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/template/retroneon"
               element={
                 <ProtectedRoute>
@@ -422,7 +422,7 @@ function App() {
                   <DynamicTextEditor />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             <Route
               path="/template/kpiflipcards"
@@ -509,7 +509,7 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/template/neonflicker"
               element={
                 <ProtectedRoute>
@@ -524,7 +524,7 @@ function App() {
                   <NeonFlickerEditor />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             <Route
               path="/template/logoanimation"
@@ -543,7 +543,7 @@ function App() {
               }
             />
 
-            <Route
+            {/* <Route
               path="/template/heatmap"
               element={
                 <ProtectedRoute>
@@ -575,7 +575,7 @@ function App() {
                   <NeonTubeFlickerEditor />
                 </ProtectedRoute>
               }
-            />
+            /> */}
 
             {/* ========== BATCH RENDERING ========== */}
             <Route
