@@ -16,6 +16,9 @@ import DynamicLayerComposition from "../remotion_compositions/DynamicLayerCompos
 
 // Sidebar
 import { SidebarTabs } from "../editor_components/SideBarTabs";
+import { MobileSidebarTabs } from "../editor_components/MobileSidebarTabs";
+import { MobilePanelWrapper } from "../editor_components/MobilePanelWrapper";
+import { useIsMobile } from "../../styles/mobileResponsiveStyles";
 
 import {
   CollagePanel,
@@ -564,7 +567,8 @@ const DynamicLayerEditor: React.FC = () => {
     height: 0,
   });
   const hasLoadedTemplate = useRef(false);
-  const isPanelOpen = activeTab !== null;
+  const isMobile = useIsMobile();
+const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   //additional usestates for project saving
   const [isProjectSaving, setIsPorjectSaving] = useState(false);
@@ -922,10 +926,10 @@ const DynamicLayerEditor: React.FC = () => {
 
   const handleSaveThumbnail = async (): Promise<string | null> => {
     handleFrameChange((duration - 2) * 30);
-
+    
     // Wait a bit for the frame to render
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     const blob = await capturePreviewScreenshot();
 
     if (blob) {
@@ -1003,11 +1007,9 @@ const DynamicLayerEditor: React.FC = () => {
     selectedLayer && isAudioLayer(selectedLayer) ? selectedLayer : null;
   const selectedVideoLayer =
     selectedLayer && isVideoLayer(selectedLayer) ? selectedLayer : null;
-  const selectedChatLayer = useMemo(
-    () =>
-      selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
-    [selectedLayer]
-  );
+  const selectedChatLayer = useMemo(() =>
+  selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
+[selectedLayer]);
   const showEditPanel =
     selectedTextLayer !== null ||
     selectedImageLayer !== null ||
@@ -1453,65 +1455,61 @@ const DynamicLayerEditor: React.FC = () => {
 
       // Timing configuration
       const photoDelay = 18;
-      const slideSpeed = 45;
-      const holdTime = 45; // Time to view complete collage after all photos enter
-      const collageEndFrame =
-        (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
-      const photoStartFrame = collageEndFrame;
+const slideSpeed = 45;
+const holdTime = 45; // Time to view complete collage after all photos enter
+const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const photoStartFrame = collageEndFrame; 
       const photoDuration = 60; // Each photo shows for 2 seconds
 
-      const collageLayers: Layer[] = layout.slots.map((slot, index) => {
-        const layerId = generateId();
 
-        // Determine slide animation based on slot direction
-        let slideAnimation:
-          | "slideUp"
-          | "slideDown"
-          | "slideLeft"
-          | "slideRight";
-        if (slot.slideDirection === "left") {
-          slideAnimation = "slideRight";
-        } else if (slot.slideDirection === "right") {
-          slideAnimation = "slideLeft";
-        } else if (slot.slideDirection === "up") {
-          slideAnimation = "slideDown";
-        } else if (slot.slideDirection === "down") {
-          slideAnimation = "slideUp";
-        } else {
-          slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
-        }
+const collageLayers: Layer[] = layout.slots.map((slot, index) => {
+  const layerId = generateId();
 
-        const imageLayer: ImageLayer = {
-          id: layerId,
-          name: `Collage Slot ${index + 1}`,
-          visible: true,
-          locked: false,
-          type: "image",
-          startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
-          endFrame: collageEndFrame,
-          position: {
-            x: slot.x + slot.width / 2,
-            y: slot.y + slot.height / 2,
-          },
-          size: {
-            width: slot.width,
-            height: slot.height,
-          },
-          rotation: slot.rotation || 0,
-          opacity: 1,
-          animation: {
-            entrance: slideAnimation,
-            entranceDuration: slideSpeed,
-          },
-          src: sampleImages[index % sampleImages.length],
-          objectFit: "cover",
-          filter: slot.shadow
-            ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
-            : "brightness(1.05) contrast(1.05)",
-        };
+  // Determine slide animation based on slot direction
+  let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
+  if (slot.slideDirection === "left") {
+    slideAnimation = "slideRight"; 
+  } else if (slot.slideDirection === "right") {
+    slideAnimation = "slideLeft";
+  } else if (slot.slideDirection === "up") {
+    slideAnimation = "slideDown";
+  } else if (slot.slideDirection === "down") {
+    slideAnimation = "slideUp";
+  } else {
+    slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
+  }
 
-        return imageLayer;
-      });
+  const imageLayer: ImageLayer = {
+    id: layerId,
+    name: `Collage Slot ${index + 1}`,
+    visible: true,
+    locked: false,
+    type: "image",
+    startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
+    endFrame: collageEndFrame,
+    position: {
+      x: slot.x + slot.width / 2,
+      y: slot.y + slot.height / 2,
+    },
+    size: {
+      width: slot.width,
+      height: slot.height,
+    },
+    rotation: slot.rotation || 0,
+    opacity: 1,
+    animation: {
+      entrance: slideAnimation,
+      entranceDuration: slideSpeed,
+    },
+    src: sampleImages[index % sampleImages.length],
+    objectFit: "cover",
+    filter: slot.shadow
+      ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
+      : "brightness(1.05) contrast(1.05)",
+  };
+
+  return imageLayer;
+});
       // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS (aesthetic designs)
       const trailingPhotoLayers: ImageLayer[] = [];
       const individualAnimations = ["zoomPunch", "scale", "fade"];
@@ -1582,41 +1580,39 @@ const DynamicLayerEditor: React.FC = () => {
         shadowBlur: 12,
       };
 
-      const subtitleLayer: TextLayer | null = textOverlay
-        ? {
-            id: generateId(),
-            name: "Collage Subtitle",
-            visible: true,
-            locked: false,
-            type: "text",
-            startFrame: 10,
-            endFrame: collageEndFrame,
-            position: { x: 50, y: 53 },
-            size: { width: 70, height: 8 },
-            rotation: 0,
-            opacity: 1,
-            animation: {
-              entrance: "fade",
-              entranceDuration: 20,
-            },
-            content: textOverlay.subText,
-            fontFamily: textOverlay.subFont,
-            fontSize: 4,
-            fontColor: "#ffffff",
-            fontWeight: "normal",
-            fontStyle: "italic",
-            textAlign: "center",
-            lineHeight: 1.2,
-            letterSpacing: 1,
-            textTransform: "none",
-            textOutline: false,
-            textShadow: true,
-            shadowColor: "#000000",
-            shadowX: 0,
-            shadowY: 3,
-            shadowBlur: 10,
-          }
-        : null;
+      const subtitleLayer: TextLayer | null = textOverlay ? {
+  id: generateId(),
+  name: "Collage Subtitle",
+  visible: true,
+  locked: false,
+  type: "text",
+  startFrame: 10,
+  endFrame: collageEndFrame,
+  position: { x: 50, y: 53 },
+  size: { width: 70, height: 8 },
+  rotation: 0,
+  opacity: 1,
+  animation: {
+    entrance: "fade",
+    entranceDuration: 20,
+  },
+  content: textOverlay.subText,
+  fontFamily: textOverlay.subFont,
+  fontSize: 4,
+  fontColor: "#ffffff",
+  fontWeight: "normal",
+  fontStyle: "italic",
+  textAlign: "center",
+  lineHeight: 1.2,
+  letterSpacing: 1,
+  textTransform: "none",
+  textOutline: false,
+  textShadow: true,
+  shadowColor: "#000000",
+  shadowX: 0,
+  shadowY: 3,
+  shadowBlur: 10,
+} : null;
 
       // 4. CREATE SUBTLE GRADIENT OVERLAY (only during collage for depth)
       const gradientOverlay: ImageLayer = {
@@ -1658,13 +1654,13 @@ const DynamicLayerEditor: React.FC = () => {
 
       // 6. COMBINE ALL LAYERS IN PROPER ORDER
       const allLayers: Layer[] = [
-        ...collageLayers,
-        gradientOverlay,
-        textLayer,
-        ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
-        ...trailingPhotoLayers,
-        bottomVignette,
-      ];
+  ...collageLayers,
+  gradientOverlay,
+  textLayer,
+  ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
+  ...trailingPhotoLayers,
+  bottomVignette,
+];
 
       // Remove ALL old layers and add new composition
       console.log("=== CREATING AESTHETIC COLLAGE COMPOSITION ===");
@@ -1958,8 +1954,16 @@ const DynamicLayerEditor: React.FC = () => {
   );
 
   const selectLayerAndCloseTab = useCallback((layerId: string | null) => {
-    setSelectedLayerId(layerId);
-  }, []);
+  setSelectedLayerId(layerId);
+  if (isMobile && layerId !== null) {
+    // On mobile, open the panel when a layer is selected
+    setIsPanelOpen(true);
+  } else if (!isMobile && layerId !== null) {
+    // On desktop, close the media/tools panel to show the editor
+    setActiveTab(null);
+    setIsPanelOpen(false);
+  }
+}, [isMobile]);
 
   const handleAddText = useCallback(() => {
     addTextLayer();
@@ -2302,24 +2306,19 @@ const DynamicLayerEditor: React.FC = () => {
   // ==========================================
   // TIMELINE TRACKS (Reversed Logic)
   // ==========================================
-  const timelineTracks = useMemo((): TimelineTrack[] => {
+ const timelineTracks = useMemo(
+  (): TimelineTrack[] => {
     if (!layers) return [];
-
+    
     // Detect active chat style to filter chat-bg appropriately
-    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as
-      | ChatBubbleLayer
-      | undefined;
+    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as ChatBubbleLayer | undefined;
     const activeChatStyle = firstChatBubble?.chatStyle;
-
+    
     return [...layers]
       .reverse()
       .filter((layer) => {
         // Hide chat-bg layer for non-fakechatconversation styles
-        if (
-          layer.id === "chat-bg" &&
-          activeChatStyle &&
-          activeChatStyle !== "fakechatconversation"
-        ) {
+        if (layer.id === 'chat-bg' && activeChatStyle && activeChatStyle !== 'fakechatconversation') {
           return false;
         }
         return true;
@@ -2335,7 +2334,9 @@ const DynamicLayerEditor: React.FC = () => {
         visible: layer.visible,
         locked: layer.locked,
       }));
-  }, [layers]);
+  },
+  [layers]
+);
 
   const handleTrackSelect = useCallback(
     (trackId: string | null) => {
@@ -2471,7 +2472,7 @@ const DynamicLayerEditor: React.FC = () => {
         const inputProps = {
           config: {
             layers: layersToRender,
-            duration,
+            duration
           },
         };
         const videoUrl = await renderVideoUsingLambda(
@@ -2491,33 +2492,32 @@ const DynamicLayerEditor: React.FC = () => {
     [layers, template, getProcessedLayers]
   );
 
-  async function handleSaveExistingProject() {
-    setIsPorjectSaving(true);
-    const screenshoturl = await handleSaveThumbnail();
-    if (projectId) {
-      const props = {
-        layers,
-        duration,
-        currentFrame,
-        templateId: template?.id || 1,
-      };
-      const changedprops = await compareProjectProps(projectId, props);
-      console.log(changedprops);
-      if (changedprops === true) {
-        toast.success("Nothing to save. Make some changes before saving");
-      } else {
-        const saveresponse = await saveExistingProject(
-          projectId,
-          props,
-          screenshoturl as string
-        );
-        if (saveresponse === "error") {
-          toast.error("There was an error saving your project");
+  async function handleSaveExistingProject(screenshoturl: string) {
+     setIsPorjectSaving(true);
+      if (projectId) {
+        const props = {
+          layers,
+          duration,
+          currentFrame,
+          templateId: template?.id || 1,
+        };
+        const changedprops = await compareProjectProps(projectId, props);
+        console.log(changedprops);
+        if (changedprops === true) {
+          toast.success("Nothing to save. Make some changes before saving");
         } else {
-          toast.success("Changes saved!");
+          const saveresponse = await saveExistingProject(
+            projectId,
+            props,
+            screenshoturl
+          );
+          if (saveresponse === "error") {
+            toast.error("There was an error saving your project");
+          } else {
+            toast.success("Changes saved!");
+          }
         }
       }
-    }
     setIsPorjectSaving(false);
   }
 
@@ -2542,7 +2542,7 @@ const DynamicLayerEditor: React.FC = () => {
     },
     [saveNewProject, projectId, navigate]
   );
-
+  
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -2662,42 +2662,131 @@ const DynamicLayerEditor: React.FC = () => {
     </div>
   );
 
+  const handlePanelToggle = (open: boolean) => {
+    setIsPanelOpen(open);
+    if (!open) {
+      setActiveTab(null);
+    }
+  };
+
   return (
     <>
-      <div
+     <div
         style={{
           ...editorStyles.container,
           backgroundColor: colors.bgPrimary,
+          flexDirection: isMobile ? "column" : "row",
+          overflow: "hidden",
         }}
       >
         {isLoading && <LoadingOverlay message="Loading project..." />}
 
-        {/* --- LEFT SIDEBAR --- */}
-        <SidebarTabs
-          activeTab={activeTab}
-          onTabChange={(tab) => {
-            setActiveTab(tab);
-            // setSelectedLayerId(null);
-            setWatchCategory("main");
-          }}
-          onPanelToggle={() => {}}
-          templateId={template?.id}
-        />
+       {/* --- SIDEBAR / BOTTOM TABS --- */}
+       {isMobile ? (
+          <MobileSidebarTabs
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              setIsPanelOpen(tab !== null);
+              setWatchCategory("main");
+              
+              // ✅ ADD THIS: Close editors (deselect layer) when opening a tab
+              if (tab !== null) {
+                setSelectedLayerId(null);
+                setEditingLayerId(null);
+              }
+            }}
+            onPanelToggle={handlePanelToggle}
+            templateId={template?.id}
+            isMobile={isMobile}
+          />
+        ) : (
+          <SidebarTabs
+            activeTab={activeTab}
+            onTabChange={(tab) => {
+              setActiveTab(tab);
+              setIsPanelOpen(tab !== null);
+              setWatchCategory("main");
+
+              // ✅ ADD THIS: Close editors (deselect layer) when opening a tab
+              if (tab !== null) {
+                setSelectedLayerId(null);
+                setEditingLayerId(null);
+              }
+            }}
+            onPanelToggle={handlePanelToggle}
+            templateId={template?.id}
+          />
+        )}
 
         {/* --- LAYERS PANEL --- */}
-        <div
-          style={{
-            ...editorStyles.layersPanel,
-            backgroundColor: colors.bgPrimary,
-            // ← ADD THIS LINE
-            zIndex: 50, // ← Ensure this is set
-            pointerEvents: "auto", // ← Allow clicks
-            ...(isPanelOpen ? {} : editorStyles.layersPanelClosed),
-          }}
-          data-panel="true"
-        >
+        {((isPanelOpen && activeTab) || showEditPanel) && (
+         <MobilePanelWrapper
+  isOpen={isPanelOpen}
+   showEdit={showEditPanel}
+  onClose={() => {
+    setIsPanelOpen(false);
+    setActiveTab(null);
+  }}
+  isMobile={isMobile}
+  title={
+    showEditPanel
+      ? (selectedTextLayer ? "Edit Text" : 
+         selectedVideoLayer ? "Edit Video" : 
+         selectedImageLayer ? "Edit Image" : 
+         selectedAudioLayer ? "Edit Audio" : 
+         selectedChatLayer ? "Edit Chat" : "Edit Layer")
+      : activeTab === "chat"
+      ? "Chat Settings"
+      : activeTab === "watch"
+      ? "Showcase"
+      : activeTab === "carousel"
+      ? "Blur Style"
+      : activeTab === "collage"
+      ? "Grid Layout"
+      : activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : ""
+  }
+>
+  <div
+    style={{
+      // Base styles
+      ...(!isMobile ? editorStyles.layersPanel : {
+        width: "100%",
+        height: "100%",
+        display: (isMobile && showEditPanel) ? "none" : "flex",
+        flexDirection: "column",
+        position: "relative",
+        border: "none",
+        backgroundColor: "transparent",
+      }),
+
+      // Desktop Overrides
+      ...(!isMobile ? {
+          backgroundColor: colors.bgPrimary,
+          position: "relative",
+          left: 0,
+          top: 0,
+          width: "100%",
+          height: "100%",
+          margin: 0,
+          boxShadow: "none",
+      } : {}),
+
+      // Shared styles
+      zIndex: 50,
+      pointerEvents: "auto",
+      
+      // ✅ FIX 1: Force hide this panel if we are editing (showEditPanel), 
+      // regardless of whether a tab is open.
+      display: !isMobile ? ((!isPanelOpen || showEditPanel) ? "none" : "flex") : undefined,
+      
+      ...(!isMobile && !isPanelOpen ? editorStyles.layersPanelClosed : {}),
+    }}
+    data-panel="true"
+  >
           {isPanelOpen && (
             <>
+            {!isMobile && (
               <div
                 style={{
                   ...editorStyles.layersPanelHeader,
@@ -2721,7 +2810,7 @@ const DynamicLayerEditor: React.FC = () => {
                     <Icons.ChevronLeft /> Back
                   </button>
                 ) : (
-                  <span
+                 <span
                     style={{
                       ...editorStyles.layersPanelTitle,
                       color: colors.textPrimary,
@@ -2733,7 +2822,7 @@ const DynamicLayerEditor: React.FC = () => {
                       ? "Showcase"
                       : activeTab === "carousel"
                       ? "Blur Style"
-                      : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+                      : (activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : "")}
                   </span>
                 )}
                 <button
@@ -2746,6 +2835,8 @@ const DynamicLayerEditor: React.FC = () => {
                   <Icons.Close />
                 </button>
               </div>
+            )}
+
 
               {/* Standard Media Library */}
               {activeTab !== "tools" &&
@@ -3209,19 +3300,40 @@ const DynamicLayerEditor: React.FC = () => {
 
         {/* --- EDIT PANEL --- */}
         <div
-          data-panel="true"
-          style={{
-            ...editorStyles.editPanel,
-            backgroundColor: colors.bgPrimary,
-            zIndex: 50, // ← ADD THIS - Same as layers panel
-            pointerEvents: showEditPanel && !isPanelOpen ? "auto" : "none", // ← ADD THIS
-            ...(showEditPanel && !isPanelOpen
-              ? {}
-              : editorStyles.editPanelHidden),
-          }}
+        data-panel="true"
+         style={{
+  ...(!isMobile ? editorStyles.editPanel : {
+    width: "100%",
+    height: "100%",
+    display: showEditPanel ? "flex" : "none",
+    flexDirection: "column",
+    position: "relative",
+    backgroundColor: colors.bgPrimary,
+  }),
+
+  ...(!isMobile ? {
+      backgroundColor: colors.bgPrimary, // Force opaque background
+      position: "relative",              // Reset 'fixed' positioning
+      left: 0,                           // Reset left offset
+      top: 0,
+      width: "100%",                     // Fill the transparent wrapper
+      height: "100%",
+      margin: 0,
+      boxShadow: "none",
+  } : {}),
+  zIndex: 50,
+  display: !isMobile && !showEditPanel ? "none" : undefined,
+  pointerEvents: isMobile 
+  ? (showEditPanel ? "auto" : "none")
+  : (showEditPanel && !isPanelOpen ? "auto" : "none"),
+  ...(!isMobile && showEditPanel
+    ? {}
+    : (!isMobile ? editorStyles.editPanelHidden : {})),
+}}
         >
           {showEditPanel && (
             <>
+            {!isMobile && (
               <div
                 style={{
                   ...editorStyles.editPanelHeader,
@@ -3249,6 +3361,7 @@ const DynamicLayerEditor: React.FC = () => {
                   <Icons.Close />
                 </button>
               </div>
+            )}
               {selectedTextLayer && (
                 <TextEditor
                   layer={selectedTextLayer}
@@ -3278,7 +3391,7 @@ const DynamicLayerEditor: React.FC = () => {
                   }
                 />
               )}
-              {selectedVideoLayer && (
+             {selectedVideoLayer && (
                 <VideoEditor
                   layer={selectedVideoLayer}
                   totalFrames={totalFrames}
@@ -3299,6 +3412,8 @@ const DynamicLayerEditor: React.FC = () => {
             </>
           )}
         </div>
+        </MobilePanelWrapper>
+        )}
 
         {/* --- MAIN AREA --- */}
         <div
@@ -3332,12 +3447,19 @@ const DynamicLayerEditor: React.FC = () => {
               <ThemeToggle />
               <button
                 style={editorStyles.addButton}
-                onClick={() => {
-                  if (projectId) {
-                    handleSaveExistingProject();
-                    // handleSaveProject();
+                onClick={async () => {
+                  const screenshoturl = await handleSaveThumbnail();
+                  if (screenshot) {
+                    if (projectId) {
+                      handleSaveExistingProject(screenshoturl as string);
+                      // handleSaveProject();
+                    } else {
+                      setShowSaveModal(true);
+                    }
                   } else {
-                    setShowSaveModal(true);
+                    toast.error(
+                      "There was an error saving your project.\nTry again later."
+                    );
                   }
                 }}
               >
@@ -3434,21 +3556,21 @@ const DynamicLayerEditor: React.FC = () => {
                   </div>
                 )}
 
-                {/* {template?.id !== 8 && ( */}
-                <DynamicPreviewOverlay
-                  layers={layers}
-                  currentFrame={currentFrame}
-                  selectedLayerId={selectedLayerId}
-                  editingLayerId={editingLayerId}
-                  onSelectLayer={selectLayerAndCloseTab}
-                  onLayerUpdate={updateLayer}
-                  containerWidth={previewDimensions.width}
-                  containerHeight={previewDimensions.height}
-                  onEditingLayerChange={setEditingLayerId}
-                  isPlaying={isPlaying}
-                  onPlayingChange={setIsPlaying}
-                />
-                {/* )} */}
+                {template?.id !== 8 && (
+                  <DynamicPreviewOverlay
+                    layers={layers}
+                    currentFrame={currentFrame}
+                    selectedLayerId={selectedLayerId}
+                    editingLayerId={editingLayerId}
+                    onSelectLayer={selectLayerAndCloseTab}
+                    onLayerUpdate={updateLayer}
+                    containerWidth={previewDimensions.width}
+                    containerHeight={previewDimensions.height}
+                    onEditingLayerChange={setEditingLayerId}
+                    isPlaying={isPlaying}
+                    onPlayingChange={setIsPlaying}
+                  />
+                )}
               </div>
             </div>
           </div>
@@ -3495,7 +3617,7 @@ const DynamicLayerEditor: React.FC = () => {
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
             onDeleteTrack={deleteLayer}
-            onCutTrack={splitLayer}
+            onCutTrack={splitLayer} 
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}
             data-timeline="true"

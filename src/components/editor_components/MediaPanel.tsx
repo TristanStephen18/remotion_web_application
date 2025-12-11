@@ -21,6 +21,7 @@ export interface MediaPanelProps {
   activeMediaType?: "image" | "video" | "audio" | "all";
   onMediaSelect: (media: MediaItem) => void;
   onUploadClick: () => void;
+  isMobile?: boolean; // NEW PROP for mobile detection
 }
 
 // ============================================================================
@@ -28,11 +29,11 @@ export interface MediaPanelProps {
 // ============================================================================
 
 const Icons = {
-  Play: () => (
+  Play: ({ size = 20 }: { size?: number }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="20"
-      height="20"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="currentColor"
       stroke="none"
@@ -40,11 +41,11 @@ const Icons = {
       <polygon points="5 3 19 12 5 21 5 3" />
     </svg>
   ),
-  Music: () => (
+  Music: ({ size = 16 }: { size?: number }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -57,11 +58,11 @@ const Icons = {
       <circle cx="18" cy="16" r="3" />
     </svg>
   ),
-  Cloud: () => (
+  Cloud: ({ size = 24 }: { size?: number }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -72,11 +73,11 @@ const Icons = {
       <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
     </svg>
   ),
-  Refresh: () => (
+  Refresh: ({ size = 16 }: { size?: number }) => (
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="16"
-      height="16"
+      width={size}
+      height={size}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -92,10 +93,10 @@ const Icons = {
 };
 
 // ============================================================================
-// STYLES - CANVA-STYLE
+// STYLES - RESPONSIVE MOBILE-FIRST
 // ============================================================================
 
-const styles = {
+const getStyles = (isMobile: boolean = false) => ({
   container: {
     display: "flex",
     flexDirection: "column" as const,
@@ -103,59 +104,59 @@ const styles = {
     backgroundColor: "#0a0a0a",
   },
   uploadSection: {
-    padding: "16px",
+    padding: isMobile ? "8px" : "16px", // EXTRA REDUCED: 12px → 8px for mobile
     borderBottom: "1px solid rgba(255,255,255,0.08)",
     display: "flex",
-    gap: "8px",
+    gap: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
   },
   uploadButton: {
     flex: 1,
-    padding: "14px 16px",
+    padding: isMobile ? "8px 10px" : "14px 16px", // EXTRA REDUCED: 10px 12px → 8px 10px for mobile
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    gap: "8px",
-    fontSize: "13px",
+    gap: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
+    fontSize: isMobile ? "11px" : "13px", // EXTRA REDUCED: 12px → 11px for mobile
     fontWeight: "600" as const,
     color: "#fff",
     backgroundColor: "#3b82f6",
     border: "none",
-    borderRadius: "8px",
+    borderRadius: isMobile ? "5px" : "8px", // EXTRA REDUCED: 6px → 5px for mobile
     cursor: "pointer",
     transition: "all 0.2s",
   },
   refreshButton: {
-    width: "44px",
-    padding: "12px",
+    width: isMobile ? "32px" : "44px", // EXTRA REDUCED: 36px → 32px for mobile
+    padding: isMobile ? "6px" : "12px", // EXTRA REDUCED: 8px → 6px for mobile
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "13px",
+    fontSize: isMobile ? "11px" : "13px", // EXTRA REDUCED: 12px → 11px for mobile
     fontWeight: "500" as const,
     color: "#888",
     backgroundColor: "rgba(255, 255, 255, 0.03)",
     border: "1px solid rgba(255, 255, 255, 0.1)",
-    borderRadius: "8px",
+    borderRadius: isMobile ? "5px" : "8px", // EXTRA REDUCED: 6px → 5px for mobile
     cursor: "pointer",
     transition: "all 0.2s",
   },
   content: {
     flex: 1,
     overflowY: "auto" as const,
-    padding: "16px",
+    padding: isMobile ? "8px" : "16px", // EXTRA REDUCED: 12px → 8px for mobile
   },
   emptyState: {
     display: "flex",
     flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
-    padding: "60px 20px",
+    padding: isMobile ? "24px 12px" : "60px 20px", // EXTRA REDUCED: 40px 16px → 24px 12px for mobile
     textAlign: "center" as const,
   },
   emptyIcon: {
-    width: "72px",
-    height: "72px",
-    marginBottom: "16px",
+    width: isMobile ? "40px" : "72px", // EXTRA REDUCED: 56px → 40px for mobile
+    height: isMobile ? "40px" : "72px", // EXTRA REDUCED: 56px → 40px for mobile
+    marginBottom: isMobile ? "8px" : "16px", // EXTRA REDUCED: 12px → 8px for mobile
     borderRadius: "50%",
     backgroundColor: "rgba(255,255,255,0.04)",
     display: "flex",
@@ -164,13 +165,13 @@ const styles = {
     color: "#444",
   },
   emptyTitle: {
-    fontSize: "15px",
+    fontSize: isMobile ? "12px" : "15px", // EXTRA REDUCED: 14px → 12px for mobile
     fontWeight: "600" as const,
     color: "#e5e5e5",
-    marginBottom: "8px",
+    marginBottom: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
   },
   emptyDescription: {
-    fontSize: "12px",
+    fontSize: isMobile ? "10px" : "12px", // EXTRA REDUCED: 11px → 10px for mobile
     color: "#888",
     lineHeight: "1.5",
   },
@@ -179,20 +180,22 @@ const styles = {
     flexDirection: "column" as const,
     alignItems: "center",
     justifyContent: "center",
-    padding: "40px 20px",
+    padding: isMobile ? "20px 12px" : "40px 20px", // EXTRA REDUCED: 32px 16px → 20px 12px for mobile
     textAlign: "center" as const,
     color: "#888",
   },
-  // CANVA-STYLE GRID - Responsive, auto-fills based on container width
+  // RESPONSIVE GRID - much smaller on mobile
   mediaGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-    gap: "8px",
+    gridTemplateColumns: isMobile 
+      ? "repeat(auto-fill, minmax(85px, 1fr))"  // EXTRA SMALLER: 100px → 85px for mobile
+      : "repeat(auto-fill, minmax(140px, 1fr))",
+    gap: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
   },
   mediaItem: {
     position: "relative" as const,
     aspectRatio: "1",
-    borderRadius: "8px",
+    borderRadius: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
     overflow: "hidden",
     cursor: "pointer",
     border: "1px solid rgba(255,255,255,0.05)",
@@ -209,8 +212,8 @@ const styles = {
     top: "50%",
     left: "50%",
     transform: "translate(-50%, -50%)",
-    width: "40px",
-    height: "40px",
+    width: isMobile ? "24px" : "40px", // EXTRA REDUCED: 32px → 24px for mobile
+    height: isMobile ? "24px" : "40px", // EXTRA REDUCED: 32px → 24px for mobile
     borderRadius: "50%",
     backgroundColor: "rgba(255, 255, 255, 0.95)",
     display: "flex",
@@ -228,35 +231,35 @@ const styles = {
   },
   uploadBadge: {
     position: "absolute" as const,
-    top: "6px",
-    right: "6px",
-    width: "20px",
-    height: "20px",
+    top: isMobile ? "3px" : "6px", // EXTRA REDUCED: 4px → 3px for mobile
+    right: isMobile ? "3px" : "6px", // EXTRA REDUCED: 4px → 3px for mobile
+    width: isMobile ? "14px" : "20px", // EXTRA REDUCED: 16px → 14px for mobile
+    height: isMobile ? "14px" : "20px", // EXTRA REDUCED: 16px → 14px for mobile
     borderRadius: "50%",
     backgroundColor: "#10b981",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: "11px",
+    fontSize: isMobile ? "8px" : "11px", // EXTRA REDUCED: 9px → 8px for mobile
     fontWeight: "600" as const,
     color: "#fff",
   },
   audioItem: {
-    padding: "12px",
-    borderRadius: "8px",
+    padding: isMobile ? "8px" : "12px", // EXTRA REDUCED: 10px → 8px for mobile
+    borderRadius: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
     backgroundColor: "rgba(255,255,255,0.03)",
     border: "1px solid rgba(255,255,255,0.05)",
     cursor: "pointer",
-    marginBottom: "8px",
+    marginBottom: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
     transition: "all 0.15s",
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: isMobile ? "8px" : "12px", // EXTRA REDUCED: 10px → 8px for mobile
   },
   audioIcon: {
-    width: "40px",
-    height: "40px",
-    borderRadius: "8px",
+    width: isMobile ? "32px" : "40px", // EXTRA REDUCED: 36px → 32px for mobile
+    height: isMobile ? "32px" : "40px", // EXTRA REDUCED: 36px → 32px for mobile
+    borderRadius: isMobile ? "4px" : "8px", // EXTRA REDUCED: 6px → 4px for mobile
     backgroundColor: "rgba(245, 158, 11, 0.15)",
     display: "flex",
     alignItems: "center",
@@ -269,49 +272,49 @@ const styles = {
     minWidth: 0,
   },
   audioName: {
-    fontSize: "12px",
+    fontSize: isMobile ? "11px" : "13px", // EXTRA REDUCED: 12px → 11px for mobile
     fontWeight: "500" as const,
     color: "#e5e5e5",
-    whiteSpace: "nowrap" as const,
     overflow: "hidden",
     textOverflow: "ellipsis",
-    marginBottom: "2px",
+    whiteSpace: "nowrap" as const,
+    marginBottom: "3px",
   },
   audioDuration: {
-    fontSize: "10px",
+    fontSize: isMobile ? "9px" : "11px", // EXTRA REDUCED: 10px → 9px for mobile
     color: "#888",
   },
   sectionTitle: {
-    fontSize: "11px",
+    fontSize: isMobile ? "10px" : "12px", // EXTRA REDUCED: 11px → 10px for mobile
     fontWeight: "600" as const,
     color: "#888",
     textTransform: "uppercase" as const,
-    letterSpacing: "1px",
-    marginBottom: "12px",
-    marginTop: "20px",
+    letterSpacing: "0.5px",
+    marginBottom: isMobile ? "6px" : "12px", // EXTRA REDUCED: 8px → 6px for mobile
   },
-};
+});
 
 // ============================================================================
-// COMPONENT
+// MAIN COMPONENT
 // ============================================================================
 
 export const MediaPanel: React.FC<MediaPanelProps> = ({
   activeMediaType = "all",
   onMediaSelect,
   onUploadClick,
+  isMobile = false, // Default to desktop
 }) => {
-  // const [hoveredItem, setHoveredItem] = useState<string | null>(null);
-
   const {
     uploads,
-    fetchUploads,
     loadingUploads,
+    fetchUploads,
   } = useUploadHooks();
 
   useEffect(() => {
     fetchUploads();
   }, []);
+
+  const styles = getStyles(isMobile); // Get responsive styles
 
   // Convert uploads to MediaItem format and filter by type
   const projectUploads: MediaItem[] = uploads
@@ -355,7 +358,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
     return (
       <>
         {videos.length > 0 && (
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: isMobile ? "12px" : "24px" }}>
             <div style={styles.sectionTitle}>Videos ({videos.length})</div>
             <div style={styles.mediaGrid}>
               {videos.map((item) => (
@@ -364,18 +367,20 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                   style={styles.mediaItem}
                   onClick={() => onMediaSelect(item)}
                   onMouseEnter={(e) => {
-                    // setHoveredItem(item.id);
-                    e.currentTarget.style.transform = "scale(1.05)";
-                    e.currentTarget.style.borderColor = "#3b82f6";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
-                    e.currentTarget.style.zIndex = "10";
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = "scale(1.05)";
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                      e.currentTarget.style.zIndex = "10";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    // setHoveredItem(null);
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.zIndex = "1";
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.boxShadow = "none";
+                      e.currentTarget.style.zIndex = "1";
+                    }
                   }}
                 >
                   {item.thumbnail && (
@@ -385,13 +390,10 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                       muted
                     />
                   )}
-                  {/* Gradient overlay */}
                   <div style={styles.videoOverlay} />
-                  {/* Play button */}
                   <div style={styles.playButton}>
-                    <Icons.Play />
+                    <Icons.Play size={isMobile ? 14 : 20} />
                   </div>
-                  {/* Upload badge */}
                   <div style={styles.uploadBadge}>✓</div>
                 </div>
               ))}
@@ -400,7 +402,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
         )}
         
         {images.length > 0 && (
-          <div style={{ marginBottom: "24px" }}>
+          <div style={{ marginBottom: isMobile ? "12px" : "24px" }}>
             <div style={styles.sectionTitle}>Images ({images.length})</div>
             <div style={styles.mediaGrid}>
               {images.map((item) => (
@@ -409,18 +411,20 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                   style={styles.mediaItem}
                   onClick={() => onMediaSelect(item)}
                   onMouseEnter={(e) => {
-                    // setHoveredItem(item.id);
-                    e.currentTarget.style.transform = "scale(1.05)";
-                    e.currentTarget.style.borderColor = "#3b82f6";
-                    e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
-                    e.currentTarget.style.zIndex = "10";
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = "scale(1.05)";
+                      e.currentTarget.style.borderColor = "#3b82f6";
+                      e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+                      e.currentTarget.style.zIndex = "10";
+                    }
                   }}
                   onMouseLeave={(e) => {
-                    // setHoveredItem(null);
-                    e.currentTarget.style.transform = "scale(1)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-                    e.currentTarget.style.boxShadow = "none";
-                    e.currentTarget.style.zIndex = "1";
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = "scale(1)";
+                      e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                      e.currentTarget.style.boxShadow = "none";
+                      e.currentTarget.style.zIndex = "1";
+                    }
                   }}
                 >
                   {item.thumbnail && (
@@ -430,7 +434,6 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
                       style={styles.mediaThumbnail}
                     />
                   )}
-                  {/* Upload badge */}
                   <div style={styles.uploadBadge}>✓</div>
                 </div>
               ))}
@@ -453,20 +456,22 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
             style={styles.audioItem}
             onClick={() => onMediaSelect(item)}
             onMouseEnter={(e) => {
-              // setHoveredItem(item.id);
-              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
-              e.currentTarget.style.borderColor = "#3b82f6";
-              e.currentTarget.style.transform = "translateX(2px)";
+              if (!isMobile) {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.06)";
+                e.currentTarget.style.borderColor = "#3b82f6";
+                e.currentTarget.style.transform = "translateX(2px)";
+              }
             }}
             onMouseLeave={(e) => {
-              // setHoveredItem(null);
-              e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
-              e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-              e.currentTarget.style.transform = "translateX(0)";
+              if (!isMobile) {
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.03)";
+                e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.transform = "translateX(0)";
+              }
             }}
           >
             <div style={styles.audioIcon}>
-              <Icons.Music />
+              <Icons.Music size={isMobile ? 12 : 16} />
             </div>
             <div style={styles.audioInfo}>
               <div style={styles.audioName}>{item.name}</div>
@@ -481,7 +486,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
   const renderEmptyState = () => (
     <div style={styles.emptyState}>
       <div style={styles.emptyIcon}>
-        <Icons.Cloud />
+        <Icons.Cloud size={isMobile ? 28 : 40} />
       </div>
       <div style={styles.emptyTitle}>
         No uploads yet
@@ -494,8 +499,8 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
 
   const renderLoadingState = () => (
     <div style={styles.loadingState}>
-      <div style={{ fontSize: "32px", marginBottom: "16px" }}>⏳</div>
-      <div>Loading your uploads...</div>
+      <div style={{ fontSize: isMobile ? "20px" : "32px", marginBottom: isMobile ? "8px" : "16px" }}>⏳</div>
+      <div style={{ fontSize: isMobile ? "11px" : "13px" }}>Loading your uploads...</div>
     </div>
   );
 
@@ -517,7 +522,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
             e.currentTarget.style.boxShadow = "none";
           }}
         >
-          <Icons.Cloud />
+          <Icons.Cloud size={isMobile ? 18 : 24} />
           Upload files
         </button>
         <button
@@ -533,7 +538,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
             e.currentTarget.style.borderColor = "rgba(255, 255, 255, 0.1)";
           }}
         >
-          <Icons.Refresh />
+          <Icons.Refresh size={isMobile ? 12 : 16} />
         </button>
       </div>
 
@@ -553,7 +558,7 @@ export const MediaPanel: React.FC<MediaPanelProps> = ({
 
       <style>{`
         div[style*="overflowY: auto"]::-webkit-scrollbar {
-          width: 6px;
+          width: ${isMobile ? "3px" : "6px"};
         }
         div[style*="overflowY: auto"]::-webkit-scrollbar-track {
           background: transparent;
