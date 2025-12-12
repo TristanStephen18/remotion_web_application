@@ -444,7 +444,7 @@ const ViralMotionLanding: React.FC = () => {
               templates. Perfect for TikTok, Instagram Reels, and YouTube Shorts.
             </p>
             <div className="flex gap-3 mb-10 animate-[fadeInUp_0.8s_ease-out_0.6s_both] justify-center lg:justify-start">
-              <a href="/get-started" className="bg-[#111827] text-white py-3 md:py-3.5 px-5 md:px-6 rounded-[10px] font-medium text-[0.85rem] md:text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 border-none cursor-pointer hover:bg-[#8b5cf6] hover:-translate-y-px">
+              <a href="/signup" className="bg-[#111827] text-white py-3 md:py-3.5 px-5 md:px-6 rounded-[10px] font-medium text-[0.85rem] md:text-[0.9rem] no-underline inline-flex items-center gap-2 transition-all duration-200 border-none cursor-pointer hover:bg-[#8b5cf6] hover:-translate-y-px">
                 Start Creating Free
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M5 12h14M12 5l7 7-7 7" />
