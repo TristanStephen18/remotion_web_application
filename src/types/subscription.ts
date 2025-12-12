@@ -4,7 +4,7 @@ export interface Subscription {
   stripeSubscriptionId: string;
   stripeCustomerId: string;
   stripePriceId: string;
-  status: 'active' | 'trialing' | 'canceled' | 'past_due' | 'incomplete' | 'unpaid';
+  status: 'free_trial' | 'active' | 'trialing' | 'canceled' | 'past_due' | 'incomplete' | 'unpaid';
   plan: string;
   currentPeriodStart: string;
   currentPeriodEnd: string;
