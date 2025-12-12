@@ -104,7 +104,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
           // Logged in another tab
           setIsAuthenticated(true);
           tokenManager.startAutoRefresh();
-          window.location.href = "/subscription";
+          window.location.href = "/dashboard";
         } else {
           // Logged out in another tab
           setIsAuthenticated(false);
