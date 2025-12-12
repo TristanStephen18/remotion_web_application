@@ -183,8 +183,8 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
 
   if (token) {
-    console.log("✅ Already logged in, redirecting to subscription");
-    return <Navigate to="/subscription" replace />;
+    console.log("✅ Already logged in, redirecting to dashboard");
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;
