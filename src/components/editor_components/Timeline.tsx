@@ -36,6 +36,7 @@ export interface TimelineProps {
   onDeleteTrack?: (trackId: string) => void;
   onCutTrack?: (trackId: string, frame: number) => void;
   onReorderTracks?: (fromIndex: number, toIndex: number) => void;
+  onEdit?: () => void;
   height?: string
 }
 
@@ -48,7 +49,6 @@ const formatTime = (frames: number, fps: number): string => {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = Math.floor(totalSeconds % 60);
   
-  // Simplified format: only show what's needed
   if (minutes > 0) {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   } else {
@@ -78,7 +78,6 @@ const TRACK_CLIP_TOP = (TRACK_ROW_HEIGHT - TRACK_CLIP_HEIGHT) / 2;
 // TIMELINE COMPONENT
 // ============================================================================
 
-
 export const Timeline: React.FC<TimelineProps> = ({
   tracks,
   totalFrames,
@@ -97,11 +96,28 @@ export const Timeline: React.FC<TimelineProps> = ({
   onDeleteTrack,
   onCutTrack,
   onReorderTracks,
+  onEdit,
   height = "200px",
 }) => {
   const [zoom, setZoom] = useState(1);
-  const { colors } = useTheme();
+  const { colors } = useTheme();  
   
+  // Mobile detection & Label Width adjustment
+  const [isMobile, setIsMobile] = useState(false);
+  const [labelWidth, setLabelWidth] = useState(180); 
+
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
+      // ✅ Adjusted to 70px to fit Icon + Eye + Lock comfortably
+      setLabelWidth(mobile ? 70 : 180);
+    };
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const trackAreaRef = useRef<HTMLDivElement>(null);
   const labelsRef = useRef<HTMLDivElement>(null);
   const rulerRef = useRef<HTMLDivElement>(null);
@@ -109,7 +125,6 @@ export const Timeline: React.FC<TimelineProps> = ({
   const isDraggingPlayhead = useRef(false);
   const tracksRef = useRef<TimelineTrack[]>(tracks);
 
-  const [labelWidth, setLabelWidth] = useState(180);
   const [isResizingHorizontal, setIsResizingHorizontal] = useState(false);
   
   const [dragState, setDragState] = useState<{
@@ -130,14 +145,18 @@ export const Timeline: React.FC<TimelineProps> = ({
   
   const [dragDirection, setDragDirection] = useState<"horizontal" | "vertical" | null>(null);
   const dragStartPos = useRef<{ x: number; y: number } | null>(null);
+  
   useEffect(() => {
-  tracksRef.current = tracks;
-}, [tracks]);
+    tracksRef.current = tracks;
+  }, [tracks]);
 
-  // Enhanced hover state for better feedback
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
-  const timelineWidth = useMemo(() => Math.max(totalFrames * zoom * 2, 800), [totalFrames, zoom]);
+  const timelineWidth = useMemo(() => {
+    const multiplier = isMobile ? 0.5 : 2;
+    const minWidth = isMobile ? 300 : 800;
+    return Math.max(totalFrames * zoom * multiplier, minWidth);
+  }, [totalFrames, zoom, isMobile]);
 
   const frameToPixel = useCallback((frame: number) => (frame / totalFrames) * timelineWidth, [totalFrames, timelineWidth]);
   const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timelineWidth) * totalFrames), [totalFrames, timelineWidth]);
@@ -158,7 +177,18 @@ export const Timeline: React.FC<TimelineProps> = ({
     return () => trackArea.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Handle wheel on labels
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    if (e.shiftKey && trackAreaRef.current) {
+        // Optional shift scroll handling
+    }
+  }, []);
+
+  const handleRulerWheel = useCallback((e: React.WheelEvent) => {
+    if (trackAreaRef.current) {
+      trackAreaRef.current.scrollLeft += e.deltaY;
+    }
+  }, []);
+
   const handleLabelsWheel = useCallback((e: React.WheelEvent) => {
     const trackArea = trackAreaRef.current;
     if (trackArea) {
@@ -176,10 +206,8 @@ export const Timeline: React.FC<TimelineProps> = ({
     ruler.scrollLeft = trackArea.scrollLeft;
   }, []);
 
-  // Display tracks (sorted by original order)
   const displayTracks = useMemo(() => [...tracks], [tracks]);
 
-  // Cut & Delete Track Logic
   const canCut = selectedTrackId !== null && !tracks.find(t => t.id === selectedTrackId)?.locked;
   const canDelete = selectedTrackId !== null;
 
@@ -193,13 +221,11 @@ export const Timeline: React.FC<TimelineProps> = ({
     onDeleteTrack?.(selectedTrackId);
   }, [canDelete, selectedTrackId, onDeleteTrack]);
 
-  // Enhanced Track Selection - now selects on both label and clip click
   const handleTrackSelect = useCallback((trackId: string | null, e?: React.MouseEvent) => {
     e?.stopPropagation();
     onTrackSelect?.(trackId);
   }, [onTrackSelect]);
 
-  // Timeline Click (for playhead)
   const handleTimelineClick = useCallback((e: React.MouseEvent) => {
     if (isDraggingPlayhead.current || dragState || reorderState?.isDragging) return;
     const rect = trackAreaRef.current?.getBoundingClientRect();
@@ -209,8 +235,6 @@ export const Timeline: React.FC<TimelineProps> = ({
     onFrameChange(newFrame);
   }, [dragState, reorderState, pixelToFrame, totalFrames, onFrameChange]);
 
-
-  // Ruler Click - Seek to clicked time
   const handleRulerClick = useCallback((e: React.MouseEvent) => {
     if (isDraggingPlayhead.current || dragState || reorderState?.isDragging) return;
     const rect = rulerRef.current?.getBoundingClientRect();
@@ -244,7 +268,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     document.addEventListener("mouseup", handleMouseUp);
   }, [pixelToFrame, totalFrames, onFrameChange]);
 
-  // Track Dragging & Resizing
+  // Track Dragging Logic
   const handleTrackMouseDown = useCallback((
     e: React.MouseEvent,
     track: TimelineTrack,
@@ -252,19 +276,13 @@ export const Timeline: React.FC<TimelineProps> = ({
     trackIndex: number
   ) => {
     if (track.locked) return;
-    
     e.stopPropagation();
-    
-    // Record starting position for direction detection
     dragStartPos.current = { x: e.clientX, y: e.clientY };
     setDragDirection(null);
-
-    // Select the track when starting to drag
     handleTrackSelect(track.id, e);
 
     const rect = trackAreaRef.current?.getBoundingClientRect();
     if (!rect) return;
-
     const startX = e.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
 
     setDragState({
@@ -275,22 +293,17 @@ export const Timeline: React.FC<TimelineProps> = ({
       endFrame: track.endFrame,
     });
 
-    // Use local variables to track reorder state during drag
     let isReordering = false;
     const reorderStartIndex = trackIndex;
     let reorderCurrentIndex = trackIndex;
-
-
-    // Store temporary track state during drag for smooth updates
-let tempStartFrame = track.startFrame;
-let tempEndFrame = track.endFrame;
-let animationFrameId: number | null = null;
-let hasPendingUpdate = false;
+    let tempStartFrame = track.startFrame;
+    let tempEndFrame = track.endFrame;
+    let animationFrameId: number | null = null;
+    let hasPendingUpdate = false;
     
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!trackAreaRef.current || !rect) return;
 
-      // Detect drag direction if not yet determined
       if (!dragDirection && dragStartPos.current) {
         const deltaX = Math.abs(moveEvent.clientX - dragStartPos.current.x);
         const deltaY = Math.abs(moveEvent.clientY - dragStartPos.current.y);
@@ -304,11 +317,9 @@ let hasPendingUpdate = false;
         }
       }
 
-      // Handle horizontal dragging (move/resize)
       if (dragDirection === "horizontal" || dragDirection === null) {
         const x = moveEvent.clientX - rect.left + trackAreaRef.current.scrollLeft;
         const deltaFrames = pixelToFrame(x - startX);
-
         let newStartFrame = track.startFrame;
         let newEndFrame = track.endFrame;
 
@@ -324,33 +335,27 @@ let hasPendingUpdate = false;
           newEndFrame = Math.min(totalFrames, Math.max(track.startFrame + 5, track.endFrame + deltaFrames));
         }
 
-        // Store the new values temporarily
-tempStartFrame = newStartFrame;
-tempEndFrame = newEndFrame;
+        tempStartFrame = newStartFrame;
+        tempEndFrame = newEndFrame;
 
-// Use requestAnimationFrame for smooth updates
-if (!hasPendingUpdate) {
-  hasPendingUpdate = true;
-  animationFrameId = requestAnimationFrame(() => {
-    // Use tracksRef.current to get the latest tracks, not stale closure
-    const currentTracks = tracksRef.current;
-    const updatedTracks = currentTracks.map(t =>
-      t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
-    );
-    onTracksChange?.(updatedTracks);
-    hasPendingUpdate = false;
-  });
-}
+        if (!hasPendingUpdate) {
+          hasPendingUpdate = true;
+          animationFrameId = requestAnimationFrame(() => {
+            const currentTracks = tracksRef.current;
+            const updatedTracks = currentTracks.map(t =>
+              t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
+            );
+            onTracksChange?.(updatedTracks);
+            hasPendingUpdate = false;
+          });
+        }
       }
       
-      // Handle vertical dragging (reordering)
       if (dragDirection === "vertical" && onReorderTracks) {
         const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
         const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
-        
         isReordering = true;
         reorderCurrentIndex = newIndex;
-        
         setReorderState({
           trackId: track.id,
           startY: dragStartPos.current?.y || 0,
@@ -362,54 +367,36 @@ if (!hasPendingUpdate) {
     };
 
     const handleMouseUp = () => {
-  // Cancel any pending animation frame and apply final state
-  if (animationFrameId !== null) {
-    cancelAnimationFrame(animationFrameId);
-    // Apply final update using current tracks from ref
-    if (dragDirection === "horizontal" || (!dragDirection && !isReordering)) {
-      const currentTracks = tracksRef.current;
-      const updatedTracks = currentTracks.map(t =>
-        t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
-      );
-      onTracksChange?.(updatedTracks);
-    }
-  }
-  
-  // Use local variables which have the most up-to-date values
-  if (isReordering && reorderCurrentIndex !== reorderStartIndex) {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        if (dragDirection === "horizontal" || (!dragDirection && !isReordering)) {
+          const currentTracks = tracksRef.current;
+          const updatedTracks = currentTracks.map(t =>
+            t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
+          );
+          onTracksChange?.(updatedTracks);
+        }
+      }
+      if (isReordering && reorderCurrentIndex !== reorderStartIndex) {
         onReorderTracks?.(reorderStartIndex, reorderCurrentIndex);
       }
-      
       setDragState(null);
       setReorderState(null);
       setDragDirection(null);
       dragStartPos.current = null;
-      
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
 
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
-  }, [
-    tracks,
-    totalFrames,
-    pixelToFrame,
-    onTracksChange,
-    onReorderTracks,
-    dragDirection,
-    handleTrackSelect
-  ]);
+  }, [tracks, totalFrames, pixelToFrame, onTracksChange, onReorderTracks, dragDirection, handleTrackSelect]);
 
-  // Reorder handle drag
+  // Reorder Handle logic
   const handleReorderMouseDown = useCallback((e: React.MouseEvent, track: TimelineTrack, trackIndex: number) => {
     if (track.locked) return;
-    
     e.stopPropagation();
-    
-    // Select the track
     handleTrackSelect(track.id, e);
-    
     const rect = trackAreaRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -420,50 +407,37 @@ if (!hasPendingUpdate) {
       currentIndex: trackIndex,
       isDragging: true,
     });
-
-    // Use a local variable to track the current index during the drag
     let currentDragIndex = trackIndex;
 
     const handleMouseMove = (moveEvent: MouseEvent) => {
       if (!trackAreaRef.current || !rect) return;
-      
       const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
       const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
-      
-      currentDragIndex = newIndex; // Update local variable
+      currentDragIndex = newIndex; 
       setReorderState(prev => prev ? { ...prev, currentIndex: newIndex } : null);
     };
 
     const handleMouseUp = () => {
-      // Use the local variable which has the most up-to-date index
       if (currentDragIndex !== trackIndex) {
         onReorderTracks?.(trackIndex, currentDragIndex);
       }
-      
       setReorderState(null);
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
   }, [tracks, onReorderTracks, handleTrackSelect]);
-
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isResizingHorizontal) return;
       e.preventDefault();
-
       const labelsRect = labelsRef.current?.getBoundingClientRect();
-
       if (!labelsRect) return;
-
-      const minWidth = 100;
+      const minWidth = 50;
       const maxWidth = 300;
-      // Calculate new width relative to the left side of the labels container
       const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX - labelsRect.left));
-
       setLabelWidth(newWidth);
     };
 
@@ -486,7 +460,6 @@ if (!hasPendingUpdate) {
     };
   }, [isResizingHorizontal]);
 
-  // Toggle Lock/Visibility
   const handleToggleLock = useCallback((trackId: string) => {
     const updatedTracks = tracks.map(t =>
       t.id === trackId ? { ...t, locked: !t.locked } : t
@@ -501,38 +474,21 @@ if (!hasPendingUpdate) {
     onTracksChange?.(updatedTracks);
   }, [tracks, onTracksChange]);
 
-  // Time Markers - improved with intelligent intervals
   const timeMarkers = useMemo(() => {
     const markers: { frame: number; label: string; isMajor: boolean }[] = [];
-    
-    // Calculate intelligent intervals based on zoom and total duration
     const pixelsPerSecond = (timelineWidth / totalFrames) * fps;
-    
-    // Major markers every 1-5 seconds depending on zoom
     let majorInterval: number;
-    if (pixelsPerSecond > 100) {
-      majorInterval = fps; // Every 1 second when zoomed in
-    } else if (pixelsPerSecond > 40) {
-      majorInterval = fps * 2; // Every 2 seconds
-    } else if (pixelsPerSecond > 20) {
-      majorInterval = fps * 5; // Every 5 seconds
-    } else {
-      majorInterval = fps * 10; // Every 10 seconds when zoomed out
-    }
+    if (pixelsPerSecond > 100) majorInterval = fps;
+    else if (pixelsPerSecond > 40) majorInterval = fps * 2;
+    else if (pixelsPerSecond > 20) majorInterval = fps * 5;
+    else majorInterval = fps * 10;
     
-    // Add markers at major intervals
     for (let f = 0; f <= totalFrames; f += majorInterval) {
-      markers.push({ 
-        frame: f, 
-        label: formatTime(f, fps),
-        isMajor: true 
-      });
+      markers.push({ frame: f, label: formatTime(f, fps), isMajor: true });
     }
-    
     return markers;
-  }, [totalFrames, fps, timelineWidth, zoom]);
+  }, [totalFrames, fps, timelineWidth]);
 
-  // Keyboard Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === " " && e.target === document.body) {
@@ -548,38 +504,36 @@ if (!hasPendingUpdate) {
         onFrameChange(totalFrames);
       }
     };
-
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [onPlayPause, selectedTrackId, handleDeleteTrack, handleCutTrack, onFrameChange, totalFrames]);
 
-  // Styles with enhanced visual feedback
   const styles: Record<string, React.CSSProperties> = {
     container: { display: "flex", flexDirection: "column", height: height, backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, },
-    toolbar: { display: "flex", alignItems: "center", gap: "8px", padding: "4px 16px", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
-    toolGroup: { display: "flex", gap: "6px" },
-    divider: { width: "1px", height: "24px", backgroundColor: colors.borderLight },
-    toolButton: { width: "28px", height: "30px", border: "none", backgroundColor: "transparent", color: colors.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", transition: "all 0.15s" },
+    toolbar: { display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", padding: isMobile ? "4px 8px" : "4px 16px", flexWrap: isMobile ? "wrap" : "nowrap", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
+    toolGroup: { display: "flex", gap: isMobile ? "4px" : "6px" },
+    divider: { width: "1px", height: isMobile ? "20px" : "24px", backgroundColor: colors.borderLight },
+    toolButton: { width: isMobile ? "26px" : "28px", height: isMobile ? "28px" : "30px", border: "none", backgroundColor: "transparent", color: colors.textPrimary, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "6px", transition: "all 0.15s" },
     toolButtonActive: { backgroundColor: "#3b82f6", color: "white" },
     toolButtonDisabled: { opacity: 0.3, cursor: "not-allowed" },
-    timeDisplay: { marginLeft: "auto", marginRight: "12px", fontSize: "13px", color: colors.textSecondary, fontVariantNumeric: "tabular-nums" },
-    zoomControl: { display: "flex", alignItems: "center", gap: "8px", color: colors.textMuted },
-    zoomSlider: { width: "80px", cursor: "pointer" },
+    timeDisplay: { marginLeft: "auto", marginRight: isMobile ? "6px" : "12px", fontSize: isMobile ? "11px" : "13px", color: colors.textSecondary, fontVariantNumeric: "tabular-nums" },
+    zoomControl: { display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", color: colors.textMuted },
+    zoomSlider: { width: isMobile ? "60px" : "80px", cursor: "pointer" },
     timelineWrapper: { flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" },
     rulerRow: { display: "flex", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
     rulerSpacer: { width: `${labelWidth}px`, flexShrink: 0, backgroundColor: colors.bgSecondary },
     rulerContent: { flex: 1, overflow: "hidden", position: "relative" },
-   ruler: { position: "relative", height: "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer" },
+   ruler: { position: "relative", height: isMobile ? "22px" : "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer" },
     rulerInner: { position: "relative", height: "100%", borderLeft: `1px solid ${colors.borderLight}` },
     rulerMarker: { 
       position: "absolute", 
       top: "0px", 
       transform: "translateX(-50%)", 
-      fontSize: "8px", 
+      fontSize: isMobile ? "7px" : "8px", 
       fontWeight: 500,
       color: colors.textSecondary,
       whiteSpace: "nowrap",
-      padding: "2px 6px",
+      padding: isMobile ? "1px 4px" : "2px 6px",
       backgroundColor: colors.bgPrimary,
       borderRadius: "3px",
       display: "flex",
@@ -592,10 +546,10 @@ if (!hasPendingUpdate) {
       bottom: 0,
       width: "1px",
       backgroundColor: colors.borderLight,
-      height: "8px"
+      height: isMobile ? "6px" : "8px"
     },
     rulerTickMajor: {
-      height: "12px",
+      height: isMobile ? "10px" : "12px",
       backgroundColor: colors.textMuted,
       width: "2px"
     },
@@ -605,15 +559,17 @@ if (!hasPendingUpdate) {
       height: `${TRACK_ROW_HEIGHT}px`, 
       display: "flex", 
       alignItems: "center", 
-      gap: "8px", 
-      padding: "0 8px", 
+      gap: isMobile ? "4px" : "8px", 
+      padding: isMobile ? "0 4px" : "0 8px", 
       borderBottom: `1px solid ${colors.borderLight}`, 
       cursor: "pointer", 
       transition: "all 0.15s", 
-      fontSize: "13px", 
+      fontSize: isMobile ? "11px" : "13px", 
       fontWeight: 500, 
       color: colors.textSecondary,
       backgroundColor: colors.bgSecondary,
+      // On mobile, justify "space-between" to fit Icon + Buttons. On desktop, standard flex-start.
+      justifyContent: isMobile ? "space-between" : "flex-start",
     },
     trackLabelSelected: { 
       backgroundColor: "rgba(59, 130, 246, 0.15)", 
@@ -622,12 +578,18 @@ if (!hasPendingUpdate) {
     },
     trackLabelHidden: { opacity: 0.5 },
     trackLabelReordering: { backgroundColor: "rgba(59, 130, 246, 0.25)", boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)" },
-    trackLabelIcon: { opacity: 0.6 },
-    trackLabelControls: { marginLeft: "auto", display: "flex", gap: "2px" },
-    trackLabelButton: { width: "22px", height: "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s" },
-    dragHandle: { width: "16px", height: "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s" },
+    trackLabelIcon: { opacity: 0.6, fontSize: isMobile ? "14px" : "16px" },
+    trackLabelControls: { marginLeft: "auto", display: "flex", gap: isMobile ? "1px" : "2px" },
+    trackLabelButton: { width: isMobile ? "20px" : "22px", height: isMobile ? "20px" : "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s" },
+    dragHandle: { width: isMobile ? "14px" : "16px", height: isMobile ? "20px" : "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s" },
     dragHandleActive: { cursor: "grabbing", color: "#3b82f6" },
-    trackArea: { flex: 1, position: "relative", overflow: "auto", backgroundColor: colors.bgPrimary },
+    trackArea: { 
+      flex: 1, 
+      position: "relative", 
+      overflowX: "auto", 
+      overflowY: "auto", 
+      backgroundColor: colors.bgPrimary 
+    },
     trackAreaInner: { position: "relative", minHeight: "100%" },
     trackRow: {
       height: `${TRACK_ROW_HEIGHT}px`,
@@ -645,7 +607,7 @@ if (!hasPendingUpdate) {
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      fontSize: "11px",
+      fontSize: isMobile ? "10px" : "11px",
       fontWeight: 600,
       cursor: "grab",
       transition: "box-shadow 0.15s, opacity 0.15s, transform 0.1s",
@@ -678,7 +640,7 @@ if (!hasPendingUpdate) {
   );
 
   return (
-    <div style={styles.container}>
+    <div style={styles.container} data-timeline="true">
       {/* Toolbar */}
       <div style={styles.toolbar}>
         <div style={styles.toolGroup}>
@@ -687,6 +649,25 @@ if (!hasPendingUpdate) {
         </div>
         <div style={styles.divider} />
         <div style={styles.toolGroup}>
+          {isMobile && selectedTrackId && onEdit && (
+            <button 
+              style={{ 
+                ...styles.toolButton, 
+                backgroundColor: colors.accent,
+                color: colors.bgPrimary 
+              }} 
+              onClick={onEdit} 
+              title="Edit Layer" 
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = colors.accentHover || colors.accent;
+              }} 
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = colors.accent;
+              }}
+            >
+              <EditorIcons.Edit />
+            </button>
+          )}
           <button style={{ ...styles.toolButton, ...(!canCut ? styles.toolButtonDisabled : {}) }} onClick={handleCutTrack} disabled={!canCut} title="Cut at Playhead (C)" onMouseOver={(e) => canCut && (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><EditorIcons.Split /></button>
           <button style={{ ...styles.toolButton, ...(!canDelete ? styles.toolButtonDisabled : {}) }} onClick={handleDeleteTrack} disabled={!canDelete} title="Delete Track (Del)" onMouseOver={(e) => canDelete && (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><EditorIcons.Trash /></button>
         </div>
@@ -703,12 +684,12 @@ if (!hasPendingUpdate) {
       <div style={styles.timelineWrapper}>
         <div style={styles.rulerRow}>
           <div style={styles.rulerSpacer} />
-          <div style={styles.rulerContent} ref={rulerRef}>
+          {/* Add wheel handler to ruler for horizontal scrolling */}
+          <div style={styles.rulerContent} ref={rulerRef} onWheel={handleRulerWheel}>
             <div style={styles.ruler} onClick={handleRulerClick}>
               <div style={{ ...styles.rulerInner, width: `${timelineWidth}px` }}>
                 {timeMarkers.map(({ frame, label, isMajor }) => (
                   <React.Fragment key={frame}>
-                    {/* Tick mark */}
                     <div 
                       style={{ 
                         ...styles.rulerTick, 
@@ -716,7 +697,6 @@ if (!hasPendingUpdate) {
                         left: `${frameToPixel(frame)}px` 
                       }} 
                     />
-                    {/* Time label */}
                     <div 
                       style={{ 
                         ...styles.rulerMarker, 
@@ -733,7 +713,6 @@ if (!hasPendingUpdate) {
         </div>
 
         <div style={styles.contentWrapper}>
-          {/* Enhanced Track Labels with click-to-select */}
           <div style={styles.trackLabels} ref={labelsRef} onWheel={handleLabelsWheel}>
             <div
               style={{
@@ -788,7 +767,13 @@ if (!hasPendingUpdate) {
                     </div>
                   )}
                   <span style={styles.trackLabelIcon}>{getTrackIcon(track.type)}</span>
-                  <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.label}</span>
+                  
+                  {/* ✅ SHOW LABEL TEXT ONLY ON DESKTOP */}
+                  {!isMobile && (
+                    <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{track.label}</span>
+                  )}
+
+                  {/* ✅ ALWAYS SHOW CONTROLS (LOCK/VISIBILITY) */}
                   <div style={styles.trackLabelControls}>
                     <button 
                       style={{ ...styles.trackLabelButton, color: track.visible === false ? "#ef4444" : colors.textMuted }} 
@@ -814,8 +799,7 @@ if (!hasPendingUpdate) {
             })}
           </div>
 
-          {/* Enhanced Track Area with better visual feedback */}
-          <div style={styles.trackArea} ref={trackAreaRef} onClick={handleTimelineClick} onScroll={handleScroll}>
+          <div style={styles.trackArea} ref={trackAreaRef} onClick={handleTimelineClick} onScroll={handleScroll} onWheel={handleWheel}>
             <div style={{ ...styles.trackAreaInner, width: `${timelineWidth}px` }}>
               {displayTracks.map((track, index) => {
                 const isBeingReordered = reorderState?.isDragging && reorderState?.trackId === track.id;

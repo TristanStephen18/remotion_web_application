@@ -89,7 +89,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   });
   const [elementCenter, setElementCenter] = useState({ x: 0, y: 0 });
 
-  // NEW: Store the offset from element center to where user clicked
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -113,7 +112,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     .filter(({ layer }) => {
       if ((layer as ImageLayer).isBackground) return false;
       if (!layer.visible) return false;
-      if (layer.locked) return false; // ✅ FILTER OUT LOCKED LAYERS
+      if (layer.locked) return false; 
       if (layer.type === "audio") return false;
       if (!layer.position) return false;
       return currentFrame >= layer.startFrame && currentFrame <= layer.endFrame;
@@ -121,7 +120,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     .sort((a, b) => b.originalIndex - a.originalIndex)
     .map(({ layer }) => layer);
 
-  // Helper: Get visual center of element in pixels
   const getElementCenter = (layer: Layer) => {
     if (!layer.position) return { x: 0, y: 0 };
     const centerX = (layer.position.x / 100) * actualWidth;
@@ -166,7 +164,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
 
     const newValue = e.target.value;
 
-    // Handle Text Layers
     if (isTextLayer(layer)) {
       const tempLayer = { ...layer, content: newValue };
       const newSize = measureTextDimensions(tempLayer, 1080, 1920);
@@ -212,11 +209,8 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
       const rect = overlayRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      // KEY FIX: Calculate element's center in screen coordinates
       const centerX = rect.left + (layer.position.x / 100) * actualWidth;
       const centerY = rect.top + (layer.position.y / 100) * actualHeight;
-
-      // Calculate offset from element center to mouse position
       const offsetX = e.clientX - centerX;
       const offsetY = e.clientY - centerY;
 
@@ -233,7 +227,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
         fontSize,
       });
 
-      // Store the grab offset
       setGrabOffset({ x: offsetX, y: offsetY });
 
       onSelectLayer(layer.id);
@@ -339,9 +332,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   const toggleCropMode = useCallback((e: React.MouseEvent, layerId: string) => {
     e.stopPropagation();
     e.preventDefault();
-    
-    // Just toggle crop mode - don't modify the layer
-    // The crop data remains and continues to be applied visually
+
     setCropModeLayerId(prev => prev === layerId ? null : layerId);
   }, []);
 
@@ -356,20 +347,12 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
       if (!rect) return;
 
       if (dragMode === "move") {
-        // KEY FIX: Account for the grab offset
-        // Current mouse position minus grab offset = where the element center should be
         const targetCenterX = e.clientX - grabOffset.x;
         const targetCenterY = e.clientY - grabOffset.y;
-
-        // Convert to container-relative coordinates
         const relativeX = targetCenterX - rect.left;
         const relativeY = targetCenterY - rect.top;
-
-        // Convert to percentage
         const newX = (relativeX / actualWidth) * 100;
         const newY = (relativeY / actualHeight) * 100;
-
-        // Apply bounds
         const boundedX = Math.max(0, Math.min(100, newX));
         const boundedY = Math.max(0, Math.min(100, newY));
 
@@ -449,7 +432,6 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
             fontSize: newFontSize,
           } as Partial<TextLayer>);
         } else {
-          // Update position for edges that change it (left/top)
           if (newX !== dragStartPos.x || newY !== dragStartPos.y) {
             onLayerUpdate(dragLayerId, {
               position: { x: newX, y: newY },
@@ -601,7 +583,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     const handleMouseUp = () => {
       setDragMode(null);
       setDragLayerId(null);
-      setGrabOffset({ x: 0, y: 0 }); // Reset grab offset
+      setGrabOffset({ x: 0, y: 0 }); 
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -616,7 +598,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     dragStart,
     dragStartPos,
     elementCenter,
-    grabOffset, // Add grabOffset to dependencies
+    grabOffset, 
     actualWidth,
     actualHeight,
     onLayerUpdate,
@@ -627,10 +609,9 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     (e: React.MouseEvent) => {
       if (e.target === overlayRef.current) {
         onEditingLayerChange(null);
-        onSelectLayer(null);
       }
     },
-    [onSelectLayer, onEditingLayerChange]
+    [onEditingLayerChange] 
   );
 
   // Styles
