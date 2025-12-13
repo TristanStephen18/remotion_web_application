@@ -3400,6 +3400,7 @@ const openEditor = useCallback(() => {
                   layer={selectedTextLayer}
                   onUpdate={updateLayer}
                   onDelete={deleteLayer}
+                  isMobile={isMobile}
                 />
               )}
               {selectedAudioLayer && (
@@ -3411,6 +3412,7 @@ const openEditor = useCallback(() => {
                   onReplace={() =>
                     openMediaGallery("audio", selectedAudioLayer.id, "audio")
                   }
+                  isMobile={isMobile}
                 />
               )}
               {selectedLayer && isImageLayer(selectedLayer) && (
@@ -3422,6 +3424,7 @@ const openEditor = useCallback(() => {
                   onReplace={() =>
                     openMediaGallery("media", selectedLayer.id, "image")
                   }
+                isMobile={isMobile}
                 />
               )}
              {selectedVideoLayer && (
@@ -3433,6 +3436,7 @@ const openEditor = useCallback(() => {
                   onReplace={() =>
                     openMediaGallery("video", selectedVideoLayer.id, "video")
                   }
+                  isMobile={isMobile}
                 />
               )}
               {selectedChatLayer && (

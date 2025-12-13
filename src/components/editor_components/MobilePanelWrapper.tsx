@@ -153,25 +153,26 @@ export const MobilePanelWrapper: React.FC<MobilePanelWrapperProps> = ({
       flexDirection: "column" as const,
       alignItems: "center",
       justifyContent: "center",
-      padding: "6px 12px 4px", // EXTRA REDUCED: for 10vh panel
+      padding: "6px 12px 4px",
       backgroundColor: colors.bgSecondary,
       borderTopLeftRadius: "16px",
       borderTopRightRadius: "16px",
       cursor: isDragging ? "grabbing" : "grab",
       position: "relative" as const,
       userSelect: "none" as const,
-      gap: "4px", // EXTRA REDUCED: from 6px to 4px
+      gap: "4px",
+      flexShrink: 0,
     },
     dragHandle: {
-      width: "32px", // EXTRA REDUCED: from 36px to 32px
-      height: "2px", // EXTRA REDUCED: from 3px to 2px
+      width: "32px",
+      height: "2px",
       backgroundColor: colors.borderHeavy,
       borderRadius: "2px",
       opacity: isDragging ? 0.5 : 1,
       flexShrink: 0,
     },
     title: {
-      fontSize: "11px", // EXTRA REDUCED: from 13px to 11px
+      fontSize: "11px",
       fontWeight: "600" as const,
       color: colors.textPrimary,
       width: "100%",
@@ -180,10 +181,10 @@ export const MobilePanelWrapper: React.FC<MobilePanelWrapperProps> = ({
     closeButton: {
       display: isMobile ? "flex" : "none",
       position: "absolute" as const,
-      top: "6px", // EXTRA REDUCED: from 8px to 6px
-      right: "10px", // REDUCED: from 12px to 10px
-      width: "24px", // EXTRA REDUCED: from 28px to 24px
-      height: "24px", // EXTRA REDUCED: from 28px to 24px
+      top: "6px",
+      right: "10px",
+      width: "24px",
+      height: "24px",
       alignItems: "center",
       justifyContent: "center",
       backgroundColor: colors.bgTertiary,
@@ -196,9 +197,10 @@ export const MobilePanelWrapper: React.FC<MobilePanelWrapperProps> = ({
     },
     content: {
       flex: 1,
-      overflow: "auto",
+      overflow: "hidden", // Let children handle their own scrolling
       display: "flex",
       flexDirection: "column" as const,
+      minHeight: 0, // Important for flex children to scroll properly
     },
   };
 
@@ -235,8 +237,8 @@ export const MobilePanelWrapper: React.FC<MobilePanelWrapperProps> = ({
           }}
         >
           <svg
-            width="12" // EXTRA REDUCED: from 14 to 12
-            height="12" // EXTRA REDUCED: from 14 to 12
+            width="12"
+            height="12"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

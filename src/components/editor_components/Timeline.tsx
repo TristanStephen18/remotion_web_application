@@ -66,6 +66,32 @@ const getTrackIcon = (type: TimelineTrack["type"]) => {
   }
 };
 
+
+// ============================================================================
+// HELPER: UNIFIED EVENT COORDINATES
+// ============================================================================
+
+const getEventCoordinates = (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent): { clientX: number; clientY: number; pageX: number; pageY: number } => {
+  if ('touches' in e) {
+    // Touch event
+    const touch = e.touches[0] || e.changedTouches?.[0];
+    return {
+      clientX: touch?.clientX || 0,
+      clientY: touch?.clientY || 0,
+      pageX: touch?.pageX || 0,
+      pageY: touch?.pageY || 0,
+    };
+  } else {
+    // Mouse event
+    return {
+      clientX: e.clientX,
+      clientY: e.clientY,
+      pageX: e.pageX,
+      pageY: e.pageY,
+    };
+  }
+};
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
@@ -196,17 +222,23 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   }, []);
 
-  const handleScroll = useCallback(() => {
+  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
     const trackArea = trackAreaRef.current;
     const labels = labelsRef.current;
     const ruler = rulerRef.current;
     if (!trackArea || !labels || !ruler) return;
-    
+
     labels.scrollTop = trackArea.scrollTop;
     ruler.scrollLeft = trackArea.scrollLeft;
   }, []);
 
-  const displayTracks = useMemo(() => [...tracks], [tracks]);
+  const displayTracks = useMemo(() => {
+    if (!reorderState?.isDragging) return tracks;
+    const result = [...tracks];
+    const [movedTrack] = result.splice(reorderState.startIndex, 1);
+    result.splice(reorderState.currentIndex, 0, movedTrack);
+    return result;
+  }, [tracks, reorderState]);
 
   const canCut = selectedTrackId !== null && !tracks.find(t => t.id === selectedTrackId)?.locked;
   const canDelete = selectedTrackId !== null;
@@ -221,244 +253,225 @@ export const Timeline: React.FC<TimelineProps> = ({
     onDeleteTrack?.(selectedTrackId);
   }, [canDelete, selectedTrackId, onDeleteTrack]);
 
-  const handleTrackSelect = useCallback((trackId: string | null, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    onTrackSelect?.(trackId);
+  const handleTrackSelect = useCallback((trackId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onTrackSelect) {
+      onTrackSelect(trackId);
+    }
   }, [onTrackSelect]);
 
   const handleTimelineClick = useCallback((e: React.MouseEvent) => {
-    if (isDraggingPlayhead.current || dragState || reorderState?.isDragging) return;
-    const rect = trackAreaRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = e.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
-    const newFrame = Math.max(0, Math.min(totalFrames, pixelToFrame(x)));
-    onFrameChange(newFrame);
-  }, [dragState, reorderState, pixelToFrame, totalFrames, onFrameChange]);
+    if (onTrackSelect) {
+      onTrackSelect(null);
+    }
+  }, [onTrackSelect]);
 
   const handleRulerClick = useCallback((e: React.MouseEvent) => {
-    if (isDraggingPlayhead.current || dragState || reorderState?.isDragging) return;
     const rect = rulerRef.current?.getBoundingClientRect();
     if (!rect) return;
     const x = e.clientX - rect.left + (rulerRef.current?.scrollLeft || 0);
-    const newFrame = Math.max(0, Math.min(totalFrames, pixelToFrame(x)));
-    onFrameChange(newFrame);
-  }, [dragState, reorderState, pixelToFrame, totalFrames, onFrameChange]);
-
-  // Playhead Dragging
-  const handlePlayheadMouseDown = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    isDraggingPlayhead.current = true;
-    
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!isDraggingPlayhead.current) return;
-      const rect = trackAreaRef.current?.getBoundingClientRect();
-      if (!rect) return;
-      const x = moveEvent.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
-      const newFrame = Math.max(0, Math.min(totalFrames, pixelToFrame(x)));
-      onFrameChange(newFrame);
-    };
-
-    const handleMouseUp = () => {
-      isDraggingPlayhead.current = false;
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
+    const frame = pixelToFrame(x);
+    onFrameChange(Math.max(0, Math.min(totalFrames, frame)));
   }, [pixelToFrame, totalFrames, onFrameChange]);
 
-  // Track Dragging Logic
-  const handleTrackMouseDown = useCallback((
-    e: React.MouseEvent,
+  // Playhead Dragging
+  const handlePlayheadPointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    isDraggingPlayhead.current = true;
+  }, []);
+
+// Track Dragging Logic
+  const handleTrackPointerDown = useCallback((
+    e: React.MouseEvent | React.TouchEvent,
     track: TimelineTrack,
     type: "move" | "resize-left" | "resize-right",
-    trackIndex: number
+    // index: number
   ) => {
     if (track.locked) return;
+    
     e.stopPropagation();
-    dragStartPos.current = { x: e.clientX, y: e.clientY };
-    setDragDirection(null);
-    handleTrackSelect(track.id, e);
-
+    e.preventDefault();
+    
+    const coords = getEventCoordinates(e);
     const rect = trackAreaRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const startX = e.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
-
+    
+    const x = coords.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
+    
     setDragState({
       trackId: track.id,
       type,
-      startX,
+      startX: x,
       startFrame: track.startFrame,
       endFrame: track.endFrame,
     });
-
-    let isReordering = false;
-    const reorderStartIndex = trackIndex;
-    let reorderCurrentIndex = trackIndex;
-    let tempStartFrame = track.startFrame;
-    let tempEndFrame = track.endFrame;
-    let animationFrameId: number | null = null;
-    let hasPendingUpdate = false;
     
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!trackAreaRef.current || !rect) return;
-
-      if (!dragDirection && dragStartPos.current) {
-        const deltaX = Math.abs(moveEvent.clientX - dragStartPos.current.x);
-        const deltaY = Math.abs(moveEvent.clientY - dragStartPos.current.y);
-        
-        if (deltaX > 5 || deltaY > 5) {
-          if (deltaX > deltaY) {
-            setDragDirection("horizontal");
-          } else {
-            setDragDirection("vertical");
-          }
-        }
-      }
-
-      if (dragDirection === "horizontal" || dragDirection === null) {
-        const x = moveEvent.clientX - rect.left + trackAreaRef.current.scrollLeft;
-        const deltaFrames = pixelToFrame(x - startX);
-        let newStartFrame = track.startFrame;
-        let newEndFrame = track.endFrame;
-
-        if (type === "move") {
-          newStartFrame = Math.max(0, track.startFrame + deltaFrames);
-          newEndFrame = Math.min(totalFrames, track.endFrame + deltaFrames);
-          if (newEndFrame === totalFrames) {
-            newStartFrame = totalFrames - (track.endFrame - track.startFrame);
-          }
-        } else if (type === "resize-left") {
-          newStartFrame = Math.max(0, Math.min(track.endFrame - 5, track.startFrame + deltaFrames));
-        } else if (type === "resize-right") {
-          newEndFrame = Math.min(totalFrames, Math.max(track.startFrame + 5, track.endFrame + deltaFrames));
-        }
-
-        tempStartFrame = newStartFrame;
-        tempEndFrame = newEndFrame;
-
-        if (!hasPendingUpdate) {
-          hasPendingUpdate = true;
-          animationFrameId = requestAnimationFrame(() => {
-            const currentTracks = tracksRef.current;
-            const updatedTracks = currentTracks.map(t =>
-              t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
-            );
-            onTracksChange?.(updatedTracks);
-            hasPendingUpdate = false;
-          });
-        }
-      }
-      
-      if (dragDirection === "vertical" && onReorderTracks) {
-        const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
-        const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
-        isReordering = true;
-        reorderCurrentIndex = newIndex;
-        setReorderState({
-          trackId: track.id,
-          startY: dragStartPos.current?.y || 0,
-          startIndex: trackIndex,
-          currentIndex: newIndex,
-          isDragging: true,
-        });
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (animationFrameId !== null) {
-        cancelAnimationFrame(animationFrameId);
-        if (dragDirection === "horizontal" || (!dragDirection && !isReordering)) {
-          const currentTracks = tracksRef.current;
-          const updatedTracks = currentTracks.map(t =>
-            t.id === track.id ? { ...t, startFrame: tempStartFrame, endFrame: tempEndFrame } : t
-          );
-          onTracksChange?.(updatedTracks);
-        }
-      }
-      if (isReordering && reorderCurrentIndex !== reorderStartIndex) {
-        onReorderTracks?.(reorderStartIndex, reorderCurrentIndex);
-      }
-      setDragState(null);
-      setReorderState(null);
-      setDragDirection(null);
-      dragStartPos.current = null;
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, [tracks, totalFrames, pixelToFrame, onTracksChange, onReorderTracks, dragDirection, handleTrackSelect]);
+    if (onTrackSelect) {
+      onTrackSelect(track.id);
+    }
+    
+    dragStartPos.current = { x: coords.clientX, y: coords.clientY };
+    setDragDirection(null);
+  }, [onTrackSelect]);
 
   // Reorder Handle logic
-  const handleReorderMouseDown = useCallback((e: React.MouseEvent, track: TimelineTrack, trackIndex: number) => {
-    if (track.locked) return;
+  const handleReorderPointerDown = useCallback((e: React.MouseEvent | React.TouchEvent, track: TimelineTrack, index: number) => {
+    if (track.locked || !onReorderTracks) return;
+    
     e.stopPropagation();
-    handleTrackSelect(track.id, e);
-    const rect = trackAreaRef.current?.getBoundingClientRect();
-    if (!rect) return;
-
+    e.preventDefault();
+    
+    const coords = getEventCoordinates(e);
+    
     setReorderState({
       trackId: track.id,
-      startY: e.clientY,
-      startIndex: trackIndex,
-      currentIndex: trackIndex,
+      startY: coords.clientY,
+      startIndex: index,
+      currentIndex: index,
       isDragging: true,
     });
-    let currentDragIndex = trackIndex;
+    
+    dragStartPos.current = { x: coords.clientX, y: coords.clientY };
+    setDragDirection(null);
+  }, [onReorderTracks]);
 
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      if (!trackAreaRef.current || !rect) return;
-      const y = moveEvent.clientY - rect.top + trackAreaRef.current.scrollTop;
-      const newIndex = Math.max(0, Math.min(tracks.length - 1, Math.floor(y / TRACK_ROW_HEIGHT)));
-      currentDragIndex = newIndex; 
-      setReorderState(prev => prev ? { ...prev, currentIndex: newIndex } : null);
-    };
+  const handleHorizontalResizePointerDown = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingHorizontal(true);
+  }, []);
 
-    const handleMouseUp = () => {
-      if (currentDragIndex !== trackIndex) {
-        onReorderTracks?.(trackIndex, currentDragIndex);
-      }
-      setReorderState(null);
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-  }, [tracks, onReorderTracks, handleTrackSelect]);
-
+  // Global event handlers for all drag operations
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizingHorizontal) return;
-      e.preventDefault();
-      const labelsRect = labelsRef.current?.getBoundingClientRect();
-      if (!labelsRect) return;
-      const minWidth = 50;
-      const maxWidth = 300;
-      const newWidth = Math.max(minWidth, Math.min(maxWidth, e.clientX - labelsRect.left));
-      setLabelWidth(newWidth);
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const coords = getEventCoordinates(e);
+      
+      // Horizontal Resize
+      if (isResizingHorizontal) {
+        const newWidth = Math.max(70, Math.min(300, coords.clientX));
+        setLabelWidth(newWidth);
+        return;
+      }
+      
+      // Playhead Dragging
+      if (isDraggingPlayhead.current) {
+        const rect = trackAreaRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const x = coords.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
+        const frame = pixelToFrame(x);
+        onFrameChange(Math.max(0, Math.min(totalFrames, frame)));
+        return;
+      }
+      
+      // Track Reordering
+      if (reorderState?.isDragging && onReorderTracks) {
+        if (!dragDirection && dragStartPos.current) {
+          const dx = Math.abs(coords.clientX - dragStartPos.current.x);
+          const dy = Math.abs(coords.clientY - dragStartPos.current.y);
+          if (dx > 5 || dy > 5) {
+            setDragDirection(dy > dx ? "vertical" : "horizontal");
+          }
+        }
+        
+        if (dragDirection === "vertical" || !dragDirection) {
+          const deltaY = coords.clientY - reorderState.startY;
+          const newIndex = Math.max(0, Math.min(tracks.length - 1, reorderState.startIndex + Math.round(deltaY / TRACK_ROW_HEIGHT)));
+          
+          if (newIndex !== reorderState.currentIndex) {
+            setReorderState({ ...reorderState, currentIndex: newIndex });
+          }
+        }
+        return;
+      }
+      
+      // Track Clip Dragging/Resizing
+      if (dragState) {
+        if (!dragDirection && dragStartPos.current) {
+          const dx = Math.abs(coords.clientX - dragStartPos.current.x);
+          const dy = Math.abs(coords.clientY - dragStartPos.current.y);
+          if (dx > 5 || dy > 5) {
+            setDragDirection(dy > dx ? "vertical" : "horizontal");
+          }
+        }
+        
+        if (dragDirection === "horizontal" || !dragDirection) {
+          const rect = trackAreaRef.current?.getBoundingClientRect();
+          if (!rect) return;
+          
+          const x = coords.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
+          const deltaX = x - dragState.startX;
+          const deltaFrames = pixelToFrame(deltaX);
+          
+          const updatedTracks = tracksRef.current.map((t) => {
+            if (t.id !== dragState.trackId) return t;
+            
+            let newStart = dragState.startFrame;
+            let newEnd = dragState.endFrame;
+            
+            if (dragState.type === "move") {
+              newStart = Math.max(0, Math.min(totalFrames, dragState.startFrame + deltaFrames));
+              newEnd = Math.max(0, Math.min(totalFrames, dragState.endFrame + deltaFrames));
+              if (newEnd > totalFrames) {
+                const overflow = newEnd - totalFrames;
+                newStart -= overflow;
+                newEnd -= overflow;
+              }
+            } else if (dragState.type === "resize-left") {
+              newStart = Math.max(0, Math.min(dragState.endFrame - 1, dragState.startFrame + deltaFrames));
+            } else if (dragState.type === "resize-right") {
+              newEnd = Math.max(dragState.startFrame + 1, Math.min(totalFrames, dragState.endFrame + deltaFrames));
+            }
+            
+            return { ...t, startFrame: newStart, endFrame: newEnd };
+          });
+          
+          if (onTracksChange) {
+            onTracksChange(updatedTracks);
+          }
+        }
+      }
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       if (isResizingHorizontal) {
         setIsResizingHorizontal(false);
-        document.body.style.cursor = "default";
       }
+      
+      if (isDraggingPlayhead.current) {
+        isDraggingPlayhead.current = false;
+      }
+      
+      if (reorderState?.isDragging && onReorderTracks) {
+        if (reorderState.startIndex !== reorderState.currentIndex) {
+          onReorderTracks(reorderState.startIndex, reorderState.currentIndex);
+        }
+        setReorderState(null);
+      }
+      
+      if (dragState) {
+        setDragState(null);
+      }
+      
+      setDragDirection(null);
+      dragStartPos.current = null;
     };
 
-    if (isResizingHorizontal) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "ew-resize";
-    }
+    // 🔥 CRITICAL: Add both mouse AND touch events
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove, { passive: false });
+    window.addEventListener("touchend", handleEnd);
+    window.addEventListener("touchcancel", handleEnd);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener("touchcancel", handleEnd);
     };
-  }, [isResizingHorizontal]);
+  }, [dragState, reorderState, isResizingHorizontal, onTracksChange, onReorderTracks, pixelToFrame, totalFrames, onFrameChange, tracks.length, dragDirection]);
 
   const handleToggleLock = useCallback((trackId: string) => {
     const updatedTracks = tracks.map(t =>
@@ -580,8 +593,8 @@ export const Timeline: React.FC<TimelineProps> = ({
     trackLabelReordering: { backgroundColor: "rgba(59, 130, 246, 0.25)", boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)" },
     trackLabelIcon: { opacity: 0.6, fontSize: isMobile ? "14px" : "16px" },
     trackLabelControls: { marginLeft: "auto", display: "flex", gap: isMobile ? "1px" : "2px" },
-    trackLabelButton: { width: isMobile ? "20px" : "22px", height: isMobile ? "20px" : "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s" },
-    dragHandle: { width: isMobile ? "14px" : "16px", height: isMobile ? "20px" : "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s" },
+    trackLabelButton: { width: isMobile ? "20px" : "22px", height: isMobile ? "20px" : "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s", touchAction: "none",},
+    dragHandle: { width: isMobile ? "14px" : "16px", height: isMobile ? "20px" : "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s", touchAction: "none" },
     dragHandleActive: { cursor: "grabbing", color: "#3b82f6" },
     trackArea: { 
       flex: 1, 
@@ -613,6 +626,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       transition: "box-shadow 0.15s, opacity 0.15s, transform 0.1s",
       userSelect: "none",
       overflow: "hidden",
+      touchAction: "none",
     },
     trackClipSelected: { 
       boxShadow: "0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.3)",
@@ -621,13 +635,14 @@ export const Timeline: React.FC<TimelineProps> = ({
     trackClipHovered: {
       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.2)",
       transform: "translateY(-1px)",
+      
     },
     trackClipLocked: { cursor: "not-allowed" },
     trackClipHidden: { opacity: 0.3 },
-    trackClipHandle: { position: "absolute", top: 0, bottom: 0, width: "10px", cursor: "ew-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10 },
+    trackClipHandle: { position: "absolute", top: 0, bottom: 0, width: "10px", cursor: "ew-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10, touchAction: "none" },
     trackClipHandleBar: { width: "3px", height: "16px", backgroundColor: "rgba(255, 255, 255, 0.7)", borderRadius: "2px" },
     playhead: { position: "absolute", top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 20, pointerEvents: "none" },
-    playheadHead: { position: "absolute", top: "-6px", left: "-7px", width: "16px", height: "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center" },
+    playheadHead: { position: "absolute", top: "-6px", left: "-7px", width: "16px", height: "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" },
     playheadLine: { position: "absolute", top: "10px", left: "0", width: "2px", bottom: "0", backgroundColor: "#ef4444" },
   };
 
@@ -725,12 +740,10 @@ export const Timeline: React.FC<TimelineProps> = ({
                 zIndex: 10,
                 backgroundColor: isResizingHorizontal ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
                 transition: 'background-color 0.15s',
+                touchAction: 'none',
               }}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setIsResizingHorizontal(true);
-              }}
+              onMouseDown={handleHorizontalResizePointerDown}
+              onTouchStart={handleHorizontalResizePointerDown}
               onMouseOver={(e) => {
                 if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
               }}
@@ -758,7 +771,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                   {onReorderTracks && !track.locked && (
                     <div 
                       style={{ ...styles.dragHandle, ...(isBeingReordered ? styles.dragHandleActive : {}) }} 
-                      onMouseDown={(e) => handleReorderMouseDown(e, track, index)} 
+                      onMouseDown={(e) => handleReorderPointerDown(e, track, index)}
+                      onTouchStart={(e) => handleReorderPointerDown(e, track, index)} 
                       onMouseOver={(e) => (e.currentTarget.style.color = colors.textSecondary)} 
                       onMouseOut={(e) => (e.currentTarget.style.color = isBeingReordered ? "#3b82f6" : colors.textMuted)} 
                       title="Drag to reorder"
@@ -821,7 +835,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                         ...(isBeingReordered ? { opacity: 0.7, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" } : {}), 
                         cursor: track.locked ? "not-allowed" : (reorderState?.isDragging ? "grabbing" : (dragState?.trackId === track.id ? "grabbing" : "grab")),
                       }} 
-                      onMouseDown={(e) => handleTrackMouseDown(e, track, "move", index)}
+                      onMouseDown={(e) => handleTrackPointerDown(e, track, "move", index)}
+                      onTouchStart={(e) => handleTrackPointerDown(e, track, "move", index)}
                       onMouseEnter={() => setHoveredTrackId(track.id)}
                       onMouseLeave={() => setHoveredTrackId(null)}
                       onClick={(e) => {
@@ -832,7 +847,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                       {!track.locked && (
                         <div 
                           style={{ ...styles.trackClipHandle, left: 0 }} 
-                          onMouseDown={(e) => handleTrackMouseDown(e, track, "resize-left", index)}
+                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-left", index)}
+                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-left", index)}
                         >
                           <div style={styles.trackClipHandleBar} />
                         </div>
@@ -843,7 +859,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                       {!track.locked && (
                         <div 
                           style={{ ...styles.trackClipHandle, right: 0 }} 
-                          onMouseDown={(e) => handleTrackMouseDown(e, track, "resize-right", index)}
+                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-right", index)}
+                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-right", index)}
                         >
                           <div style={styles.trackClipHandleBar} />
                         </div>
@@ -853,7 +870,11 @@ export const Timeline: React.FC<TimelineProps> = ({
                 );
               })}
               <div style={{ ...styles.playhead, left: `${frameToPixel(currentFrame)}px` }}>
-                <div style={styles.playheadHead} onMouseDown={handlePlayheadMouseDown} />
+                <div 
+                  style={styles.playheadHead} 
+                  onMouseDown={handlePlayheadPointerDown}
+                  onTouchStart={handlePlayheadPointerDown}
+                />
                 <div style={styles.playheadLine} />
               </div>
               {reorderState?.isDragging && reorderState.currentIndex !== reorderState.startIndex && (

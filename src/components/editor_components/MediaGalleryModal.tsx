@@ -328,7 +328,10 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
             duration = result.duration;
           }
         } else if (filePreview.type.startsWith('audio/')) {
-          uploadedUrl = await imageUpload.uploadFile(filePreview.file);
+          const result = await videoUpload.uploadVideo(filePreview.file);
+          if (result) {
+            uploadedUrl = result.url;
+          }
         }
 
         if (uploadedUrl) {

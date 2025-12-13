@@ -41,7 +41,7 @@ const getStyles = (colors: ThemeColors): Record<string, React.CSSProperties> => 
   },
   toolsGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
+    gridTemplateColumns: "1fr 1fr 1fr",
     gap: "10px",
     padding: "16px",
   },

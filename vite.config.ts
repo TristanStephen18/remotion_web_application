@@ -33,6 +33,8 @@ export default defineConfig({
     },
   },
   server: {
+    host: true, // ✅ Allow external access
+    allowedHosts: ['all'],
     proxy: {
       '/api': {
         target: 'http://localhost:3000',
