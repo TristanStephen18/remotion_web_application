@@ -94,6 +94,24 @@ import { saveExistingProject } from "../../utils/projectSaver";
 
 import { CropOverlay, type CropData } from "../editor_components/CropOverlay";
 
+
+const getEventCoordinates = (e: MouseEvent | TouchEvent): { clientX: number; clientY: number } => {
+  if ('touches' in e) {
+    // Touch event
+    const touch = e.touches[0] || e.changedTouches?.[0];
+    return {
+      clientX: touch?.clientX || 0,
+      clientY: touch?.clientY || 0,
+    };
+  } else {
+    // Mouse event
+    return {
+      clientX: e.clientX,
+      clientY: e.clientY,
+    };
+  }
+};
+
 // ============================================================================
 // ICONS & STYLES
 // ============================================================================
@@ -1398,26 +1416,27 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
   }, [handleGlobalDeselect]);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!isResizingVertical) return;
       e.preventDefault();
 
       const mainArea = mainAreaRef.current;
       if (!mainArea) return;
 
+      const coords = getEventCoordinates(e);
       const mainRect = mainArea.getBoundingClientRect();
       const newTimelineHeight = Math.max(
         100, // Minimum height
         Math.min(
           mainRect.height - 200, // Maximum height (leaves space for preview)
-          mainRect.bottom - e.clientY // Distance from mouse to bottom of mainArea
+          mainRect.bottom - coords.clientY // Distance from touch/mouse to bottom of mainArea
         )
       );
 
       setTimelineHeight(newTimelineHeight);
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       if (isResizingVertical) {
         setIsResizingVertical(false);
         document.body.style.cursor = "default";
@@ -1425,14 +1444,20 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
     };
 
     if (isResizingVertical) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("mousemove", handleMove);
+      document.addEventListener("mouseup", handleEnd);
+      document.addEventListener("touchmove", handleMove, { passive: false });
+      document.addEventListener("touchend", handleEnd);
+      document.addEventListener("touchcancel", handleEnd);
       document.body.style.cursor = "ns-resize";
     }
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleMove);
+      document.removeEventListener("touchend", handleEnd);
+      document.removeEventListener("touchcancel", handleEnd);
     };
   }, [isResizingVertical]);
 
@@ -3651,7 +3676,7 @@ const openEditor = useCallback(() => {
           <div
             ref={verticalResizerRef}
             style={{
-              height: "8px",
+              height: "12px",
               backgroundColor: colors.bgSecondary,
               borderTop: `1px solid ${colors.borderLight}`,
               borderBottom: `1px solid ${colors.borderLight}`,
@@ -3664,8 +3689,15 @@ const openEditor = useCallback(() => {
               boxShadow: isResizingVertical
                 ? "0 0 10px rgba(59, 130, 246, 0.4)"
                 : "none",
+              touchAction: 'none',
+              WebkitTouchCallout: 'none',
+              WebkitUserSelect: 'none',
             }}
             onMouseDown={(e) => {
+              e.preventDefault();
+              setIsResizingVertical(true);
+            }}
+            onTouchStart={(e) => {
               e.preventDefault();
               setIsResizingVertical(true);
             }}
@@ -3678,7 +3710,6 @@ const openEditor = useCallback(() => {
                 e.currentTarget.style.backgroundColor = colors.bgSecondary;
             }}
           />
-
           <Timeline
             tracks={timelineTracks}
             currentFrame={currentFrame}
