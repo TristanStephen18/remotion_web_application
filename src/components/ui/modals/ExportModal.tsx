@@ -231,7 +231,7 @@ export const ExportModal: React.FC<{
               variant="contained"
               component="a"
               href={exportUrl ?? "#"}
-              download={exportUrl.replaceAll("http://localhost:3000/videos/", "")}
+              download={exportUrl}
               target="_blank"
               rel="noopener noreferrer"
               disabled={!exportUrl || isExporting}

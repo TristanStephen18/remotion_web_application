@@ -87,12 +87,13 @@ import {
   getTemplate,
   type TemplateDefinition,
 } from "../../utils/simpleTemplateRegistry";
-import { renderVideoUsingLambda } from "../../utils/lambdarendering";
+// import { renderVideoUsingLambda } from "../../utils/lambdarendering";
 import { backendPrefix } from "../../config";
 import { compareProjectProps } from "../../utils/projectPropsComparison";
 import { saveExistingProject } from "../../utils/projectSaver";
 
 import { CropOverlay, type CropData } from "../editor_components/CropOverlay";
+import { renderVideoUsingLambdaWithoutSaving } from "../../utils/lambdaRenderingwithoutdbsave";
 
 
 const getEventCoordinates = (e: MouseEvent | TouchEvent): { clientX: number; clientY: number } => {
@@ -2533,9 +2534,8 @@ const openEditor = useCallback(() => {
             duration
           },
         };
-        const videoUrl = await renderVideoUsingLambda(
+        const videoUrl = await renderVideoUsingLambdaWithoutSaving(
           inputProps,
-          template?.id as number,
           format
         );
         setExportUrl(videoUrl);
