@@ -222,7 +222,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   }, []);
 
-  const handleScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+  const handleScroll = useCallback((_e: React.UIEvent<HTMLDivElement>) => {
     const trackArea = trackAreaRef.current;
     const labels = labelsRef.current;
     const ruler = rulerRef.current;
@@ -260,7 +260,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   }, [onTrackSelect]);
 
-  const handleTimelineClick = useCallback((e: React.MouseEvent) => {
+  const handleTimelineClick = useCallback((_e: React.MouseEvent) => {
     if (onTrackSelect) {
       onTrackSelect(null);
     }
@@ -815,7 +815,7 @@ export const Timeline: React.FC<TimelineProps> = ({
 
           <div style={styles.trackArea} ref={trackAreaRef} onClick={handleTimelineClick} onScroll={handleScroll} onWheel={handleWheel}>
             <div style={{ ...styles.trackAreaInner, width: `${timelineWidth}px` }}>
-              {displayTracks.map((track, index) => {
+              {displayTracks.map((track) => {
                 const isBeingReordered = reorderState?.isDragging && reorderState?.trackId === track.id;
                 const isSelected = selectedTrackId === track.id;
                 const isHovered = hoveredTrackId === track.id;
@@ -835,8 +835,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                         ...(isBeingReordered ? { opacity: 0.7, boxShadow: "0 4px 12px rgba(0,0,0,0.4)" } : {}), 
                         cursor: track.locked ? "not-allowed" : (reorderState?.isDragging ? "grabbing" : (dragState?.trackId === track.id ? "grabbing" : "grab")),
                       }} 
-                      onMouseDown={(e) => handleTrackPointerDown(e, track, "move", index)}
-                      onTouchStart={(e) => handleTrackPointerDown(e, track, "move", index)}
+                      onMouseDown={(e) => handleTrackPointerDown(e, track, "move")}
+                      onTouchStart={(e) => handleTrackPointerDown(e, track, "move")}
                       onMouseEnter={() => setHoveredTrackId(track.id)}
                       onMouseLeave={() => setHoveredTrackId(null)}
                       onClick={(e) => {
@@ -847,8 +847,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                       {!track.locked && (
                         <div 
                           style={{ ...styles.trackClipHandle, left: 0 }} 
-                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-left", index)}
-                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-left", index)}
+                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-left")}
+                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-left")}
                         >
                           <div style={styles.trackClipHandleBar} />
                         </div>
@@ -859,8 +859,8 @@ export const Timeline: React.FC<TimelineProps> = ({
                       {!track.locked && (
                         <div 
                           style={{ ...styles.trackClipHandle, right: 0 }} 
-                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-right", index)}
-                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-right", index)}
+                          onMouseDown={(e) => handleTrackPointerDown(e, track, "resize-right")}
+                          onTouchStart={(e) => handleTrackPointerDown(e, track, "resize-right")}
                         >
                           <div style={styles.trackClipHandleBar} />
                         </div>

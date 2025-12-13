@@ -26,7 +26,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   isMobile = false,
 }) => {
   const { colors } = useTheme();
-  const [showFilters, setShowFilters] = useState(false);
+  // const [showFilters, setShowFilters] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [activeSection, setActiveSection] = useState<"video" | "display" | "effects">("video");
 
