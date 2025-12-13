@@ -266,10 +266,11 @@ export const Timeline: React.FC<TimelineProps> = ({
     }
   }, [onTrackSelect]);
 
-  const handleRulerClick = useCallback((e: React.MouseEvent) => {
+  const handleRulerClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const rect = rulerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left + (rulerRef.current?.scrollLeft || 0);
+    const coords = getEventCoordinates(e);
+    const x = coords.clientX - rect.left + (rulerRef.current?.scrollLeft || 0);
     const frame = pixelToFrame(x);
     onFrameChange(Math.max(0, Math.min(totalFrames, frame)));
   }, [pixelToFrame, totalFrames, onFrameChange]);
@@ -522,7 +523,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [onPlayPause, selectedTrackId, handleDeleteTrack, handleCutTrack, onFrameChange, totalFrames]);
 
   const styles: Record<string, React.CSSProperties> = {
-    container: { display: "flex", flexDirection: "column", height: height, backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, },
+    container: { display: "flex", flexDirection: "column", height: height, backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     toolbar: { display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", padding: isMobile ? "4px 8px" : "4px 16px", flexWrap: isMobile ? "wrap" : "nowrap", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
     toolGroup: { display: "flex", gap: isMobile ? "4px" : "6px" },
     divider: { width: "1px", height: isMobile ? "20px" : "24px", backgroundColor: colors.borderLight },
@@ -536,7 +537,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     rulerRow: { display: "flex", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
     rulerSpacer: { width: `${labelWidth}px`, flexShrink: 0, backgroundColor: colors.bgSecondary },
     rulerContent: { flex: 1, overflow: "hidden", position: "relative" },
-   ruler: { position: "relative", height: isMobile ? "22px" : "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer" },
+   ruler: { position: "relative", height: isMobile ? "22px" : "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer", touchAction: "none" },
     rulerInner: { position: "relative", height: "100%", borderLeft: `1px solid ${colors.borderLight}` },
     rulerMarker: { 
       position: "absolute", 
@@ -593,8 +594,8 @@ export const Timeline: React.FC<TimelineProps> = ({
     trackLabelReordering: { backgroundColor: "rgba(59, 130, 246, 0.25)", boxShadow: "0 2px 8px rgba(59, 130, 246, 0.3)" },
     trackLabelIcon: { opacity: 0.6, fontSize: isMobile ? "14px" : "16px" },
     trackLabelControls: { marginLeft: "auto", display: "flex", gap: isMobile ? "1px" : "2px" },
-    trackLabelButton: { width: isMobile ? "20px" : "22px", height: isMobile ? "20px" : "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s", touchAction: "none",},
-    dragHandle: { width: isMobile ? "14px" : "16px", height: isMobile ? "20px" : "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s", touchAction: "none" },
+    trackLabelButton: { width: isMobile ? "20px" : "22px", height: isMobile ? "20px" : "22px", border: "none", backgroundColor: "transparent", color: colors.textMuted, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", borderRadius: "4px", transition: "all 0.15s", touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
+    dragHandle: { width: isMobile ? "20px" : "16px", height: isMobile ? "24px" : "22px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "grab", color: colors.textMuted, transition: "color 0.15s", touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     dragHandleActive: { cursor: "grabbing", color: "#3b82f6" },
     trackArea: { 
       flex: 1, 
@@ -627,6 +628,8 @@ export const Timeline: React.FC<TimelineProps> = ({
       userSelect: "none",
       overflow: "hidden",
       touchAction: "none",
+      WebkitTouchCallout: 'none',
+      WebkitUserSelect: 'none',
     },
     trackClipSelected: { 
       boxShadow: "0 0 0 2px #3b82f6, 0 4px 12px rgba(59, 130, 246, 0.3)",
@@ -639,10 +642,10 @@ export const Timeline: React.FC<TimelineProps> = ({
     },
     trackClipLocked: { cursor: "not-allowed" },
     trackClipHidden: { opacity: 0.3 },
-    trackClipHandle: { position: "absolute", top: 0, bottom: 0, width: "10px", cursor: "ew-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10, touchAction: "none" },
-    trackClipHandleBar: { width: "3px", height: "16px", backgroundColor: "rgba(255, 255, 255, 0.7)", borderRadius: "2px" },
+    trackClipHandle: { position: "absolute", top: 0, bottom: 0, width: isMobile ? "16px" : "10px", cursor: "ew-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10, touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
+    trackClipHandleBar: { width: isMobile ? "4px" : "3px", height: isMobile ? "20px" : "16px", backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: "2px" },
     playhead: { position: "absolute", top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 20, pointerEvents: "none" },
-    playheadHead: { position: "absolute", top: "-6px", left: "-7px", width: "16px", height: "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none" },
+    playheadHead: { position: "absolute", top: "-6px", left: "-7px", width: isMobile ? "20px" : "16px", height: isMobile ? "20px" : "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     playheadLine: { position: "absolute", top: "10px", left: "0", width: "2px", bottom: "0", backgroundColor: "#ef4444" },
   };
 
@@ -701,7 +704,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           <div style={styles.rulerSpacer} />
           {/* Add wheel handler to ruler for horizontal scrolling */}
           <div style={styles.rulerContent} ref={rulerRef} onWheel={handleRulerWheel}>
-            <div style={styles.ruler} onClick={handleRulerClick}>
+            <div style={styles.ruler} onClick={handleRulerClick} onTouchStart={handleRulerClick}>
               <div style={{ ...styles.rulerInner, width: `${timelineWidth}px` }}>
                 {timeMarkers.map(({ frame, label, isMajor }) => (
                   <React.Fragment key={frame}>
@@ -735,12 +738,14 @@ export const Timeline: React.FC<TimelineProps> = ({
                 top: 0,
                 bottom: 0,
                 right: 0,
-                width: "6px",
+                width: isMobile ? "12px" : "6px",
                 cursor: "ew-resize",
                 zIndex: 10,
                 backgroundColor: isResizingHorizontal ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
                 transition: 'background-color 0.15s',
                 touchAction: 'none',
+                WebkitTouchCallout: 'none',
+                WebkitUserSelect: 'none',
               }}
               onMouseDown={handleHorizontalResizePointerDown}
               onTouchStart={handleHorizontalResizePointerDown}
