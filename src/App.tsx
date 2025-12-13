@@ -60,7 +60,7 @@ import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
 import { backendPrefix } from "./config";
 
-// ✅ NEW: Auth Provider Component
+// ✅ UPDATED: Auth Provider with subscription check
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -86,6 +86,7 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsAuthenticated(false);
           localStorage.removeItem("token");
         }
+        console.log("User is loggedin:", isAuthenticated);
       } catch (error) {
         console.error("❌ Auth check failed:", error);
         setIsAuthenticated(false);
@@ -97,17 +98,13 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
-    // ✅ NEW: Cross-tab synchronization
     const handleStorageChange = (e: StorageEvent) => {
-      console.log(isAuthenticated);
       if (e.key === "token") {
         if (e.newValue) {
-          // Logged in another tab
           setIsAuthenticated(true);
           tokenManager.startAutoRefresh();
           window.location.href = "/dashboard";
         } else {
-          // Logged out in another tab
           setIsAuthenticated(false);
           tokenManager.stopAutoRefresh();
           window.location.href = "/login";
@@ -264,6 +261,67 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// ✅ FIXED: RootRedirect - only shows landing page for non-authenticated users
+function RootRedirect() {
+  const [isRedirecting, setIsRedirecting] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      const token = localStorage.getItem("token");
+
+      // Not logged in → Show landing page
+      if (!token) {
+        setIsRedirecting(false);
+        return;
+      }
+
+      // Logged in → Check subscription and redirect (don't render landing page)
+      try {
+        const response = await fetch(
+          `${backendPrefix}/api/subscription/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await response.json();
+
+        console.log("🔍 Root redirect - subscription check:", data);
+
+        if (data.success) {
+          if (data.hasSubscription && !data.trialExpired) {
+            console.log("✅ Redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          } else if (data.trialExpired) {
+            console.log("⏰ Trial expired, redirecting to subscription");
+            navigate("/subscription", { replace: true });
+          } else {
+            console.log("⚠️ Edge case, redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        navigate("/dashboard", { replace: true });
+      }
+    };
+
+    checkAndRedirect();
+  }, [navigate]);
+
+  // If logged in, keep showing the loader (from AuthProvider) until redirect happens
+  // If not logged in, show landing page
+  if (isRedirecting) {
+    return null; // AuthProvider's loader is still showing, so return nothing
+  }
+
+  return <LandingPage />;
+}
+
 // ✅ NEW: Protected Route Component
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem("token");
@@ -286,77 +344,6 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   }
 
   return <>{children}</>;
-}
-
-// ✅ NEW: Smart redirect for root route
-function RootRedirect() {
-  const [checking, setChecking] = useState(true);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAndRedirect = async () => {
-      const token = localStorage.getItem("token");
-
-      // Not logged in → Show landing page
-      if (!token) {
-        setChecking(false);
-        return;
-      }
-
-      // Logged in → Check subscription status
-      try {
-        const response = await fetch(
-          `${backendPrefix}/api/subscription/status`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        const data = await response.json();
-
-        console.log("🔍 Root redirect - subscription check:", data);
-
-        if (data.success) {
-          if (data.hasSubscription && !data.trialExpired) {
-            // Has active subscription/trial → Dashboard
-            console.log("✅ Redirecting to dashboard");
-            navigate("/dashboard", { replace: true });
-          } else if (data.trialExpired) {
-            // Trial expired → Subscription page
-            console.log("⏰ Trial expired, redirecting to subscription");
-            navigate("/subscription", { replace: true });
-          } else {
-            // Edge case → Dashboard (fail open)
-            console.log("⚠️ Edge case, redirecting to dashboard");
-            navigate("/dashboard", { replace: true });
-          }
-        }
-      } catch (error) {
-        console.error("Error checking subscription:", error);
-        navigate("/dashboard", { replace: true }); // Fail open
-      } finally {
-        setChecking(false);
-      }
-    };
-
-    checkAndRedirect();
-  }, [navigate]);
-
-  if (checking) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return <LandingPage />;
 }
 
 function App() {
