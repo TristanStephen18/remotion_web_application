@@ -1,4 +1,10 @@
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Route,
+  Routes,
+  Navigate,
+  useNavigate,
+} from "react-router-dom";
 import { Toaster } from "react-hot-toast";
 import { useEffect, useState } from "react";
 import { getCurrentUser, tokenManager } from "./services/authService";
@@ -52,6 +58,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
 import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
+import { backendPrefix } from "./config";
 
 // ✅ NEW: Auth Provider Component
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -281,65 +288,76 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// function SubscriptionGuard({ children }: { children: React.ReactNode }) {
-//   const navigate = useNavigate();
-//   const [checking, setChecking] = useState(true);
+// ✅ NEW: Smart redirect for root route
+function RootRedirect() {
+  const [checking, setChecking] = useState(true);
+  const navigate = useNavigate();
 
-//   useEffect(() => {
-//     const checkSub = async () => {
-//       try {
-//         const token = localStorage.getItem("token");
-//         const response = await fetch(
-//           `${backendPrefix}/api/subscription/status`,
-//           {
-//             headers: {
-//               Authorization: `Bearer ${token}`,
-//               "Content-Type": "application/json",
-//             },
-//           }
-//         );
+  useEffect(() => {
+    const checkAndRedirect = async () => {
+      const token = localStorage.getItem("token");
 
-//         const data = await response.json();
+      // Not logged in → Show landing page
+      if (!token) {
+        setChecking(false);
+        return;
+      }
 
-//         console.log("🔍 SubscriptionGuard check:", data);
+      // Logged in → Check subscription status
+      try {
+        const response = await fetch(
+          `${backendPrefix}/api/subscription/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-//         // ✅ FIXED: Only redirect to dashboard if has ACTIVE subscription (not free trial)
-//         // Free trial users should see subscription page to upgrade
-//         if (
-//           data.success &&
-//           data.hasSubscription &&
-//           data.status !== "free_trial"
-//         ) {
-//           console.log(
-//             "✅ User has paid subscription, redirecting to dashboard"
-//           );
-//           navigate("/dashboard", { replace: true });
-//           return;
-//         }
+        const data = await response.json();
 
-//         setChecking(false);
-//       } catch (error) {
-//         console.error("Error checking subscription:", error);
-//         setChecking(false);
-//       }
-//     };
+        console.log("🔍 Root redirect - subscription check:", data);
 
-//     checkSub();
-//   }, [navigate]);
+        if (data.success) {
+          if (data.hasSubscription && !data.trialExpired) {
+            // Has active subscription/trial → Dashboard
+            console.log("✅ Redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          } else if (data.trialExpired) {
+            // Trial expired → Subscription page
+            console.log("⏰ Trial expired, redirecting to subscription");
+            navigate("/subscription", { replace: true });
+          } else {
+            // Edge case → Dashboard (fail open)
+            console.log("⚠️ Edge case, redirecting to dashboard");
+            navigate("/dashboard", { replace: true });
+          }
+        }
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        navigate("/dashboard", { replace: true }); // Fail open
+      } finally {
+        setChecking(false);
+      }
+    };
 
-//   if (checking) {
-//     return (
-//       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-//         <div className="text-center">
-//           <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-//           <p className="text-gray-600">Checking subscription...</p>
-//         </div>
-//       </div>
-//     );
-//   }
+    checkAndRedirect();
+  }, [navigate]);
 
-//   return <>{children}</>;
-// }
+  if (checking) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <LandingPage />;
+}
 
 function App() {
   return (
@@ -348,16 +366,8 @@ function App() {
         <AuthProvider>
           <Routes>
             {/* ========== PUBLIC ROUTES (Redirect to subscription if logged in) ========== */}
-            <Route
-              path="/"
-              element={
-                localStorage.getItem("token") ? (
-                  <Navigate to="/dashboard" replace />
-                ) : (
-                  <LandingPage />
-                )
-              }
-            />
+            
+            <Route path="/" element={<RootRedirect />} />
 
             <Route
               path="/login"

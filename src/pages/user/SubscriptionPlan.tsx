@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FiTrendingUp,
-  FiPieChart,
   FiShield,
   FiAlertCircle,
   FiCreditCard,
-  FiCalendar,
   FiDollarSign,
-  FiFileText,
   FiExternalLink,
   FiPackage,
   FiZap,
@@ -20,6 +18,34 @@ import { getSubscriptionDetails } from "../../utils/subscriptionUtils.ts";
 import type { Subscription } from "../../types/subscription";
 import { backendPrefix } from "../../config.ts";
 
+const formatStatus = (status: string, cancelAtPeriodEnd: boolean): string => {
+  if (cancelAtPeriodEnd) {
+    return "Canceling at Period End";
+  }
+
+  switch (status) {
+    case "free_trial":
+      return "Free Trial";
+    case "trialing":
+      return "Trial Active";
+    case "active":
+      return "Active";
+    case "canceled":
+      return "Canceled";
+    case "past_due":
+      return "Past Due";
+    case "incomplete":
+      return "Incomplete";
+    case "unpaid":
+      return "Unpaid";
+    default:
+      return status
+        .split("_")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+  }
+};
+
 const SubscriptionPlan: React.FC = () => {
   const [openCancelModal, setOpenCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -27,6 +53,7 @@ const SubscriptionPlan: React.FC = () => {
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchSub = async () => {
@@ -60,7 +87,6 @@ const SubscriptionPlan: React.FC = () => {
 
       if (data.success && data.url) {
         toast.success("Redirecting to billing portal...", { icon: "🔗" });
-        // Open Stripe portal in new tab
         window.open(data.url, "_blank");
       } else {
         throw new Error(data.error || "Failed to create portal session");
@@ -73,7 +99,6 @@ const SubscriptionPlan: React.FC = () => {
     }
   };
 
-  // Handler: Cancel Subscription
   const handleCancelSubscription = async () => {
     setIsProcessing(true);
     try {
@@ -97,21 +122,17 @@ const SubscriptionPlan: React.FC = () => {
           }
         );
 
-        // Send feedback to backend (optional)
         if (cancelReason || cancelFeedback) {
           console.log("Cancellation feedback:", {
             reason: cancelReason,
             feedback: cancelFeedback,
           });
-          // You can add an API endpoint to save this feedback
         }
 
-        // Close modal
         setOpenCancelModal(false);
         setCancelReason("");
         setCancelFeedback("");
 
-        // Refresh subscription data
         setTimeout(() => {
           window.location.reload();
         }, 1500);
@@ -149,7 +170,6 @@ const SubscriptionPlan: React.FC = () => {
           duration: 4000,
         });
 
-        // Refresh page to show updated status
         setTimeout(() => {
           window.location.reload();
         }, 1500);
@@ -164,7 +184,6 @@ const SubscriptionPlan: React.FC = () => {
     }
   };
 
-  // ✅ Show loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 px-3 sm:px-4 md:px-8 py-4 pt-16 md:pt-4 flex items-center justify-center">
@@ -176,14 +195,13 @@ const SubscriptionPlan: React.FC = () => {
     );
   }
 
-  // ✅ Show no subscription message
   if (!subscription) {
     return (
       <div className="min-h-screen bg-gray-50 px-3 sm:px-4 md:px-8 py-4 pt-16 md:pt-4 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 mb-4">No subscription found</p>
           <button
-            onClick={() => (window.location.href = "/subscription")}
+            onClick={() => navigate("/subscription")}
             className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold"
           >
             Subscribe Now
@@ -192,6 +210,11 @@ const SubscriptionPlan: React.FC = () => {
       </div>
     );
   }
+
+  // ✅ PROPERLY USE THE SUBSCRIPTION STATUS VARIABLES
+  const isFreeTrialOnly = subscription.status === "free_trial";
+  const hasPaidSubscription =
+    subscription.status === "active" || subscription.status === "trialing";
 
   return (
     <div className="min-h-screen bg-gray-50 px-3 sm:px-4 md:px-8 py-4 pt-16 md:pt-4">
@@ -277,7 +300,6 @@ const SubscriptionPlan: React.FC = () => {
                   "linear-gradient(135deg, var(--primary-1), var(--primary-2) 55%, var(--primary-3))",
               }}
             >
-              {/* Decorative elements */}
               <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
 
@@ -300,12 +322,10 @@ const SubscriptionPlan: React.FC = () => {
                       }`}
                     >
                       <FiZap className="text-base sm:text-lg" />
-                      {subscription.cancelAtPeriodEnd
-                        ? "Canceling at Period End"
-                        : subscription.status === "trialing"
-                        ? "Trial Active"
-                        : subscription.status.charAt(0).toUpperCase() +
-                          subscription.status.slice(1)}
+                      {formatStatus(
+                        subscription.status,
+                        subscription.cancelAtPeriodEnd
+                      )}
                     </div>
                   </div>
                   <div className="text-left sm:text-right">
@@ -342,251 +362,40 @@ const SubscriptionPlan: React.FC = () => {
               </div>
             </div>
 
-            {/* Trial Progress */}
-            {subscription.status === "trialing" &&
-              subscription.trialStart &&
+            {/* Trial Expiry Display */}
+            {(subscription.status === "trialing" ||
+              subscription.status === "free_trial") &&
               subscription.trialEnd && (
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                      <FiPieChart className="text-indigo-600" />
-                      Trial Period Progress
-                    </h4>
-                  </div>
-
-                  {(() => {
-                    const trialStart = new Date(subscription.trialStart);
-                    const trialEnd = new Date(subscription.trialEnd);
-                    const today = new Date();
-                    const totalDays = Math.ceil(
-                      (trialEnd.getTime() - trialStart.getTime()) /
-                        (1000 * 60 * 60 * 24)
-                    );
-                    const daysElapsed = Math.max(
-                      0,
-                      Math.ceil(
-                        (today.getTime() - trialStart.getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )
-                    );
-                    const daysRemaining = Math.max(
-                      0,
-                      Math.ceil(
-                        (trialEnd.getTime() - today.getTime()) /
-                          (1000 * 60 * 60 * 24)
-                      )
-                    );
-                    const progressPercent = Math.min(
-                      100,
-                      (daysElapsed / totalDays) * 100
-                    );
-
-                    return (
+                <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl">
+                  <p className="text-sm text-gray-700">
+                    {subscription.status === "free_trial" ? (
                       <>
-                        <div className="mb-4">
-                          <div className="flex justify-between text-sm mb-3">
-                            <span className="text-gray-600 font-medium">
-                              {daysElapsed} of {totalDays} days used
-                            </span>
-                            <span
-                              className="font-bold text-transparent bg-clip-text"
-                              style={{
-                                backgroundImage:
-                                  "linear-gradient(135deg, var(--primary-1), var(--primary-2))",
-                              }}
-                            >
-                              {daysRemaining} days remaining
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                            <motion.div
-                              className="h-full rounded-full shadow-lg"
-                              style={{
-                                background:
-                                  "linear-gradient(90deg, #8b5cf6, #ec4899)",
-                              }}
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progressPercent}%` }}
-                              transition={{ duration: 1, ease: "easeOut" }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Calendar View */}
-                        <div className="mt-4 p-3 bg-white rounded-xl border border-gray-200">
-                          <div className="flex items-center justify-between mb-2.5">
-                            <h5 className="font-semibold text-gray-800 flex items-center gap-1.5 text-xs">
-                              <FiCalendar className="text-indigo-600 text-sm" />
-                              {trialStart.toLocaleDateString("en-US", {
-                                month: "short",
-                                year: "numeric",
-                              })}
-                            </h5>
-                            <div className="flex items-center gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                                <span className="text-gray-600 text-xs">
-                                  Start
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <div className="w-2 h-2 rounded-full bg-red-500"></div>
-                                <span className="text-gray-600 text-xs">
-                                  End
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Calendar Grid */}
-                          {(() => {
-                            const year = trialStart.getFullYear();
-                            const month = trialStart.getMonth();
-                            const firstDay = new Date(year, month, 1);
-                            const lastDay = new Date(year, month + 1, 0);
-                            const startingDayOfWeek = firstDay.getDay();
-                            const daysInMonth = lastDay.getDate();
-
-                            const days = [];
-
-                            // Add empty cells for days before month starts
-                            for (let i = 0; i < startingDayOfWeek; i++) {
-                              days.push(
-                                <div
-                                  key={`empty-${i}`}
-                                  className="flex justify-center items-center h-8"
-                                >
-                                  <div className="w-7 h-7"></div>
-                                </div>
-                              );
-                            }
-
-                            // Add days of month
-                            for (let day = 1; day <= daysInMonth; day++) {
-                              const currentDate = new Date(year, month, day);
-                              const isTrialStart = day === trialStart.getDate();
-                              const isTrialEnd = day === trialEnd.getDate();
-                              const isInTrial =
-                                currentDate >= trialStart &&
-                                currentDate <= trialEnd;
-                              const isToday =
-                                currentDate.toDateString() ===
-                                today.toDateString();
-
-                              let className =
-                                "relative w-7 h-7 flex items-center justify-center rounded-md text-xs font-medium transition-all ";
-
-                              if (isTrialStart) {
-                                className +=
-                                  "bg-green-500 text-white shadow-sm ring-2 ring-green-300";
-                              } else if (isTrialEnd) {
-                                className +=
-                                  "bg-red-500 text-white shadow-sm ring-2 ring-red-300";
-                              } else if (isInTrial) {
-                                className +=
-                                  "bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-700 font-semibold";
-                              } else {
-                                className += "text-gray-400 hover:bg-gray-50";
-                              }
-
-                              if (isToday && !isTrialStart && !isTrialEnd) {
-                                className += " ring-2 ring-indigo-400";
-                              }
-
-                              days.push(
-                                <div
-                                  key={day}
-                                  className="flex justify-center items-center h-8"
-                                >
-                                  <div className={className}>{day}</div>
-                                </div>
-                              );
-                            }
-
-                            return (
-                              <>
-                                {/* Day headers */}
-                                <div className="grid grid-cols-7 gap-1 mb-1">
-                                  {["S", "M", "T", "W", "T", "F", "S"].map(
-                                    (day, idx) => (
-                                      <div
-                                        key={idx}
-                                        className="h-7 flex items-center justify-center text-xs font-bold text-gray-600"
-                                      >
-                                        {day}
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                                {/* Calendar days */}
-                                <div className="grid grid-cols-7 gap-1">
-                                  {days}
-                                </div>
-                              </>
-                            );
-                          })()}
-
-                          {/* Date Info */}
-                          <div className="mt-2.5 pt-2.5 border-t border-gray-200 flex items-center justify-between text-xs">
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-green-500"></div>
-                              <span className="text-gray-600">
-                                {trialStart.toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-1.5">
-                              <div className="w-1.5 h-1.5 rounded-full bg-red-500"></div>
-                              <span className="text-gray-600">
-                                {trialEnd.toLocaleDateString("en-US", {
-                                  month: "short",
-                                  day: "numeric",
-                                })}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-
-                        {daysRemaining <= 3 && daysRemaining > 0 && (
-                          <motion.div
-                            className="mt-4 p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-300 rounded-2xl shadow-md"
-                            initial={{ scale: 0.95 }}
-                            animate={{ scale: 1 }}
-                            transition={{ duration: 0.3 }}
-                          >
-                            <div className="flex items-start gap-3">
-                              <FiAlertCircle
-                                className="text-yellow-600 mt-0.5 flex-shrink-0"
-                                size={22}
-                              />
-                              <div>
-                                <p className="text-sm font-bold text-yellow-900 mb-1">
-                                  Trial Ending Soon!
-                                </p>
-                                <p className="text-sm text-yellow-800 leading-relaxed">
-                                  Your trial ends in{" "}
-                                  <strong>
-                                    {daysRemaining}{" "}
-                                    {daysRemaining === 1 ? "day" : "days"}
-                                  </strong>
-                                  . You'll be charged{" "}
-                                  <strong>${SUBSCRIPTION_PRICE}/month</strong>{" "}
-                                  starting{" "}
-                                  {trialEnd.toLocaleDateString("en-US", {
-                                    month: "long",
-                                    day: "numeric",
-                                  })}
-                                  .
-                                </p>
-                              </div>
-                            </div>
-                          </motion.div>
+                        <span className="font-semibold">Free trial ends:</span>{" "}
+                        {new Date(subscription.trialEnd).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          }
                         )}
                       </>
-                    );
-                  })()}
+                    ) : (
+                      <>
+                        <span className="font-semibold">
+                          Next billing date:
+                        </span>{" "}
+                        {new Date(subscription.trialEnd).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )}
+                      </>
+                    )}
+                  </p>
                 </div>
               )}
           </motion.div>
@@ -598,39 +407,229 @@ const SubscriptionPlan: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            {/* Payment Method */}
+            {/* Payment Method - CONDITIONAL RENDERING */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
               <div className="flex items-center gap-2 mb-5">
                 <FiCreditCard className="text-indigo-600 text-xl" />
                 <h4 className="font-bold text-gray-800">Payment Method</h4>
               </div>
-              <div className="p-5 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-slate-50 to-gray-50">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
-                      VISA
+
+              {isFreeTrialOnly ? (
+                // ✅ FREE TRIAL: Show "Add Payment Method" CTA
+                <div className="p-5 rounded-xl border-2 border-dashed border-gray-300 bg-gradient-to-br from-blue-50 to-indigo-50">
+                  <div className="text-center py-4">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-indigo-100 flex items-center justify-center">
+                      <FiCreditCard className="text-indigo-600 text-2xl" />
                     </div>
-                    <div>
-                      <p className="font-mono text-gray-800 font-semibold">
-                        •••• •••• •••• 4242
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Expires 12/2028
-                      </p>
-                    </div>
-                  </div>
-                  <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
-                    Default
+                    <p className="text-sm font-semibold text-gray-800 mb-2">
+                      No Payment Method Added
+                    </p>
+                    <p className="text-xs text-gray-600 mb-4 leading-relaxed">
+                      Add a payment method to continue your subscription after
+                      the free trial ends
+                    </p>
+                    <button
+                      onClick={() => navigate("/subscription")}
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition text-sm"
+                    >
+                      Add Payment Method
+                    </button>
                   </div>
                 </div>
+              ) : (
+                // ✅ PAID SUBSCRIPTION: Show actual payment method
+                <div className="p-5 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-slate-50 to-gray-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                        CARD
+                      </div>
+                      <div>
+                        <p className="font-mono text-gray-800 font-semibold">
+                          •••• •••• •••• ••••
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Payment method on file
+                        </p>
+                      </div>
+                    </div>
+                    <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">
+                      Active
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleManageBilling}
+                    disabled={isProcessing}
+                    className="w-full py-2 px-4 bg-white border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Opening...
+                      </span>
+                    ) : (
+                      "Update Card"
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Next Billing */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <FiDollarSign className="text-green-600 text-xl" />
+                <h4 className="font-bold text-gray-800">
+                  {isFreeTrialOnly ? "Trial Period" : "Next Billing"}
+                </h4>
+              </div>
+              <div
+                className={`p-5 rounded-xl border-2 ${
+                  isFreeTrialOnly
+                    ? "border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50"
+                    : "border-gray-200 bg-gradient-to-br from-green-50 to-emerald-50"
+                }`}
+              >
+                {isFreeTrialOnly ? (
+                  // ✅ FREE TRIAL: Show trial end date
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-gray-600 font-medium">
+                        Trial Ends
+                      </span>
+                      <span className="text-2xl font-bold text-gray-800">
+                        {subscription.trialEnd &&
+                          new Date(subscription.trialEnd).toLocaleDateString(
+                            "en-US",
+                            { month: "short", day: "numeric" }
+                          )}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      Add payment method before trial ends to continue your
+                      subscription
+                    </p>
+                  </div>
+                ) : (
+                  // ✅ PAID SUBSCRIPTION: Show billing info
+                  <>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className="text-gray-600 font-medium">Amount</span>
+                      <span className="text-3xl font-bold text-gray-800">
+                        ${SUBSCRIPTION_PRICE}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
+                      <span className="text-gray-600 font-medium">
+                        Billing Date
+                      </span>
+                      <span className="font-semibold text-gray-800">
+                        {new Date(
+                          subscription.currentPeriodEnd
+                        ).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ✅ Free Trial Info Box - SEPARATE FROM BUTTONS */}
+          {isFreeTrialOnly && (
+            <motion.div
+              className="p-5 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <FiZap className="text-green-600 text-xl" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-bold text-green-900 mb-2">
+                    ✨ Good News! Your Trial Period is Protected
+                  </p>
+                  <p className="text-xs text-green-800 leading-relaxed">
+                    You can add your payment method now and still enjoy your{" "}
+                    <strong>full 7-day free trial</strong>. You won't be charged
+                    until{" "}
+                    <strong>
+                      {subscription.trialEnd &&
+                        new Date(subscription.trialEnd).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "long",
+                            day: "numeric",
+                            year: "numeric",
+                          }
+                        )}
+                    </strong>
+                    , regardless of when you subscribe.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Action Buttons - CONDITIONAL RENDERING */}
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            {isFreeTrialOnly ? (
+              // ✅ FREE TRIAL: Only show "Subscribe Now" button
+              <button
+                onClick={() => navigate("/subscription")}
+                className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl"
+                style={{
+                  background:
+                    "linear-gradient(135deg, var(--primary-1), var(--primary-2) 55%, var(--primary-3))",
+                }}
+              >
+                <FiZap />
+                Subscribe to Continue After Trial
+              </button>
+            ) : (
+              // ✅ PAID SUBSCRIPTION: Show management buttons
+              <>
                 <button
                   onClick={handleManageBilling}
                   disabled={isProcessing}
-                  className="w-full py-2 px-4 bg-white border-2 border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+                  style={{
+                    background:
+                      "linear-gradient(135deg, var(--primary-1), var(--primary-2) 55%, var(--primary-3))",
+                  }}
                 >
                   {isProcessing ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                    <>
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                         <circle
                           className="opacity-25"
                           cx="12"
@@ -647,176 +646,57 @@ const SubscriptionPlan: React.FC = () => {
                         />
                       </svg>
                       Opening...
-                    </span>
+                    </>
                   ) : (
-                    "Update Card"
+                    <>
+                      <FiExternalLink />
+                      Manage Billing Portal
+                    </>
                   )}
                 </button>
-              </div>
-            </div>
 
-            {/* Next Billing */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center gap-2 mb-5">
-                <FiDollarSign className="text-green-600 text-xl" />
-                <h4 className="font-bold text-gray-800">Next Billing</h4>
-              </div>
-              <div className="p-5 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-green-50 to-emerald-50">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-gray-600 font-medium">Amount</span>
-                  <span className="text-3xl font-bold text-gray-800">
-                    ${SUBSCRIPTION_PRICE}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
-                  <span className="text-gray-600 font-medium">
-                    Billing Date
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString(
-                      "en-US",
-                      { month: "short", day: "numeric", year: "numeric" }
+                {subscription.cancelAtPeriodEnd ? (
+                  <button
+                    onClick={handleReactivateSubscription}
+                    disabled={isProcessing}
+                    className="flex-1 px-6 py-4 bg-white border-2 border-green-500 rounded-xl text-green-600 font-bold hover:bg-green-50 transition-all duration-300 hover:border-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isProcessing ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg
+                          className="animate-spin h-5 w-5"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                            fill="none"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          />
+                        </svg>
+                        Reactivating...
+                      </span>
+                    ) : (
+                      "Reactivate Subscription"
                     )}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Subscription Details */}
-          <motion.div
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <h4 className="font-bold text-gray-800 mb-5">
-              Subscription Details
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[
-                {
-                  icon: FiFileText,
-                  label: "Subscription ID",
-                  value: subscription.stripeSubscriptionId || "N/A",
-                },
-                {
-                  icon: FiFileText,
-                  label: "Customer ID",
-                  value: subscription.stripeCustomerId || "N/A",
-                },
-                {
-                  icon: FiCalendar,
-                  label: "Created Date",
-                  value: subscription.createdAt
-                    ? new Date(subscription.createdAt).toLocaleDateString(
-                        "en-US",
-                        { month: "long", day: "numeric", year: "numeric" }
-                      )
-                    : "N/A",
-                },
-              ].map((item, index) => (
-                <div
-                  key={index}
-                  className="p-4 bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl border border-gray-200"
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    <item.icon className="text-indigo-600 text-sm" />
-                    <p className="text-xs text-gray-600 font-medium">
-                      {item.label}
-                    </p>
-                  </div>
-                  <p className="font-semibold text-gray-800 truncate text-sm">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Action Buttons */}
-
-          <motion.div
-            className="flex flex-col sm:flex-row gap-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <button
-              onClick={handleManageBilling}
-              disabled={isProcessing}
-              className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-xl font-bold text-white shadow-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--primary-1), var(--primary-2) 55%, var(--primary-3))",
-              }}
-            >
-              {isProcessing ? (
-                <>
-                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                      fill="none"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Opening...
-                </>
-              ) : (
-                <>
-                  <FiExternalLink />
-                  Manage Billing Portal
-                </>
-              )}
-            </button>
-
-            {/* ✅ Show different button based on cancellation status */}
-            {subscription.cancelAtPeriodEnd ? (
-              <button
-                onClick={handleReactivateSubscription}
-                disabled={isProcessing}
-                className="flex-1 px-6 py-4 bg-white border-2 border-green-500 rounded-xl text-green-600 font-bold hover:bg-green-50 transition-all duration-300 hover:border-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isProcessing ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                        fill="none"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      />
-                    </svg>
-                    Reactivating...
-                  </span>
+                  </button>
                 ) : (
-                  "Reactivate Subscription"
+                  <button
+                    onClick={() => setOpenCancelModal(true)}
+                    className="flex-1 px-6 py-4 bg-white border-2 border-red-300 rounded-xl text-red-600 font-bold hover:bg-red-50 transition-all duration-300 hover:border-red-400"
+                  >
+                    Cancel Subscription
+                  </button>
                 )}
-              </button>
-            ) : (
-              <button
-                onClick={() => setOpenCancelModal(true)}
-                className="flex-1 px-6 py-4 bg-white border-2 border-red-300 rounded-xl text-red-600 font-bold hover:bg-red-50 transition-all duration-300 hover:border-red-400"
-              >
-                Cancel Subscription
-              </button>
+              </>
             )}
           </motion.div>
         </div>
@@ -850,7 +730,6 @@ const SubscriptionPlan: React.FC = () => {
                 <FiX size={20} />
               </button>
 
-              {/* Header */}
               <div className="flex items-start gap-3 sm:gap-4 mb-4 sm:mb-6 pr-8">
                 <div className="w-12 h-12 sm:w-14 sm:h-14 bg-red-100 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
                   <FiAlertCircle className="text-red-600 text-xl sm:text-2xl" />
@@ -865,7 +744,6 @@ const SubscriptionPlan: React.FC = () => {
                 </div>
               </div>
 
-              {/* Warning Message */}
               <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-red-50 border-2 border-red-200 rounded-xl">
                 <div className="flex items-start gap-2 sm:gap-3">
                   <FiAlertCircle
@@ -914,7 +792,6 @@ const SubscriptionPlan: React.FC = () => {
                 </div>
               </div>
 
-              {/* Reason Selection */}
               <div className="mb-4 sm:mb-6">
                 <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">
                   Why are you canceling? (Optional)
@@ -952,7 +829,6 @@ const SubscriptionPlan: React.FC = () => {
                 </div>
               </div>
 
-              {/* Feedback */}
               <div className="mb-4 sm:mb-6">
                 <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                   Additional feedback (Optional)
@@ -966,7 +842,6 @@ const SubscriptionPlan: React.FC = () => {
                 />
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 mb-4 sm:mb-0">
                 <button
                   onClick={() => {

@@ -183,9 +183,10 @@ function CheckoutForm() {
     navigate("/");
   };
 
-  // Calculate dates
-  const trialEndDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-  const billingStartDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  // ✅ Calculate dates - billing starts immediately (no additional trial)
+  const today = new Date();
+  const billingStartDate = today; // Immediate billing
+  const nextBillingDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // ~30 days from now
 
   return (
     <div
@@ -400,12 +401,8 @@ function CheckoutForm() {
                   />
                 </svg>
                 <p className="text-sm">
-                  Cancel anytime before{" "}
-                  {trialEndDate.toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                  ! Start your trial now!
+                  Cancel anytime! Manage your subscription from your profile
+                  settings.
                 </p>
               </div>
             </div>
@@ -435,11 +432,11 @@ function CheckoutForm() {
                   </div>
                   <div>
                     <p className="text-sm text-slate-800 font-semibold">
-                      7 Days Free, Then ${SUBSCRIPTION_PRICE}/month
+                      Subscribe for ${SUBSCRIPTION_PRICE}/month
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Your subscription begins on{" "}
-                      {billingStartDate.toLocaleDateString("en-US", {
+                      Your subscription starts today. Next billing:{" "}
+                      {nextBillingDate.toLocaleDateString("en-US", {
                         month: "long",
                         day: "numeric",
                         year: "numeric",
@@ -540,12 +537,12 @@ function CheckoutForm() {
                       Processing...
                     </span>
                   ) : (
-                    "Start Your 7-Day Free Trial"
+                    "Subscribe Now"
                   )}
                 </button>
 
                 <p className="text-xs text-slate-400 text-center leading-relaxed pt-1">
-                  By starting your trial, you agree to our{" "}
+                  By subscribing, you agree to our{" "}
                   <a href="#" className="text-violet-500 hover:underline">
                     Terms of Service
                   </a>{" "}
@@ -553,8 +550,8 @@ function CheckoutForm() {
                   <a href="#" className="text-violet-500 hover:underline">
                     Privacy Policy
                   </a>
-                  . Your card will be charged ${SUBSCRIPTION_PRICE}/month after
-                  the trial ends unless you cancel.
+                  . Your card will be charged ${SUBSCRIPTION_PRICE}/month
+                  starting today.
                 </p>
               </form>
             </div>
@@ -691,11 +688,11 @@ function CheckoutForm() {
                         </div>
                         <div className="flex-1">
                           <div className="font-semibold text-slate-800">
-                            7-Day Free Trial
+                            Subscription Active
                           </div>
                           <div className="text-xs text-slate-500">
-                            Ends{" "}
-                            {trialEndDate.toLocaleDateString("en-US", {
+                            Next billing:{" "}
+                            {nextBillingDate.toLocaleDateString("en-US", {
                               month: "short",
                               day: "numeric",
                               year: "numeric",
@@ -726,9 +723,9 @@ function CheckoutForm() {
                           What's Next?
                         </p>
                         <p className="text-slate-600 text-xs leading-relaxed">
-                          Your free trial has been converted to a premium
-                          subscription. You won't be charged until{" "}
-                          {billingStartDate.toLocaleDateString("en-US", {
+                          Your subscription is now active! You've been charged $
+                          {SUBSCRIPTION_PRICE} today. Your next billing date is{" "}
+                          {nextBillingDate.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                             year: "numeric",
@@ -769,29 +766,81 @@ export default function SubscriptionPage() {
   const [publishableKey, setPublishableKey] = useState("");
 
   useEffect(() => {
-    // ✅ Fetch Stripe publishable key from backend
-    const token = localStorage.getItem("token");
+  const initPaymentForm = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
 
-    fetch(`${backendPrefix}/api/subscription/create-setup-intent`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.publishableKey) {
-          setPublishableKey(data.publishableKey);
-          stripePromise = loadStripe(data.publishableKey);
+      // ✅ STEP 1: Check subscription status FIRST
+      const statusResponse = await fetch(
+        `${backendPrefix}/api/subscription/status`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to fetch Stripe key:", err);
-        setLoading(false);
-      });
-  }, []);
+      );
+
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+
+        console.log("📊 Subscription status check:", statusData);
+
+        // ✅ If user has active subscription/trial, redirect to dashboard
+        if (statusData.hasSubscription && !statusData.trialExpired) {
+          console.log(
+            "✅ User already has active subscription, redirecting to dashboard"
+          );
+          toast.success("You already have an active subscription!");
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1000);
+          return; // Stop initialization
+        }
+      }
+
+      // ✅ STEP 2: Only proceed with setup intent if no active subscription
+      const response = await fetch(
+        `${backendPrefix}/api/subscription/create-setup-intent`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.publishableKey) {
+        setPublishableKey(data.publishableKey);
+        stripePromise = loadStripe(data.publishableKey);
+        console.log("✅ Stripe initialized successfully");
+      } else {
+        throw new Error(data.error || "Failed to initialize payment");
+      }
+    } catch (err: any) {
+      console.error("Failed to initialize payment form:", err);
+      toast.error(err.message || "Failed to load payment form");
+
+      // ✅ If error is about existing subscription, redirect
+      if (
+        err.message?.includes("already have") ||
+        err.message?.includes("active subscription")
+      ) {
+        setTimeout(() => {
+          window.location.href = "/dashboard";
+        }, 2000);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  initPaymentForm();
+}, []);
 
   if (loading || !publishableKey || !stripePromise) {
     return (

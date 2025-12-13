@@ -40,11 +40,12 @@ const LoginLoading = () => {
             console.log("⏰ Trial expired - redirecting to subscription page");
             navigate("/subscription");
           } else {
-            // No subscription at all (shouldn't happen with auto-creation)
+            // Edge case: no subscription record (shouldn't happen with auto-creation)
+            // Default to dashboard with fail-open approach
             console.log(
-              "❌ No subscription - redirecting to subscription page"
+              "⚠️ No subscription record found - allowing dashboard access"
             );
-            navigate("/subscription");
+            navigate("/dashboard");
           }
         }
       } catch (error) {
@@ -62,7 +63,6 @@ const LoginLoading = () => {
 
   return (
     <div className="relative flex flex-col items-center justify-center min-h-screen w-full overflow-hidden px-6 text-center bg-white">
-      
       <div className="absolute w-[280px] h-[280px] bg-purple-200/40 rounded-full blur-3xl top-20 left-20 animate-float-gentle"></div>
       <div className="absolute w-[320px] h-[320px] bg-pink-200/30 rounded-full blur-3xl bottom-20 right-20 animate-float-gentle-alt"></div>
       <div className="absolute w-[200px] h-[200px] bg-blue-200/35 rounded-full blur-3xl top-1/2 right-1/4 animate-float-soft"></div>
