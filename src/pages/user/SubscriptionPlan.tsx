@@ -213,8 +213,6 @@ const SubscriptionPlan: React.FC = () => {
 
   // ✅ PROPERLY USE THE SUBSCRIPTION STATUS VARIABLES
   const isFreeTrialOnly = subscription.status === "free_trial";
-  const hasPaidSubscription =
-    subscription.status === "active" || subscription.status === "trialing";
 
   return (
     <div className="min-h-screen bg-gray-50 px-3 sm:px-4 md:px-8 py-4 pt-16 md:pt-4">
