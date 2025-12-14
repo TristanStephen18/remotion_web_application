@@ -409,6 +409,22 @@ const Icons = {
       <polygon points="22 2 15 22 11 13 2 9 22 2" />
     </svg>
   ),
+
+  ExpandVertical: () => (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M8 9l4-4 4 4" />
+      <path d="M8 15l4 4 4-4" />
+    </svg>
+  ),
 };
 
 // --- MOCK CLOUDINARY ASSETS ---
@@ -533,11 +549,15 @@ const DynamicLayerEditor: React.FC = () => {
     "media" | "audio" | "video" | "text"
   >("media");
 
+   const isMobile = useIsMobile();
+
   // Chat State
   const [chatInput, setChatInput] = useState("");
   const [chatPartnerName, setChatPartnerName] = useState("User");
 
-  const [timelineHeight, setTimelineHeight] = useState(200); // Default height
+  const [timelineHeight, setTimelineHeight] = useState(
+  isMobile ? window.innerHeight * 0.4 : 200
+);
   const [isResizingVertical, setIsResizingVertical] = useState(false);
   const verticalResizerRef = useRef<HTMLDivElement>(null);
 
@@ -586,7 +606,7 @@ const DynamicLayerEditor: React.FC = () => {
     height: 0,
   });
   const hasLoadedTemplate = useRef(false);
-  const isMobile = useIsMobile();
+ 
 const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   //additional usestates for project saving
@@ -3673,43 +3693,71 @@ const openEditor = useCallback(() => {
             </div>
           </div>
 
-          <div
-            ref={verticalResizerRef}
-            style={{
-              height: "12px",
-              backgroundColor: colors.bgSecondary,
-              borderTop: `1px solid ${colors.borderLight}`,
-              borderBottom: `1px solid ${colors.borderLight}`,
-              cursor: "ns-resize",
-              flexShrink: 0,
-              zIndex: 5,
-              transition: isResizingVertical
-                ? "none"
-                : "background-color 0.15s",
-              boxShadow: isResizingVertical
-                ? "0 0 10px rgba(59, 130, 246, 0.4)"
-                : "none",
-              touchAction: 'none',
-              WebkitTouchCallout: 'none',
-              WebkitUserSelect: 'none',
-            }}
-            onMouseDown={(e) => {
-              e.preventDefault();
-              setIsResizingVertical(true);
-            }}
-            onTouchStart={(e) => {
-              e.preventDefault();
-              setIsResizingVertical(true);
-            }}
-            onMouseOver={(e) => {
-              if (!isResizingVertical)
-                e.currentTarget.style.backgroundColor = colors.bgHover;
-            }}
-            onMouseOut={(e) => {
-              if (!isResizingVertical)
-                e.currentTarget.style.backgroundColor = colors.bgSecondary;
-            }}
-          />
+         <div
+  ref={verticalResizerRef}
+  style={{
+    height: isMobile ? "12px" : "12px",
+    backgroundColor: colors.bgSecondary,
+    borderTop: `1px solid ${colors.borderLight}`,
+    borderBottom: `1px solid ${colors.borderLight}`,
+    cursor: "ns-resize",
+    flexShrink: 0,
+    zIndex: 1000,
+    transition: isResizingVertical
+      ? "none"
+      : "background-color 0.15s",
+    boxShadow: isResizingVertical
+      ? "0 0 10px rgba(59, 130, 246, 0.4)"
+      : "none",
+    touchAction: 'none',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    userSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+    pointerEvents: 'auto',
+  }}
+  onMouseDown={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingVertical(true);
+  }}
+  onTouchStart={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsResizingVertical(true);
+  }}
+  onMouseOver={(e) => {
+    if (!isResizingVertical)
+      e.currentTarget.style.backgroundColor = colors.bgHover;
+  }}
+  onMouseOut={(e) => {
+    if (!isResizingVertical)
+      e.currentTarget.style.backgroundColor = colors.bgSecondary;
+  }}
+>
+  {/* Arrow indicator - only show on mobile */}
+  {isMobile && (
+    <div
+      style={{
+        color: colors.textMuted,
+        opacity: isResizingVertical ? 1 : 0.6,
+        transition: 'opacity 0.2s',
+        pointerEvents: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '6px',
+        fontSize: '11px',
+        fontWeight: '500',
+      }}
+    >
+      <Icons.ExpandVertical />
+      <span>Drag to Resize</span>
+    </div>
+  )}
+</div>
           <Timeline
             tracks={timelineTracks}
             currentFrame={currentFrame}

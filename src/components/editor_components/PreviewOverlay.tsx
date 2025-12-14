@@ -116,221 +116,225 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
 
   // Handle mouse down for move
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent, elementId: keyof ElementPositions) => {
-      e.stopPropagation();
-      e.preventDefault();
+  (e: React.MouseEvent | React.TouchEvent, elementId: keyof ElementPositions) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-      const pos = positions[elementId];
-      const rect = overlayRef.current?.getBoundingClientRect();
-      if (!rect) return;
+    const pos = positions[elementId];
+    const rect = overlayRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-      // Calculate element's center in screen coordinates
-      // FIXED: Use rendered dimensions and offset
-      const centerX = rect.left + rendered.offsetX + (pos.x / 100) * rendered.width;
-      const centerY = rect.top + rendered.offsetY + (pos.y / 100) * rendered.height;
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-      // Calculate offset from element center to mouse position
-      const offsetX = e.clientX - centerX;
-      const offsetY = e.clientY - centerY;
+    // Calculate element's center in screen coordinates
+    const centerX = rect.left + rendered.offsetX + (pos.x / 100) * rendered.width;
+    const centerY = rect.top + rendered.offsetY + (pos.y / 100) * rendered.height;
 
-      setDragMode("move");
-      setDragElement(elementId);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setDragStartPos({ 
-        x: pos.x, 
-        y: pos.y, 
-        rotation: pos.rotation || 0, 
-        scale: pos.scale || 1,
-        width: pos.width,
-        height: pos.height
-      });
-      
-      setGrabOffset({ x: offsetX, y: offsetY });
-      onSelectElement(elementId as SelectableElement);
-    },
-    [positions, onSelectElement, rendered]
-  );
+    // Calculate offset from element center to mouse/touch position
+    const offsetX = clientX - centerX;
+    const offsetY = clientY - centerY;
+
+    setDragMode("move");
+    setDragElement(elementId);
+    setDragStart({ x: clientX, y: clientY });
+    setDragStartPos({ 
+      x: pos.x, 
+      y: pos.y, 
+      rotation: pos.rotation || 0, 
+      scale: pos.scale || 1,
+      width: pos.width,
+      height: pos.height
+    });
+    
+    setGrabOffset({ x: offsetX, y: offsetY });
+    onSelectElement(elementId as SelectableElement);
+  },
+  [positions, onSelectElement, rendered]
+);
 
   // Handle rotation start
   const handleRotateStart = useCallback(
-    (e: React.MouseEvent, elementId: keyof ElementPositions) => {
-      e.stopPropagation();
-      e.preventDefault();
+  (e: React.MouseEvent | React.TouchEvent, elementId: keyof ElementPositions) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-      const pos = positions[elementId];
-      
-      setDragMode("rotate");
-      setDragElement(elementId);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setDragStartPos({ 
-        x: pos.x, 
-        y: pos.y, 
-        rotation: pos.rotation || 0, 
-        scale: pos.scale || 1,
-        width: pos.width,
-        height: pos.height
-      });
-      onSelectElement(elementId as SelectableElement);
-    },
-    [positions, onSelectElement]
-  );
+    const pos = positions[elementId];
+    
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    setDragMode("rotate");
+    setDragElement(elementId);
+    setDragStart({ x: clientX, y: clientY });
+    setDragStartPos({ 
+      x: pos.x, 
+      y: pos.y, 
+      rotation: pos.rotation || 0, 
+      scale: pos.scale || 1,
+      width: pos.width,
+      height: pos.height
+    });
+    onSelectElement(elementId as SelectableElement);
+  },
+  [positions, onSelectElement]
+);
 
   // Handle resize start
   const handleResizeStart = useCallback(
-    (e: React.MouseEvent, elementId: keyof ElementPositions, direction: ResizeDirection) => {
-      e.stopPropagation();
-      e.preventDefault();
+  (e: React.MouseEvent | React.TouchEvent, elementId: keyof ElementPositions, direction: ResizeDirection) => {
+    e.stopPropagation();
+    e.preventDefault();
 
-      const pos = positions[elementId];
+    const pos = positions[elementId];
+    
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-      setDragMode("resize");
-      setDragElement(elementId);
-      setResizeDirection(direction);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setDragStartPos({ 
-        x: pos.x, 
-        y: pos.y, 
-        rotation: pos.rotation || 0, 
-        scale: pos.scale || 1,
-        width: pos.width,
-        height: pos.height
-      });
-      onSelectElement(elementId as SelectableElement);
-    },
-    [positions, onSelectElement]
-  );
+    setDragMode("resize");
+    setDragElement(elementId);
+    setResizeDirection(direction);
+    setDragStart({ x: clientX, y: clientY });
+    setDragStartPos({ 
+      x: pos.x, 
+      y: pos.y, 
+      rotation: pos.rotation || 0, 
+      scale: pos.scale || 1,
+      width: pos.width,
+      height: pos.height
+    });
+    onSelectElement(elementId as SelectableElement);
+  },
+  [positions, onSelectElement]
+);
 
   // Handle mouse move
   useEffect(() => {
-    if (!dragMode || !dragElement) return;
+  if (!dragMode || !dragElement) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const rect = overlayRef.current?.getBoundingClientRect();
-      if (!rect) return;
+  const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+    const rect = overlayRef.current?.getBoundingClientRect();
+    if (!rect) return;
 
-      if (dragMode === "move") {
-        // FIXED: Account for grab offset and rendered dimensions
-        const targetCenterX = e.clientX - grabOffset.x;
-        const targetCenterY = e.clientY - grabOffset.y;
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 
-        // Convert to container-relative coordinates (accounting for offset)
-        const relativeX = targetCenterX - rect.left - rendered.offsetX;
-        const relativeY = targetCenterY - rect.top - rendered.offsetY;
+    if (dragMode === "move") {
+      // FIXED: Account for grab offset and rendered dimensions
+      const targetCenterX = clientX - grabOffset.x;
+      const targetCenterY = clientY - grabOffset.y;
 
-        // Convert to percentage based on RENDERED dimensions
-        const newX = (relativeX / rendered.width) * 100;
-        const newY = (relativeY / rendered.height) * 100;
+      // Convert to container-relative coordinates (accounting for offset)
+      const relativeX = targetCenterX - rect.left - rendered.offsetX;
+      const relativeY = targetCenterY - rect.top - rendered.offsetY;
 
-        // Apply bounds
-        const boundedX = Math.max(0, Math.min(100, newX));
-        const boundedY = Math.max(0, Math.min(100, newY));
+      // Convert to percentage based on RENDERED dimensions
+      const newX = (relativeX / rendered.width) * 100;
+      const newY = (relativeY / rendered.height) * 100;
 
-        onPositionChange(dragElement, { x: boundedX, y: boundedY });
-        
-      } else if (dragMode === "rotate") {
-        // FIXED: Use rendered dimensions for center calculation
-        const centerX = rect.left + rendered.offsetX + (dragStartPos.x / 100) * rendered.width;
-        const centerY = rect.top + rendered.offsetY + (dragStartPos.y / 100) * rendered.height;
+      // Apply bounds
+      const boundedX = Math.max(0, Math.min(100, newX));
+      const boundedY = Math.max(0, Math.min(100, newY));
 
-        const startAngle = Math.atan2(
-          dragStart.y - centerY,
-          dragStart.x - centerX
-        );
+      onPositionChange(dragElement, { x: boundedX, y: boundedY });
+    } else if (dragMode === "rotate") {
+      const pos = positions[dragElement];
+      const centerX = rect.left + rendered.offsetX + (pos.x / 100) * rendered.width;
+      const centerY = rect.top + rendered.offsetY + (pos.y / 100) * rendered.height;
 
-        const currentAngle = Math.atan2(
-          e.clientY - centerY,
-          e.clientX - centerX
-        );
+      const angle1 = Math.atan2(dragStart.y - centerY, dragStart.x - centerX);
+      const angle2 = Math.atan2(clientY - centerY, clientX - centerX);
+      const deltaAngle = ((angle2 - angle1) * 180) / Math.PI;
 
-        const deltaDegrees = (currentAngle - startAngle) * (180 / Math.PI);
-        const currentRotation = dragStartPos.rotation ?? 0;
-        const newRotation = currentRotation + deltaDegrees;
+      const newRotation = (dragStartPos.rotation || 0) + deltaAngle;
+      onPositionChange(dragElement, { rotation: newRotation });
+    } else if (dragMode === "resize" && resizeDirection) {
+      const deltaX = clientX - dragStart.x;
+      const deltaY = clientY - dragStart.y;
 
-        onPositionChange(dragElement, { rotation: newRotation });
-        
-      } else if (dragMode === "resize") {
-        const rotation = dragStartPos.rotation || 0;
-        const rotationRad = (rotation * Math.PI) / 180;
+      const deltaXPercent = (deltaX / rendered.width) * 100;
+      const deltaYPercent = (deltaY / rendered.height) * 100;
 
-        // FIXED: Use rendered dimensions for calculations
-        const centerX = rect.left + rendered.offsetX + (dragStartPos.x / 100) * rendered.width;
-        const centerY = rect.top + rendered.offsetY + (dragStartPos.y / 100) * rendered.height;
+      let newWidth = dragStartPos.width;
+      let newHeight = dragStartPos.height;
+      let newX = dragStartPos.x;
+      let newY = dragStartPos.y;
 
-        const startVector = {
-          x: dragStart.x - centerX,
-          y: dragStart.y - centerY,
-        };
+      const rotation = (dragStartPos.rotation || 0) * (Math.PI / 180);
+      const cos = Math.cos(rotation);
+      const sin = Math.sin(rotation);
 
-        const currentVector = {
-          x: e.clientX - centerX,
-          y: e.clientY - centerY,
-        };
+      const rotatedDeltaX = deltaXPercent * cos + deltaYPercent * sin;
+      const rotatedDeltaY = -deltaXPercent * sin + deltaYPercent * cos;
 
-        // Rotate vectors back to element's local space
-        const startLocal = {
-          x: startVector.x * Math.cos(-rotationRad) - startVector.y * Math.sin(-rotationRad),
-          y: startVector.x * Math.sin(-rotationRad) + startVector.y * Math.cos(-rotationRad),
-        };
-
-        const currentLocal = {
-          x: currentVector.x * Math.cos(-rotationRad) - currentVector.y * Math.sin(-rotationRad),
-          y: currentVector.x * Math.sin(-rotationRad) + currentVector.y * Math.cos(-rotationRad),
-        };
-
-        const deltaLocal = {
-          x: currentLocal.x - startLocal.x,
-          y: currentLocal.y - startLocal.y,
-        };
-
-        // Convert pixel delta to percentage delta (using rendered dimensions)
-        const deltaXPercent = (deltaLocal.x / rendered.width) * 100;
-        const deltaYPercent = (deltaLocal.y / rendered.height) * 100;
-
-        let newWidth = dragStartPos.width;
-        let newHeight = dragStartPos.height;
-        let newX = dragStartPos.x;
-        let newY = dragStartPos.y;
-
-        // Apply resize based on direction
-        if (resizeDirection === "se" || resizeDirection === "e") {
-          newWidth = Math.max(5, dragStartPos.width + deltaXPercent * 2);
-        }
-        if (resizeDirection === "se" || resizeDirection === "s") {
-          newHeight = Math.max(5, dragStartPos.height + deltaYPercent * 2);
-        }
-        if (resizeDirection === "nw" || resizeDirection === "w") {
-          newWidth = Math.max(5, dragStartPos.width - deltaXPercent * 2);
-        }
-        if (resizeDirection === "nw" || resizeDirection === "n") {
-          newHeight = Math.max(5, dragStartPos.height - deltaYPercent * 2);
-        }
-        if (resizeDirection === "ne") {
-          newWidth = Math.max(5, dragStartPos.width + deltaXPercent * 2);
-          newHeight = Math.max(5, dragStartPos.height - deltaYPercent * 2);
-        }
-        if (resizeDirection === "sw") {
-          newWidth = Math.max(5, dragStartPos.width - deltaXPercent * 2);
-          newHeight = Math.max(5, dragStartPos.height + deltaYPercent * 2);
-        }
-
-        onPositionChange(dragElement, { width: newWidth, height: newHeight, x: newX, y: newY });
+      switch (resizeDirection) {
+        case "se":
+          newWidth = Math.max(10, dragStartPos.width + rotatedDeltaX);
+          newHeight = Math.max(10, dragStartPos.height + rotatedDeltaY);
+          break;
+        case "sw":
+          newWidth = Math.max(10, dragStartPos.width - rotatedDeltaX);
+          newHeight = Math.max(10, dragStartPos.height + rotatedDeltaY);
+          newX = dragStartPos.x + (rotatedDeltaX / 2);
+          break;
+        case "ne":
+          newWidth = Math.max(10, dragStartPos.width + rotatedDeltaX);
+          newHeight = Math.max(10, dragStartPos.height - rotatedDeltaY);
+          newY = dragStartPos.y + (rotatedDeltaY / 2);
+          break;
+        case "nw":
+          newWidth = Math.max(10, dragStartPos.width - rotatedDeltaX);
+          newHeight = Math.max(10, dragStartPos.height - rotatedDeltaY);
+          newX = dragStartPos.x + (rotatedDeltaX / 2);
+          newY = dragStartPos.y + (rotatedDeltaY / 2);
+          break;
+        case "e":
+          newWidth = Math.max(10, dragStartPos.width + rotatedDeltaX);
+          break;
+        case "w":
+          newWidth = Math.max(10, dragStartPos.width - rotatedDeltaX);
+          newX = dragStartPos.x + (rotatedDeltaX / 2);
+          break;
+        case "s":
+          newHeight = Math.max(10, dragStartPos.height + rotatedDeltaY);
+          break;
+        case "n":
+          newHeight = Math.max(10, dragStartPos.height - rotatedDeltaY);
+          newY = dragStartPos.y + (rotatedDeltaY / 2);
+          break;
       }
-    };
 
-    const handleMouseUp = () => {
-      setDragMode(null);
-      setDragElement(null);
-      setResizeDirection(null);
-    };
+      onPositionChange(dragElement, {
+        width: newWidth,
+        height: newHeight,
+        x: newX,
+        y: newY,
+      });
+    }
+  };
 
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+  const handleMouseUp = () => {
+    setDragMode(null);
+    setDragElement(null);
+    setResizeDirection(null);
+  };
 
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [dragMode, dragElement, dragStartPos, dragStart, grabOffset, resizeDirection, onPositionChange, rendered]);
+  document.addEventListener("mousemove", handleMouseMove);
+  document.addEventListener("mouseup", handleMouseUp);
+  document.addEventListener("touchmove", handleMouseMove, { passive: false });
+  document.addEventListener("touchend", handleMouseUp);
+
+  return () => {
+    document.removeEventListener("mousemove", handleMouseMove);
+    document.removeEventListener("mouseup", handleMouseUp);
+    document.removeEventListener("touchmove", handleMouseMove);
+    document.removeEventListener("touchend", handleMouseUp);
+  };
+}, [dragMode, dragElement, dragStart, dragStartPos, grabOffset, rendered, onPositionChange, positions, resizeDirection]);
 
   // Deselect when clicking overlay background
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
@@ -446,10 +450,16 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
 
   return (
     <div
-      ref={overlayRef}
-      style={styles.overlay}
-      onClick={handleOverlayClick}
-    >
+  ref={overlayRef}
+  style={styles.overlay}
+  onClick={handleOverlayClick}
+  onTouchStart={(e) => {
+    // Prevent scrolling when touching the overlay
+    if ((e.target as HTMLElement).closest('[data-draggable]')) {
+      e.preventDefault();
+    }
+  }}
+>
       {elements.map((element) => {
         const pos = positions[element.id];
         if (!pos) return null;
@@ -481,22 +491,24 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
         const zIndex = isSelected ? 100 : 10;
 
         return (
-          <div
-            key={element.id}
-            style={{
-              ...styles.elementBox,
-              left,
-              top,
-              width,
-              height,
-              zIndex,
-              ...(isSelected ? styles.elementBoxSelected : {}),
-              cursor: dragMode === "move" ? "grabbing" : "move",
-              transform: `rotate(${rotation}deg) scale(${scale})`,
-              transformOrigin: "center center",
-            }}
-            onMouseDown={(e) => handleMouseDown(e, element.id)}
-          >
+  <div
+    key={element.id}
+    data-draggable="true"
+    style={{
+      ...styles.elementBox,
+      left,
+      top,
+      width,
+      height,
+      zIndex,
+      ...(isSelected ? styles.elementBoxSelected : {}),
+      cursor: dragMode === "move" ? "grabbing" : "move",
+      transform: `rotate(${rotation}deg) scale(${scale})`,
+      transformOrigin: "center center",
+    }}
+    onMouseDown={(e) => handleMouseDown(e, element.id)}
+    onTouchStart={(e) => handleMouseDown(e, element.id)}
+  >
             {/* Label */}
             {isSelected && (
               <span 
@@ -525,6 +537,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                     cursor: dragMode === "rotate" ? "grabbing" : "grab",
                   }}
                   onMouseDown={(e) => handleRotateStart(e, element.id)}
+onTouchStart={(e) => handleRotateStart(e, element.id)}
                 >
                   <svg 
                     width="12" 
@@ -555,6 +568,7 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
                     transform: `rotate(${-rotation}deg) scale(${1/scale})`,
                   }}
                   onMouseDown={(e) => handleResizeStart(e, element.id, "nw")}
+onTouchStart={(e) => handleResizeStart(e, element.id, "nw")}
                 />
                 <div
                   style={{ 

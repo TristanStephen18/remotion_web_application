@@ -523,7 +523,7 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [onPlayPause, selectedTrackId, handleDeleteTrack, handleCutTrack, onFrameChange, totalFrames]);
 
   const styles: Record<string, React.CSSProperties> = {
-    container: { display: "flex", flexDirection: "column", height: height, backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
+    container: { display: "flex", flexDirection: "column", height: height || (isMobile ? "40vh" : "300px"), backgroundColor: colors.bgSecondary, borderTop: `1px solid ${colors.borderLight}`, fontFamily: "system-ui, -apple-system, sans-serif", userSelect: "none", flexShrink: 0, WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     toolbar: { display: "flex", alignItems: "center", gap: isMobile ? "4px" : "8px", padding: isMobile ? "4px 8px" : "4px 16px", flexWrap: isMobile ? "wrap" : "nowrap", borderBottom: `1px solid ${colors.borderLight}`, backgroundColor: colors.bgPrimary },
     toolGroup: { display: "flex", gap: isMobile ? "4px" : "6px" },
     divider: { width: "1px", height: isMobile ? "20px" : "24px", backgroundColor: colors.borderLight },
@@ -657,6 +657,22 @@ export const Timeline: React.FC<TimelineProps> = ({
     </svg>
   );
 
+  const ExpandHorizontalIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M9 8l-4 4 4 4" />
+    <path d="M15 8l4 4-4 4" />
+  </svg>
+);
+
   return (
     <div style={styles.container} data-timeline="true">
       {/* Toolbar */}
@@ -733,29 +749,49 @@ export const Timeline: React.FC<TimelineProps> = ({
         <div style={styles.contentWrapper}>
           <div style={styles.trackLabels} ref={labelsRef} onWheel={handleLabelsWheel}>
             <div
-              style={{
-                position: "absolute",
-                top: 0,
-                bottom: 0,
-                right: 0,
-                width: isMobile ? "12px" : "6px",
-                cursor: "ew-resize",
-                zIndex: 10,
-                backgroundColor: isResizingHorizontal ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
-                transition: 'background-color 0.15s',
-                touchAction: 'none',
-                WebkitTouchCallout: 'none',
-                WebkitUserSelect: 'none',
-              }}
-              onMouseDown={handleHorizontalResizePointerDown}
-              onTouchStart={handleHorizontalResizePointerDown}
-              onMouseOver={(e) => {
-                if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-              }}
-              onMouseOut={(e) => {
-                if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'transparent';
-              }}
-            />
+  style={{
+    position: "absolute",
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: isMobile ? "20px" : "6px", // Bigger on mobile
+    cursor: "ew-resize",
+    zIndex: 10,
+    backgroundColor: isResizingHorizontal ? 'rgba(59, 130, 246, 0.4)' : 'transparent',
+    transition: 'background-color 0.15s',
+    touchAction: 'none',
+    WebkitTouchCallout: 'none',
+    WebkitUserSelect: 'none',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }}
+  onMouseDown={handleHorizontalResizePointerDown}
+  onTouchStart={handleHorizontalResizePointerDown}
+  onMouseOver={(e) => {
+    if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+  }}
+  onMouseOut={(e) => {
+    if (!isResizingHorizontal) e.currentTarget.style.backgroundColor = 'transparent';
+  }}
+>
+  {/* Arrow indicator - only show on mobile */}
+  {isMobile && (
+    <div
+      style={{
+        color: colors.textMuted,
+        opacity: isResizingHorizontal ? 1 : 0.5,
+        transition: 'opacity 0.2s',
+        pointerEvents: 'none',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <ExpandHorizontalIcon />
+    </div>
+  )}
+</div>
             {displayTracks.map((track, index) => {
               const isBeingReordered = reorderState?.isDragging && reorderState?.trackId === track.id;
               const isSelected = selectedTrackId === track.id;
