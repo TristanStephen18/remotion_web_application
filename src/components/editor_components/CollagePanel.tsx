@@ -18,7 +18,7 @@ export interface CollageLayout {
     subText: string;
     mainFont: string;
     subFont: string;
-    mainSize: number;
+    mainSize: number; // Represents percentage of height in preview, or scaled unit in editor
     subSize: number;
   };
 }
@@ -182,25 +182,21 @@ export const createAnimatedCollageStoriesLayers = (
   return layers;
 };
 
+
 const COLLAGE_LAYOUTS: CollageLayout[] = [
+  // --- ANIMATED ---
   {
     id: "collage-stories-animated",
     name: "Collage Stories",
     description: "Animated 2x3 Instagram style",
-    category: "animated",
-    animated: true,
-    animationConfig: {
-      photoDelay: 8,
-      photoDuration: 25,
-      textStartFrame: 65,
-    },
+    category: "grid",
     textOverlay: {
       mainText: "Layout",
       subText: "stories",
       mainFont: "Pacifico, cursive",
       subFont: "Dancing Script, cursive",
-      mainSize: 140,
-      subSize: 56,
+      mainSize: 7, // 7% of height
+      subSize: 4,  // 4% of height
     },
     slots: [
       { id: "top-left", x: 0, y: 0, width: 50, height: 33.33, slideDirection: "left" },
@@ -212,11 +208,20 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     ],
   },
 
+  // --- GRIDS ---
   {
     id: "original-3x2",
     name: "Classic Grid (3x2)",
     description: "6 photos in a horizontal grid",
     category: "grid",
+    textOverlay: {
+      mainText: "GRID",
+      subText: "classic collection",
+      mainFont: "Montserrat, sans-serif",
+      subFont: "Lato, sans-serif",
+      mainSize: 6,
+      subSize: 3,
+    },
     slots: [
       { id: "top-left", x: 0, y: 0, width: 33.33, height: 33.33 },
       { id: "top-center", x: 33.33, y: 0, width: 33.33, height: 33.33 },
@@ -226,12 +231,19 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
       { id: "bottom-right", x: 66.66, y: 66.67, width: 33.34, height: 33.33 },
     ],
   },
-
   {
     id: "grid-2x1",
     name: "Split (2x1)",
     description: "Two photos stacked vertically",
     category: "grid",
+    textOverlay: {
+      mainText: "DUO",
+      subText: "stack",
+      mainFont: "Oswald, sans-serif",
+      subFont: "Roboto, sans-serif",
+      mainSize: 8,
+      subSize: 4,
+    },
     slots: [
       { id: "top", x: 0, y: 0, width: 100, height: 50 },
       { id: "bottom", x: 0, y: 50, width: 100, height: 50 },
@@ -242,6 +254,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Grid (2x2)",
     description: "Four photos in a square grid",
     category: "grid",
+    textOverlay: {
+      mainText: "QUAD",
+      subText: "squares",
+      mainFont: "Montserrat, sans-serif",
+      subFont: "Lato, sans-serif",
+      mainSize: 7,
+      subSize: 3.5,
+    },
     slots: [
       { id: "tl", x: 0, y: 0, width: 50, height: 25 },
       { id: "tr", x: 50, y: 0, width: 50, height: 25 },
@@ -254,6 +274,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Grid (3x3)",
     description: "Nine photos in a grid",
     category: "grid",
+    textOverlay: {
+      mainText: "NINE",
+      subText: "grid layout",
+      mainFont: "Montserrat, sans-serif",
+      subFont: "Lato, sans-serif",
+      mainSize: 7,
+      subSize: 3.5,
+    },
     slots: [
       { id: "1", x: 0, y: 0, width: 33.33, height: 16.67 },
       { id: "2", x: 33.33, y: 0, width: 33.33, height: 16.67 },
@@ -267,11 +295,20 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     ],
   },
 
+  // --- CREATIVE ---
   {
     id: "creative-hero",
     name: "Hero Shot",
     description: "One large photo with two smaller ones",
     category: "creative",
+    textOverlay: {
+      mainText: "HERO",
+      subText: "focus",
+      mainFont: "Playfair Display, serif",
+      subFont: "Lora, serif",
+      mainSize: 8,
+      subSize: 4,
+    },
     slots: [
       { id: "hero", x: 0, y: 0, width: 100, height: 60 },
       { id: "left", x: 0, y: 60, width: 50, height: 40 },
@@ -283,6 +320,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Spotlight",
     description: "Center photo with side panels",
     category: "creative",
+    textOverlay: {
+      mainText: "FOCUS",
+      subText: "center stage",
+      mainFont: "Oswald, sans-serif",
+      subFont: "Roboto, sans-serif",
+      mainSize: 8,
+      subSize: 4,
+    },
     slots: [
       { id: "left", x: 0, y: 0, width: 25, height: 100 },
       { id: "center", x: 25, y: 10, width: 50, height: 80, zIndex: 2, shadow: true },
@@ -290,11 +335,20 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     ],
   },
 
+  // --- SPLIT ---
   {
     id: "split-lr",
     name: "Left-Right Split",
     description: "Two photos side by side",
     category: "split",
+    textOverlay: {
+      mainText: "VS",
+      subText: "comparison",
+      mainFont: "Impact, sans-serif",
+      subFont: "Arial, sans-serif",
+      mainSize: 10,
+      subSize: 4,
+    },
     slots: [
       { id: "left", x: 0, y: 0, width: 50, height: 100 },
       { id: "right", x: 50, y: 0, width: 50, height: 100 },
@@ -305,6 +359,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Thirds Split",
     description: "One large, two small in thirds",
     category: "split",
+    textOverlay: {
+      mainText: "SPLIT",
+      subText: "thirds",
+      mainFont: "Oswald, sans-serif",
+      subFont: "Roboto, sans-serif",
+      mainSize: 8,
+      subSize: 4,
+    },
     slots: [
       { id: "main", x: 0, y: 0, width: 66.66, height: 100 },
       { id: "top", x: 66.66, y: 0, width: 33.34, height: 50 },
@@ -312,11 +374,20 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     ],
   },
 
+  // --- POLAROID ---
   {
     id: "polaroid-classic",
     name: "Classic Polaroid",
     description: "Polaroid style with borders",
     category: "polaroid",
+    textOverlay: {
+      mainText: "MEMORIES",
+      subText: "captured moments",
+      mainFont: "Permanent Marker, cursive",
+      subFont: "Caveat, cursive",
+      mainSize: 7,
+      subSize: 4,
+    },
     slots: [
       { id: "photo", x: 12.5, y: 15, width: 75, height: 60, shadow: true, borderRadius: 2 },
       { id: "header", x: 0, y: 0, width: 100, height: 35 },
@@ -328,6 +399,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Stacked Polaroids",
     description: "Three overlapping polaroids",
     category: "polaroid",
+    textOverlay: {
+      mainText: "SNAP",
+      subText: "shots",
+      mainFont: "Permanent Marker, cursive",
+      subFont: "Caveat, cursive",
+      mainSize: 8,
+      subSize: 4,
+    },
     slots: [
       { id: "back", x: 5, y: 10, width: 60, height: 50, rotation: -5, zIndex: 1, shadow: true, borderRadius: 2 },
       { id: "middle", x: 20, y: 25, width: 60, height: 50, rotation: 3, zIndex: 2, shadow: true, borderRadius: 2 },
@@ -335,11 +414,20 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     ],
   },
 
+  // --- MAGAZINE ---
   {
     id: "magazine-cover",
     name: "Magazine Cover",
     description: "Full bleed with header and footer",
     category: "magazine",
+    textOverlay: {
+      mainText: "VOGUE",
+      subText: "fashion edition",
+      mainFont: "Playfair Display, serif",
+      subFont: "Lora, serif",
+      mainSize: 12, // Bigger for magazine
+      subSize: 4,
+    },
     slots: [
       { id: "hero", x: 0, y: 0, width: 100, height: 100 },
       { id: "header", x: 0, y: 0, width: 100, height: 20 },
@@ -351,6 +439,14 @@ const COLLAGE_LAYOUTS: CollageLayout[] = [
     name: "Feature Story",
     description: "Large image with text area",
     category: "magazine",
+    textOverlay: {
+      mainText: "FEATURE",
+      subText: "exclusive story",
+      mainFont: "Playfair Display, serif",
+      subFont: "Lora, serif",
+      mainSize: 9,
+      subSize: 4,
+    },
     slots: [
       { id: "main", x: 0, y: 0, width: 100, height: 70 },
       { id: "text", x: 0, y: 70, width: 100, height: 30 },
@@ -507,28 +603,6 @@ export const CollagePanel: React.FC<CollagePanelProps> = ({
       fontSize: "8px",
       color: colors.textMuted,
     },
-    previewMainText: {
-      position: "absolute",
-      top: "40%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontSize: "16px",
-      fontWeight: "bold",
-      color: "#FFF",
-      textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
-      zIndex: 5,
-    },
-    previewSubText: {
-      position: "absolute",
-      top: "55%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      fontSize: "10px",
-      fontStyle: "italic",
-      color: "#FFF",
-      textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
-      zIndex: 5,
-    },
   };
 
   const renderLayoutPreview = (layout: CollageLayout, isSelected: boolean) => {
@@ -577,10 +651,38 @@ export const CollagePanel: React.FC<CollagePanelProps> = ({
 
           {layout.textOverlay && (
             <>
-              <div style={styles.previewMainText}>
+              <div 
+                style={{
+                    position: "absolute",
+                    top: "47%", // MATCH EDITOR POSITION
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    fontSize: `${layout.textOverlay.mainSize}%`, // USE CONFIG SIZE
+                    fontFamily: layout.textOverlay.mainFont,      // USE CONFIG FONT
+                    fontWeight: "bold",
+                    color: "#FFF",
+                    textShadow: "2px 2px 4px rgba(0,0,0,0.7)",
+                    zIndex: 5,
+                    whiteSpace: "nowrap",
+                }}
+              >
                 {layout.textOverlay.mainText}
               </div>
-              <div style={styles.previewSubText}>
+              <div 
+                style={{
+                    position: "absolute",
+                    top: "53%", // MATCH EDITOR POSITION
+                    left: "50%",
+                    transform: "translate(-50%, -50%)",
+                    fontSize: `${layout.textOverlay.subSize}%`, // USE CONFIG SIZE
+                    fontFamily: layout.textOverlay.subFont,     // USE CONFIG FONT
+                    fontStyle: "italic",
+                    color: "#FFF",
+                    textShadow: "1px 1px 2px rgba(0,0,0,0.7)",
+                    zIndex: 5,
+                    whiteSpace: "nowrap",
+                }}
+              >
                 {layout.textOverlay.subText}
               </div>
             </>

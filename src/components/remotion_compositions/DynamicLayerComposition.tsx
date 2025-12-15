@@ -105,6 +105,10 @@ export interface ChatBubbleLayer extends LayerBase {
   avatarUrl?: string;
   senderName?: string;
   isTyping?: boolean;
+
+  avatarScale?: number;
+  bubbleFontSize?: number;
+  fontFamily?: string;
 }
 
 export type Layer =
@@ -1226,53 +1230,65 @@ const ChatBubbleComponent: React.FC<{
   layer: ChatBubbleLayer;
   relativeFrame: number;
   fps: number;
-}> = ({ layer, relativeFrame, fps }) => {
+}> = ({ layer, relativeFrame, fps}) => {
   const entrance = getEntranceAnimation(layer, relativeFrame, fps);
   const rotation = layer.rotation || 0;
+
+  const defaultFont = layer.chatStyle === "imessage"
+      ? "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+      : "Helvetica, Arial, sans-serif";
+
+  const activeFontFamily = layer.fontFamily || defaultFont;
   
   const containerStyle: React.CSSProperties = {
     position: "absolute",
-    ...(layer.isSender 
-      ? { right: "1%" } 
-      : { left: "1%" }    
-    ),
+    left: `${layer.position.x}%`, 
     top: `${layer.position.y}%`,
-    width: "auto",
-    maxWidth: "75%",
-    transform: `translateY(-50%) rotate(${rotation}deg) ${entrance.transform}`,
+    width: `${layer.size.width}%`,
+    
+    height: "auto", 
+    minHeight: "0px",
+    
+    transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
     opacity: layer.opacity * entrance.opacity,
     display: "flex",
     flexDirection: layer.isSender ? "row-reverse" : "row",
-    alignItems: "flex-end",
-    gap: "14px",
-    padding: "0 35px",
-    fontFamily:
-      layer.chatStyle === "imessage"
-        ? "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-        : "Helvetica, Arial, sans-serif",
+    alignItems: "flex-end", 
+    justifyContent: "flex-start",
+    fontFamily: activeFontFamily,
     boxSizing: "border-box",
+    padding: "0", 
   };
 
   const showAvatar =
     !layer.isSender &&
     (layer.chatStyle === "messenger" || layer.chatStyle === "instagram");
+    
   const avatarStyle: React.CSSProperties = {
-    width: "65px",
-    height: "65px",
+    width: `${Math.min(layer.size.height, 65)}px`, 
+    height: `${Math.min(layer.size.height, 65)}px`,
     borderRadius: "50%",
     objectFit: "cover",
     flexShrink: 0,
-    marginBottom: "4px",
+    marginLeft: layer.isSender ? "8px" : "0",
+    marginRight: layer.isSender ? "0" : "8px",
   };
 
   let bubbleStyle: React.CSSProperties = {
-    maxWidth: "70%",
-    padding: "20px 32px",
-    fontSize: "32px",
-    lineHeight: "1.35",
+    maxWidth: "80%", 
+    width: "fit-content",
+    height: "auto",
+    // minHeight: "100%",
+    display: "flex",
+    alignItems: "center",
+    padding: "12px 20px", 
+    fontSize: `${layer.bubbleFontSize || 30}px`, 
+    lineHeight: "1.2",
     position: "relative",
     wordWrap: "break-word",
+    wordBreak: "break-word",
     whiteSpace: "pre-wrap",
+    boxSizing: "border-box",
   };
 
   if (layer.chatStyle === "imessage") {
@@ -1291,6 +1307,7 @@ const ChatBubbleComponent: React.FC<{
   } else if (layer.chatStyle === "whatsapp") {
     bubbleStyle = {
       ...bubbleStyle,
+      display: "block", 
       borderRadius: "18px",
       padding: "16px 24px",
       backgroundColor: layer.isSender ? "#E7FFDB" : "#FFFFFF",
@@ -1318,7 +1335,11 @@ const ChatBubbleComponent: React.FC<{
       color: layer.isSender ? "#FFFFFF" : "#050505",
     };
   } else if (layer.chatStyle === "fakechatconversation") {
-    const AVATAR_SIZE = 80;
+    const avatarScale = layer.avatarScale || 1.0;
+    const AVATAR_SIZE = 80 * avatarScale ;
+    const baseFontSize = layer.bubbleFontSize || 30;
+    const fontSize = baseFontSize || 32;
+
     const message = layer.message || "";
     const baseDuration = message.length * 0.08;
     const typeDur = Math.max(1.5, Math.min(baseDuration, 5));
@@ -1341,28 +1362,33 @@ const ChatBubbleComponent: React.FC<{
           position: "absolute",
           left: `${layer.position.x}%`,
           top: `${layer.position.y}%`,
+          width: `${layer.size.width}%`, 
+          minHeight: `${layer.size.height}%`, 
           transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
-          width: "90%",
           display: "flex",
           flexDirection: layer.isSender ? "row-reverse" : "row",
           alignItems: "flex-end",
           gap: 18,
           opacity: layer.opacity * entrance.opacity,
-          padding: "0 36px",
+          padding: "0",
         }}
       >
         <div
-          style={{
-            width: AVATAR_SIZE,
-            height: AVATAR_SIZE,
-            borderRadius: AVATAR_SIZE / 2,
-            overflow: "hidden",
-            border: `4px solid ${avatarColor}`,
-            backgroundColor: "#fff",
-            flexShrink: 0,
-            boxShadow: "0 6px 18px rgba(0,0,0,0.15)",
-          }}
-        >
+            style={{
+              width: AVATAR_SIZE,
+              height: AVATAR_SIZE,
+              minWidth: AVATAR_SIZE,
+              minHeight: AVATAR_SIZE,
+              aspectRatio: "1 / 1",
+              borderRadius: "50%",
+              flex: "0 0 auto", 
+              
+              overflow: "hidden",
+              border: `4px solid ${avatarColor}`,
+              backgroundColor: "#fff",
+              boxShadow: "0 6px 18px rgba(0,0,0,0.15)",
+            }}
+          >
           {layer.avatarUrl ? (
             <img
               src={layer.avatarUrl}
@@ -1382,12 +1408,13 @@ const ChatBubbleComponent: React.FC<{
 
         <div
           style={{
+            width: "fit-content",
             maxWidth: "80%",
             backgroundColor: bubbleColor,
             color: textColor,
             borderRadius: 28,
             padding: "20px 28px",
-            fontSize: 30,
+            fontSize: fontSize,
             lineHeight: 1.6,
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
@@ -1395,6 +1422,8 @@ const ChatBubbleComponent: React.FC<{
             boxShadow: "0 8px 22px rgba(0,0,0,0.18)",
             position: "relative",
             whiteSpace: "pre-wrap",
+            wordWrap: "break-word",
+              wordBreak: "break-word",
           }}
         >
           {layer.isTyping ? (

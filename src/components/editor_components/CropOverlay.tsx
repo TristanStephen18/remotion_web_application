@@ -85,33 +85,42 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
   }, [rendered]);
 
 
-  // Handle mouse down on resize handles
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent, handle: ResizeHandle) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      setIsDragging(true);
-      setDragHandle(handle);
-      setDragStart({ x: e.clientX, y: e.clientY });
-      setInitialCrop(crop);
-    },
-    [crop]
-  );
+  // Handle mouse/touch down on resize handles
+const handleMouseDown = useCallback(
+  (e: React.MouseEvent | React.TouchEvent, handle: ResizeHandle) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    setIsDragging(true);
+    setDragHandle(handle);
+    setDragStart({ x: clientX, y: clientY });
+    setInitialCrop(crop);
+  },
+  [crop]
+);
 
   // Handle mouse move for dragging
-  useEffect(() => {
-    if (!isDragging || !dragHandle) return;
+  // Handle mouse/touch move for dragging
+useEffect(() => {
+  if (!isDragging || !dragHandle) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      const deltaX = e.clientX - dragStart.x;
-      const deltaY = e.clientY - dragStart.y;
+  const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+    // Get coordinates from mouse or touch
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    const deltaX = clientX - dragStart.x;
+    const deltaY = clientY - dragStart.y;
 
       // Convert to percentage
       const deltaXPercent = (deltaX / rendered.width) * 100;
       const deltaYPercent = (deltaY / rendered.height) * 100;
 
-      let newCrop = { ...initialCrop };
+      const newCrop = { ...initialCrop };
 
       switch (dragHandle) {
         case "move":
@@ -188,14 +197,21 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
       setDragHandle(null);
     };
 
+
+
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
+    document.addEventListener("touchmove", handleMouseMove);
+    document.addEventListener("touchend", handleMouseUp);
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("touchmove", handleMouseMove);
+      document.removeEventListener("touchend", handleMouseUp);
     };
   }, [isDragging, dragHandle, dragStart, initialCrop, rendered, onCropChange]);
+
 
   const cropPx = cropToPixels(crop);
 
@@ -205,14 +221,15 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
 
   const styles: Record<string, React.CSSProperties> = {
     overlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      pointerEvents: "all",
-      zIndex: 1000,
-    },
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  pointerEvents: "all",
+  touchAction: "none",
+  zIndex: 1000,
+},
     darkOverlay: {
       position: "absolute",
       top: 0,
@@ -222,35 +239,38 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
       backgroundColor: "rgba(0, 0, 0, 0.6)",
       pointerEvents: "none",
     },
-    cropArea: {
-      position: "absolute",
-      left: `${cropPx.x}px`,
-      top: `${cropPx.y}px`,
-      width: `${cropPx.width}px`,
-      height: `${cropPx.height}px`,
-      border: "2px solid #3b82f6",
-      boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)",
-      cursor: isDragging && dragHandle === "move" ? "grabbing" : "move",
-      pointerEvents: "all",
-    },
+   cropArea: {
+  position: "absolute",
+  left: `${cropPx.x}px`,
+  top: `${cropPx.y}px`,
+  width: `${cropPx.width}px`,
+  height: `${cropPx.height}px`,
+  border: "2px solid #3b82f6",
+  boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)",
+  cursor: isDragging && dragHandle === "move" ? "grabbing" : "move",
+  pointerEvents: "all",
+  touchAction: "none",
+},
     handle: {
-      position: "absolute",
-      width: "12px",
-      height: "12px",
-      backgroundColor: "#3b82f6",
-      border: "2px solid white",
-      borderRadius: "50%",
-      pointerEvents: "all",
-      zIndex: 10,
-    },
+  position: "absolute",
+  width: "12px",
+  height: "12px",
+  backgroundColor: "#3b82f6",
+  border: "2px solid white",
+  borderRadius: "50%",
+  pointerEvents: "all",
+  touchAction: "none",
+  zIndex: 10,
+},
     edgeHandle: {
-      position: "absolute",
-      backgroundColor: "#3b82f6",
-      border: "1px solid white",
-      borderRadius: "2px",
-      pointerEvents: "all",
-      zIndex: 10,
-    },
+  position: "absolute",
+  backgroundColor: "#3b82f6",
+  border: "1px solid white",
+  borderRadius: "2px",
+  pointerEvents: "all",
+  touchAction: "none",
+  zIndex: 10,
+},
     toolbar: {
       position: "absolute",
       top: `${cropPx.y - 50}px`,
@@ -263,15 +283,16 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
       zIndex: 1001,
     },
     toolbarButton: {
-      padding: "6px 12px",
-      backgroundColor: "#3b82f6",
-      color: "white",
-      border: "none",
-      borderRadius: "4px",
-      cursor: "pointer",
-      fontSize: "12px",
-      fontWeight: "600",
-    },
+  padding: "6px 12px",
+  backgroundColor: "#3b82f6",
+  color: "white",
+  border: "none",
+  borderRadius: "4px",
+  cursor: "pointer",
+  fontSize: "12px",
+  fontWeight: "600",
+  touchAction: "manipulation",
+},
     cropInfo: {
       position: "absolute",
       bottom: `${containerHeight - cropPx.y}px`,
@@ -295,76 +316,85 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
     <div ref={overlayRef} style={styles.overlay}>
       {/* Crop area with border and shadow overlay */}
       <div
-        style={styles.cropArea}
-        onMouseDown={(e) => handleMouseDown(e, "move")}
-      >
+  style={styles.cropArea}
+  onMouseDown={(e) => handleMouseDown(e, "move")}
+  onTouchStart={(e) => handleMouseDown(e, "move")}
+>
         {/* Corner handles */}
         <div
-          style={{ ...styles.handle, top: "-6px", left: "-6px", cursor: "nwse-resize" }}
-          onMouseDown={(e) => handleMouseDown(e, "nw")}
-        />
+  style={{ ...styles.handle, top: "-6px", left: "-6px", cursor: "nwse-resize" }}
+  onMouseDown={(e) => handleMouseDown(e, "nw")}
+  onTouchStart={(e) => handleMouseDown(e, "nw")}
+/>
+       <div
+  style={{ ...styles.handle, top: "-6px", right: "-6px", cursor: "nesw-resize" }}
+  onMouseDown={(e) => handleMouseDown(e, "ne")}
+  onTouchStart={(e) => handleMouseDown(e, "ne")}
+/>
         <div
-          style={{ ...styles.handle, top: "-6px", right: "-6px", cursor: "nesw-resize" }}
-          onMouseDown={(e) => handleMouseDown(e, "ne")}
-        />
-        <div
-          style={{ ...styles.handle, bottom: "-6px", left: "-6px", cursor: "nesw-resize" }}
-          onMouseDown={(e) => handleMouseDown(e, "sw")}
-        />
-        <div
-          style={{ ...styles.handle, bottom: "-6px", right: "-6px", cursor: "nwse-resize" }}
-          onMouseDown={(e) => handleMouseDown(e, "se")}
-        />
+  style={{ ...styles.handle, bottom: "-6px", left: "-6px", cursor: "nesw-resize" }}
+  onMouseDown={(e) => handleMouseDown(e, "sw")}
+  onTouchStart={(e) => handleMouseDown(e, "sw")}
+/>
+       <div
+  style={{ ...styles.handle, bottom: "-6px", right: "-6px", cursor: "nwse-resize" }}
+  onMouseDown={(e) => handleMouseDown(e, "se")}
+  onTouchStart={(e) => handleMouseDown(e, "se")}
+/>
 
         {/* Edge handles */}
         <div
-          style={{
-            ...styles.edgeHandle,
-            top: "-4px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "40px",
-            height: "8px",
-            cursor: "ns-resize",
-          }}
-          onMouseDown={(e) => handleMouseDown(e, "n")}
-        />
+  style={{
+    ...styles.edgeHandle,
+    top: "-4px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "40px",
+    height: "8px",
+    cursor: "ns-resize",
+  }}
+  onMouseDown={(e) => handleMouseDown(e, "n")}
+  onTouchStart={(e) => handleMouseDown(e, "n")}
+/>
         <div
-          style={{
-            ...styles.edgeHandle,
-            bottom: "-4px",
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "40px",
-            height: "8px",
-            cursor: "ns-resize",
-          }}
-          onMouseDown={(e) => handleMouseDown(e, "s")}
-        />
+  style={{
+    ...styles.edgeHandle,
+    bottom: "-4px",
+    left: "50%",
+    transform: "translateX(-50%)",
+    width: "40px",
+    height: "8px",
+    cursor: "ns-resize",
+  }}
+  onMouseDown={(e) => handleMouseDown(e, "s")}
+  onTouchStart={(e) => handleMouseDown(e, "s")}
+/>
         <div
-          style={{
-            ...styles.edgeHandle,
-            left: "-4px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: "8px",
-            height: "40px",
-            cursor: "ew-resize",
-          }}
-          onMouseDown={(e) => handleMouseDown(e, "w")}
-        />
+  style={{
+    ...styles.edgeHandle,
+    left: "-4px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "8px",
+    height: "40px",
+    cursor: "ew-resize",
+  }}
+  onMouseDown={(e) => handleMouseDown(e, "w")}
+  onTouchStart={(e) => handleMouseDown(e, "w")}
+/>
         <div
-          style={{
-            ...styles.edgeHandle,
-            right: "-4px",
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: "8px",
-            height: "40px",
-            cursor: "ew-resize",
-          }}
-          onMouseDown={(e) => handleMouseDown(e, "e")}
-        />
+  style={{
+    ...styles.edgeHandle,
+    right: "-4px",
+    top: "50%",
+    transform: "translateY(-50%)",
+    width: "8px",
+    height: "40px",
+    cursor: "ew-resize",
+  }}
+  onMouseDown={(e) => handleMouseDown(e, "e")}
+  onTouchStart={(e) => handleMouseDown(e, "e")}
+/>
 
         {/* Grid lines (rule of thirds) */}
         <div style={{
