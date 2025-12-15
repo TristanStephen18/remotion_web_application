@@ -23,30 +23,30 @@ import DynamicLayerEditor from "./components/editors/DynamicLayerEditor.tsx";
 import SubscriptionPage from "./pages/subscription/SubscriptionPage.tsx";
 
 // Editors
-import { FactCardsEditor } from "./components/editors/FactCardsTemplate/Holder.tsx";
-import { BarGraphEditor } from "./components/editors/BarGraph/Holder.tsx";
-import { SplitScreenEditor } from "./components/editors/SplitScreen/Holder.tsx";
-import { KpiFlipCardEditor } from "./components/editors/KpiFlipCards/Holder.tsx";
-import { RedditVideoEditor } from "./components/editors/RedditTemplate/Holder.tsx";
-import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/Holder.tsx";
-import { CurveLineTrendEditor } from "./components/editors/CurveLineTrend/Holder.tsx";
-import { NewTypingEditor } from "./components/editors/NewTextTypingEditor/Holder.tsx";
-import { KineticEditor } from "./components/editors/KineticText/Holder.tsx";
+// import { FactCardsEditor } from "./components/editors/FactCardsTemplate/Holder.tsx";
+// import { BarGraphEditor } from "./components/editors/BarGraph/Holder.tsx";
+// import { SplitScreenEditor } from "./components/editors/SplitScreen/Holder.tsx";
+// import { KpiFlipCardEditor } from "./components/editors/KpiFlipCards/Holder.tsx";
+// import { RedditVideoEditor } from "./components/editors/RedditTemplate/Holder.tsx";
+// import { StoryTellingVideoEditor } from "./components/editors/StoryTellingVideo/Holder.tsx";
+// import { CurveLineTrendEditor } from "./components/editors/CurveLineTrend/Holder.tsx";
+// import { NewTypingEditor } from "./components/editors/NewTextTypingEditor/Holder.tsx";
+// import { KineticEditor } from "./components/editors/KineticText/Holder.tsx";
 // import { NeonFlickerEditor } from "./components/editors/NeonFlicker/Holder.tsx";
 // import { HeatmapEditor } from "./components/editors/HeatMap/Holder.tsx";
-import { FlipCardsEditor } from "./components/editors/FlipCards/Holder.tsx";
-import { LogoAnimationEditor } from "./components/editors/LogoAnimation/Holder.tsx";
+// import { FlipCardsEditor } from "./components/editors/FlipCards/Holder.tsx";
+// import { LogoAnimationEditor } from "./components/editors/LogoAnimation/Holder.tsx";
 // import { NeonTubeFlickerEditor } from "./components/editors/NeonTubeFlicker/Holder.tsx";
 // import { DynamicTextEditor } from "./components/editors/RetroNeonText/Holder.tsx";
 
 // Batch Rendering
-import { QuoteSpotlightBatchRendering } from "./pages/batchrendering/QuoteSpotlight.tsx";
-import { TextTypingTemplateBatchRendering } from "./pages/batchrendering/TextTyping.tsx";
-import { BarGraphBatchRendering } from "./pages/batchrendering/BarGraph.tsx";
-import { CurveLineTrendBatchRendering } from "./pages/batchrendering/CurveLineTrend.tsx";
-import { KenBurnsSwipeBatchRendering } from "./pages/batchrendering/KenburnsStack.tsx";
-import { FactCardsBatchRendering } from "./pages/batchrendering/FactCardsTemplate.tsx";
-import { KpiFlipBatchRendering } from "./pages/batchrendering/KpilipCards.tsx";
+// import { QuoteSpotlightBatchRendering } from "./pages/batchrendering/QuoteSpotlight.tsx";
+// import { TextTypingTemplateBatchRendering } from "./pages/batchrendering/TextTyping.tsx";
+// import { BarGraphBatchRendering } from "./pages/batchrendering/BarGraph.tsx";
+// import { CurveLineTrendBatchRendering } from "./pages/batchrendering/CurveLineTrend.tsx";
+// import { KenBurnsSwipeBatchRendering } from "./pages/batchrendering/KenburnsStack.tsx";
+// import { FactCardsBatchRendering } from "./pages/batchrendering/FactCardsTemplate.tsx";
+// import { KpiFlipBatchRendering } from "./pages/batchrendering/KpilipCards.tsx";
 
 // Tools
 import { AIToolsPanel } from "./components/ui/dsahboard/sections/tools/AIToolsPanel.tsx";
@@ -56,10 +56,10 @@ import QuoteTester from "./trials/quotesapitester.tsx";
 // Theme
 import { ThemeProvider } from "./contexts/ThemeContext";
 import "./styles/theme.css";
-import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
+// import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
 import { backendPrefix } from "./config";
-import { TemplateGallery } from "./components/ui/dsahboard/sections/refactored/TemplatesSection.tsx";
+// import { TemplateGallery } from "./components/ui/dsahboard/sections/refactored/TemplatesSection.tsx";
 
 // ✅ UPDATED: Auth Provider with subscription check
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -425,327 +425,7 @@ function App() {
                 </ProtectedRoute>
               }
             />
-
-            {/* ========== TEMPLATE EDITORS ========== */}
-            <Route
-              path="/template/splitscreen"
-              element={
-                <ProtectedRoute>
-                  <SplitScreenEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/splitscreen"
-              element={
-                <ProtectedRoute>
-                  <SplitScreenEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/kinetictext"
-              element={
-                <ProtectedRoute>
-                  <KineticEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/kinetictext"
-              element={
-                <ProtectedRoute>
-                  <KineticEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/flipcards"
-              element={
-                <ProtectedRoute>
-                  <FlipCardsEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/flipcards"
-              element={
-                <ProtectedRoute>
-                  <FlipCardsEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/factcards"
-              element={
-                <ProtectedRoute>
-                  <FactCardsEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/factcards"
-              element={
-                <ProtectedRoute>
-                  <FactCardsEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/bargraph"
-              element={
-                <ProtectedRoute>
-                  <BarGraphEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/bargraph"
-              element={
-                <ProtectedRoute>
-                  <BarGraphEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* <Route
-              path="/template/retroneon"
-              element={
-                <ProtectedRoute>
-                  <DynamicTextEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/retroneon"
-              element={
-                <ProtectedRoute>
-                  <DynamicTextEditor />
-                </ProtectedRoute>
-              }
-            /> */}
-
-            <Route
-              path="/template/kpiflipcards"
-              element={
-                <ProtectedRoute>
-                  <KpiFlipCardEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/kpiflipcards"
-              element={
-                <ProtectedRoute>
-                  <KpiFlipCardEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/curvelinetrend"
-              element={
-                <ProtectedRoute>
-                  <CurveLineTrendEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/curvelinetrend"
-              element={
-                <ProtectedRoute>
-                  <CurveLineTrendEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/redditvideo"
-              element={
-                <ProtectedRoute>
-                  <RedditVideoEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/redditvideo"
-              element={
-                <ProtectedRoute>
-                  <RedditVideoEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/storytelling"
-              element={
-                <ProtectedRoute>
-                  <StoryTellingVideoEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/storytelling"
-              element={
-                <ProtectedRoute>
-                  <StoryTellingVideoEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/newtexttyping"
-              element={
-                <ProtectedRoute>
-                  <NewTypingEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/texttypingtemplate"
-              element={
-                <ProtectedRoute>
-                  <NewTypingEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* <Route
-              path="/template/neonflicker"
-              element={
-                <ProtectedRoute>
-                  <NeonFlickerEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/neonflicker"
-              element={
-                <ProtectedRoute>
-                  <NeonFlickerEditor />
-                </ProtectedRoute>
-              }
-            /> */}
-
-            <Route
-              path="/template/logoanimation"
-              element={
-                <ProtectedRoute>
-                  <LogoAnimationEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/logoanimation"
-              element={
-                <ProtectedRoute>
-                  <LogoAnimationEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* <Route
-              path="/template/heatmap"
-              element={
-                <ProtectedRoute>
-                  <HeatmapEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/heatmap"
-              element={
-                <ProtectedRoute>
-                  <HeatmapEditor />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/neontube"
-              element={
-                <ProtectedRoute>
-                  <NeonTubeFlickerEditor />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/project/:id/neontube"
-              element={
-                <ProtectedRoute>
-                  <NeonTubeFlickerEditor />
-                </ProtectedRoute>
-              }
-            /> */}
-
-            {/* ========== BATCH RENDERING ========== */}
-            <Route
-              path="/template/quotetemplate/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <QuoteSpotlightBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/newtexttyping/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <TextTypingTemplateBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/factcards/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <FactCardsBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/bargraph/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <BarGraphBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/kpiflipcards/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <KpiFlipBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/kenburnscarousel/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <KenBurnsSwipeBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/template/curvelinetrend/mode/batchrendering"
-              element={
-                <ProtectedRoute>
-                  <CurveLineTrendBatchRendering />
-                </ProtectedRoute>
-              }
-            />
-
+            
             {/* ========== TOOLS ========== */}
             <Route
               path="/tools/ai-image"
@@ -773,12 +453,9 @@ function App() {
                 </ProtectedRoute>
               }
             />
-            <Route path="/ss" element={<VideoEditorDemo />} />
 
             {/* ========== 404 FALLBACK ========== */}
             <Route path="*" element={<Navigate to="/" replace />} />
-            {/* trials */}
-            <Route path="/nana" element={<TemplateGallery/>} />
           </Routes>
 
           {/* Global Toast Notifications */}
