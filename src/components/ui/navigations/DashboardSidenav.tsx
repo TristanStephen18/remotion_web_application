@@ -100,7 +100,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
   const navItems: Array<{ id: DashboardSection; label: string; icon: React.ReactNode }> = [
   { id: "home", label: "Home", icon: <FiHome /> },
   { id: "files", label: "Projects", icon: <FiFolder /> },
-  { id: "templates", label: "My templates", icon: <FiGrid /> },
+  { id: "templates", label: "Templates", icon: <FiGrid /> },
   { id: "tools", label: "Tools", icon: <LuSparkles /> },
   // { id: "home", label: "ViralMotion AI", icon: null },
 ];

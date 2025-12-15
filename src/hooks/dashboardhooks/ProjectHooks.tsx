@@ -62,6 +62,42 @@ export const useProjectHooks = () => {
     }
   };
 
+  const handleRenameProject = async (id: number, newTitle: string) => {
+    try {
+      const res = await fetch(`${backendPrefix}/projects/update-name/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (!res.ok) throw new Error("Failed to rename project");
+      setProjects((prev) =>
+        prev.map((p) => (p.id === id ? { ...p, title: newTitle } : p))
+      );
+    } catch (err) {
+      console.error("Error renaming project:", err);
+      throw err;
+    }
+  };
+
+  const handleDeleteProject = async (id: number) => {
+    try {
+      const res = await fetch(`${backendPrefix}/projects/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      if (!res.ok) throw new Error("Failed to delete project");
+      setProjects((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      console.error("Error deleting project:", err);
+      throw err;
+    }
+  };
+
   return {
     projects,
     setProjects,
@@ -70,6 +106,8 @@ export const useProjectHooks = () => {
     setHoveredId,
     fetchProjects,
     handleDeleteProjects,
+    handleRenameProject,
+    handleDeleteProject,
     toggleProjectSelection,
     selectedProjects,
     setSelectedProjects,

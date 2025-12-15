@@ -95,9 +95,10 @@ import { saveExistingProject } from "../../utils/projectSaver";
 import { CropOverlay, type CropData } from "../editor_components/CropOverlay";
 import { renderVideoUsingLambdaWithoutSaving } from "../../utils/lambdaRenderingwithoutdbsave";
 
-
-const getEventCoordinates = (e: MouseEvent | TouchEvent): { clientX: number; clientY: number } => {
-  if ('touches' in e) {
+const getEventCoordinates = (
+  e: MouseEvent | TouchEvent
+): { clientX: number; clientY: number } => {
+  if ("touches" in e) {
     // Touch event
     const touch = e.touches[0] || e.changedTouches?.[0];
     return {
@@ -498,6 +499,8 @@ const DynamicLayerEditor: React.FC = () => {
   const [template, setTemplate] = useState<TemplateDefinition | null>(null);
   const [projectId, setProjectId] = useState<string | null>(null);
   const [projectTitle, setProjectTitle] = useState<string>("");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editingTitleValue, setEditingTitleValue] = useState("");
 
   const [screenshot, setScreenshot] = useState<string | null>(null);
 
@@ -549,15 +552,15 @@ const DynamicLayerEditor: React.FC = () => {
     "media" | "audio" | "video" | "text"
   >("media");
 
-   const isMobile = useIsMobile();
+  const isMobile = useIsMobile();
 
   // Chat State
   const [chatInput, setChatInput] = useState("");
   const [chatPartnerName, setChatPartnerName] = useState("User");
 
   const [timelineHeight, setTimelineHeight] = useState(
-  isMobile ? window.innerHeight * 0.4 : 200
-);
+    isMobile ? window.innerHeight * 0.4 : 200
+  );
   const [isResizingVertical, setIsResizingVertical] = useState(false);
   const verticalResizerRef = useRef<HTMLDivElement>(null);
 
@@ -606,8 +609,8 @@ const DynamicLayerEditor: React.FC = () => {
     height: 0,
   });
   const hasLoadedTemplate = useRef(false);
- 
-const [isPanelOpen, setIsPanelOpen] = useState(false);
+
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   //additional usestates for project saving
   const [isProjectSaving, setIsPorjectSaving] = useState(false);
@@ -750,7 +753,6 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
       navigate(location.pathname, { replace: true, state: {} });
       return;
     }
-
 
     if (
       location.state?.fromAIImage &&
@@ -956,10 +958,10 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
 
   const handleSaveThumbnail = async (): Promise<string | null> => {
     handleFrameChange((duration - 2) * 30);
-    
+
     // Wait a bit for the frame to render
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const blob = await capturePreviewScreenshot();
 
     if (blob) {
@@ -1037,9 +1039,11 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
     selectedLayer && isAudioLayer(selectedLayer) ? selectedLayer : null;
   const selectedVideoLayer =
     selectedLayer && isVideoLayer(selectedLayer) ? selectedLayer : null;
-  const selectedChatLayer = useMemo(() =>
-  selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
-[selectedLayer]);
+  const selectedChatLayer = useMemo(
+    () =>
+      selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
+    [selectedLayer]
+  );
   const showEditPanel =
     selectedTextLayer !== null ||
     selectedImageLayer !== null ||
@@ -1085,12 +1089,12 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
         setPreviewDimensions({ width, height });
       }
     };
-    
+
     updateDimensions();
-    
+
     // Force recalculation after a short delay to ensure layout has updated
     const timeoutId = setTimeout(updateDimensions, 100);
-    
+
     window.addEventListener("resize", updateDimensions);
     return () => {
       window.removeEventListener("resize", updateDimensions);
@@ -1383,15 +1387,18 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
       if (justSelectedRef.current) {
         return;
       }
-      
+
       if (!selectedLayerId && !editingLayerId) return;
 
       const target = e.target as HTMLElement;
 
-      if (remotionWrapperRef.current && remotionWrapperRef.current.contains(target)) {
+      if (
+        remotionWrapperRef.current &&
+        remotionWrapperRef.current.contains(target)
+      ) {
         return;
       }
-      
+
       const isTargetingInput =
         target.tagName === "INPUT" ||
         target.tagName === "TEXTAREA" ||
@@ -1508,61 +1515,65 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
 
       // Timing configuration
       const photoDelay = 18;
-const slideSpeed = 45;
-const holdTime = 45; // Time to view complete collage after all photos enter
-const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
-      const photoStartFrame = collageEndFrame; 
+      const slideSpeed = 45;
+      const holdTime = 45; // Time to view complete collage after all photos enter
+      const collageEndFrame =
+        (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const photoStartFrame = collageEndFrame;
       const photoDuration = 60; // Each photo shows for 2 seconds
 
+      const collageLayers: Layer[] = layout.slots.map((slot, index) => {
+        const layerId = generateId();
 
-const collageLayers: Layer[] = layout.slots.map((slot, index) => {
-  const layerId = generateId();
+        // Determine slide animation based on slot direction
+        let slideAnimation:
+          | "slideUp"
+          | "slideDown"
+          | "slideLeft"
+          | "slideRight";
+        if (slot.slideDirection === "left") {
+          slideAnimation = "slideRight";
+        } else if (slot.slideDirection === "right") {
+          slideAnimation = "slideLeft";
+        } else if (slot.slideDirection === "up") {
+          slideAnimation = "slideDown";
+        } else if (slot.slideDirection === "down") {
+          slideAnimation = "slideUp";
+        } else {
+          slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
+        }
 
-  // Determine slide animation based on slot direction
-  let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
-  if (slot.slideDirection === "left") {
-    slideAnimation = "slideRight"; 
-  } else if (slot.slideDirection === "right") {
-    slideAnimation = "slideLeft";
-  } else if (slot.slideDirection === "up") {
-    slideAnimation = "slideDown";
-  } else if (slot.slideDirection === "down") {
-    slideAnimation = "slideUp";
-  } else {
-    slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
-  }
+        const imageLayer: ImageLayer = {
+          id: layerId,
+          name: `Collage Slot ${index + 1}`,
+          visible: true,
+          locked: false,
+          type: "image",
+          startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
+          endFrame: collageEndFrame,
+          position: {
+            x: slot.x + slot.width / 2,
+            y: slot.y + slot.height / 2,
+          },
+          size: {
+            width: slot.width,
+            height: slot.height,
+          },
+          rotation: slot.rotation || 0,
+          opacity: 1,
+          animation: {
+            entrance: slideAnimation,
+            entranceDuration: slideSpeed,
+          },
+          src: sampleImages[index % sampleImages.length],
+          objectFit: "cover",
+          filter: slot.shadow
+            ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
+            : "brightness(1.05) contrast(1.05)",
+        };
 
-  const imageLayer: ImageLayer = {
-    id: layerId,
-    name: `Collage Slot ${index + 1}`,
-    visible: true,
-    locked: false,
-    type: "image",
-    startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
-    endFrame: collageEndFrame,
-    position: {
-      x: slot.x + slot.width / 2,
-      y: slot.y + slot.height / 2,
-    },
-    size: {
-      width: slot.width,
-      height: slot.height,
-    },
-    rotation: slot.rotation || 0,
-    opacity: 1,
-    animation: {
-      entrance: slideAnimation,
-      entranceDuration: slideSpeed,
-    },
-    src: sampleImages[index % sampleImages.length],
-    objectFit: "cover",
-    filter: slot.shadow
-      ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
-      : "brightness(1.05) contrast(1.05)",
-  };
-
-  return imageLayer;
-});
+        return imageLayer;
+      });
       // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS (aesthetic designs)
       const trailingPhotoLayers: ImageLayer[] = [];
       const individualAnimations = ["zoomPunch", "scale", "fade"];
@@ -1633,39 +1644,41 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         shadowBlur: 12,
       };
 
-      const subtitleLayer: TextLayer | null = textOverlay ? {
-  id: generateId(),
-  name: "Collage Subtitle",
-  visible: true,
-  locked: false,
-  type: "text",
-  startFrame: 10,
-  endFrame: collageEndFrame,
-  position: { x: 50, y: 53 },
-  size: { width: 70, height: 8 },
-  rotation: 0,
-  opacity: 1,
-  animation: {
-    entrance: "fade",
-    entranceDuration: 20,
-  },
-  content: textOverlay.subText,
-  fontFamily: textOverlay.subFont,
-  fontSize: 4,
-  fontColor: "#ffffff",
-  fontWeight: "normal",
-  fontStyle: "italic",
-  textAlign: "center",
-  lineHeight: 1.2,
-  letterSpacing: 1,
-  textTransform: "none",
-  textOutline: false,
-  textShadow: true,
-  shadowColor: "#000000",
-  shadowX: 0,
-  shadowY: 3,
-  shadowBlur: 10,
-} : null;
+      const subtitleLayer: TextLayer | null = textOverlay
+        ? {
+            id: generateId(),
+            name: "Collage Subtitle",
+            visible: true,
+            locked: false,
+            type: "text",
+            startFrame: 10,
+            endFrame: collageEndFrame,
+            position: { x: 50, y: 53 },
+            size: { width: 70, height: 8 },
+            rotation: 0,
+            opacity: 1,
+            animation: {
+              entrance: "fade",
+              entranceDuration: 20,
+            },
+            content: textOverlay.subText,
+            fontFamily: textOverlay.subFont,
+            fontSize: 4,
+            fontColor: "#ffffff",
+            fontWeight: "normal",
+            fontStyle: "italic",
+            textAlign: "center",
+            lineHeight: 1.2,
+            letterSpacing: 1,
+            textTransform: "none",
+            textOutline: false,
+            textShadow: true,
+            shadowColor: "#000000",
+            shadowX: 0,
+            shadowY: 3,
+            shadowBlur: 10,
+          }
+        : null;
 
       // 4. CREATE SUBTLE GRADIENT OVERLAY (only during collage for depth)
       const gradientOverlay: ImageLayer = {
@@ -1707,13 +1720,13 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
 
       // 6. COMBINE ALL LAYERS IN PROPER ORDER
       const allLayers: Layer[] = [
-  ...collageLayers,
-  gradientOverlay,
-  textLayer,
-  ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
-  ...trailingPhotoLayers,
-  bottomVignette,
-];
+        ...collageLayers,
+        gradientOverlay,
+        textLayer,
+        ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
+        ...trailingPhotoLayers,
+        bottomVignette,
+      ];
 
       // Remove ALL old layers and add new composition
       console.log("=== CREATING AESTHETIC COLLAGE COMPOSITION ===");
@@ -2006,36 +2019,39 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
     [currentFrame, totalFrames, layers, pushState, FPS]
   );
 
-const selectLayerAndCloseTab = useCallback((layerId: string | null) => {
-  setSelectedLayerId(layerId);
-  
-  if (layerId !== null) {
-    // Set flag to prevent immediate deselection
-    justSelectedRef.current = true;
-    setTimeout(() => {
-      justSelectedRef.current = false;
-    }, 100);
-    
-    if (isMobile) {
-      // setIsPanelOpen(true);  // Mobile: open bottom panel
-    } else {
-      // Desktop: MUST close sidebar so editor can show
-      setIsPanelOpen(false);  // ← This makes editor visible!
-      setActiveTab(null);     // ← Close sidebar tab
-    }
-  } else {
-    if (isMobile) {
-      setIsPanelOpen(false);
-    }
-  }
-}, [isMobile]);
+  const selectLayerAndCloseTab = useCallback(
+    (layerId: string | null) => {
+      setSelectedLayerId(layerId);
 
-const openEditor = useCallback(() => {
-  if (isMobile && selectedLayerId) {
-    setIsPanelOpen(true);
-    setActiveTab(null);
-  }
-}, [isMobile, selectedLayerId]);
+      if (layerId !== null) {
+        // Set flag to prevent immediate deselection
+        justSelectedRef.current = true;
+        setTimeout(() => {
+          justSelectedRef.current = false;
+        }, 100);
+
+        if (isMobile) {
+          // setIsPanelOpen(true);  // Mobile: open bottom panel
+        } else {
+          // Desktop: MUST close sidebar so editor can show
+          setIsPanelOpen(false); // ← This makes editor visible!
+          setActiveTab(null); // ← Close sidebar tab
+        }
+      } else {
+        if (isMobile) {
+          setIsPanelOpen(false);
+        }
+      }
+    },
+    [isMobile]
+  );
+
+  const openEditor = useCallback(() => {
+    if (isMobile && selectedLayerId) {
+      setIsPanelOpen(true);
+      setActiveTab(null);
+    }
+  }, [isMobile, selectedLayerId]);
 
   const handleAddText = useCallback(() => {
     addTextLayer();
@@ -2378,19 +2394,24 @@ const openEditor = useCallback(() => {
   // ==========================================
   // TIMELINE TRACKS (Reversed Logic)
   // ==========================================
- const timelineTracks = useMemo(
-  (): TimelineTrack[] => {
+  const timelineTracks = useMemo((): TimelineTrack[] => {
     if (!layers) return [];
-    
+
     // Detect active chat style to filter chat-bg appropriately
-    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as ChatBubbleLayer | undefined;
+    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as
+      | ChatBubbleLayer
+      | undefined;
     const activeChatStyle = firstChatBubble?.chatStyle;
-    
+
     return [...layers]
       .reverse()
       .filter((layer) => {
         // Hide chat-bg layer for non-fakechatconversation styles
-        if (layer.id === 'chat-bg' && activeChatStyle && activeChatStyle !== 'fakechatconversation') {
+        if (
+          layer.id === "chat-bg" &&
+          activeChatStyle &&
+          activeChatStyle !== "fakechatconversation"
+        ) {
           return false;
         }
         return true;
@@ -2406,24 +2427,22 @@ const openEditor = useCallback(() => {
         visible: layer.visible,
         locked: layer.locked,
       }));
-  },
-  [layers]
-);
+  }, [layers]);
 
   const handleTrackSelect = useCallback(
-  (trackId: string | null) => {
-    // ✅ NEW: Only deselect if explicitly clicking to deselect
-    // Prevent accidental deselection from misclicks on timeline background
-    if (trackId === null && selectedLayerId !== null) {
-      // If clicking background but a layer is selected, ignore the deselection
-      // User must explicitly click the X button to deselect
-      return;
-    }
-    selectLayerAndCloseTab(trackId);
-    setEditingLayerId(null);
-  },
-  [selectLayerAndCloseTab, selectedLayerId]
-);
+    (trackId: string | null) => {
+      // ✅ NEW: Only deselect if explicitly clicking to deselect
+      // Prevent accidental deselection from misclicks on timeline background
+      if (trackId === null && selectedLayerId !== null) {
+        // If clicking background but a layer is selected, ignore the deselection
+        // User must explicitly click the X button to deselect
+        return;
+      }
+      selectLayerAndCloseTab(trackId);
+      setEditingLayerId(null);
+    },
+    [selectLayerAndCloseTab, selectedLayerId]
+  );
 
   const handleReorderTracks = useCallback(
     (fromIndex: number, toIndex: number) => {
@@ -2551,7 +2570,7 @@ const openEditor = useCallback(() => {
         const inputProps = {
           config: {
             layers: layersToRender,
-            duration
+            duration,
           },
         };
         const videoUrl = await renderVideoUsingLambdaWithoutSaving(
@@ -2571,33 +2590,58 @@ const openEditor = useCallback(() => {
   );
 
   async function handleSaveExistingProject(screenshoturl: string) {
-     setIsPorjectSaving(true);
-      if (projectId) {
-        const props = {
-          layers,
-          duration,
-          currentFrame,
-          templateId: template?.id || 1,
-        };
-        const changedprops = await compareProjectProps(projectId, props);
-        console.log(changedprops);
-        if (changedprops === true) {
-          toast.success("Nothing to save. Make some changes before saving");
+    setIsPorjectSaving(true);
+    if (projectId) {
+      const props = {
+        layers,
+        duration,
+        currentFrame,
+        templateId: template?.id || 1,
+      };
+      const changedprops = await compareProjectProps(projectId, props);
+      console.log(changedprops);
+      if (changedprops === true) {
+        toast.success("Nothing to save. Make some changes before saving");
+      } else {
+        const saveresponse = await saveExistingProject(
+          projectId,
+          props,
+          screenshoturl
+        );
+        if (saveresponse === "error") {
+          toast.error("There was an error saving your project");
         } else {
-          const saveresponse = await saveExistingProject(
-            projectId,
-            props,
-            screenshoturl
-          );
-          if (saveresponse === "error") {
-            toast.error("There was an error saving your project");
-          } else {
-            toast.success("Changes saved!");
-          }
+          toast.success("Changes saved!");
         }
       }
+    }
     setIsPorjectSaving(false);
   }
+
+  const handleUpdateTitle = async (newTitle: string) => {
+    if (!projectId || !newTitle.trim()) return;
+
+    try {
+      const response = await fetch(`${backendPrefix}/projects/update-name/${projectId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify({ title: newTitle.trim() }),
+      });
+
+      if (response.ok) {
+        setProjectTitle(newTitle.trim());
+        toast.success("Title updated!");
+      } else {
+        toast.error("Failed to update title");
+      }
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast.error("Failed to update title");
+    }
+  };
 
   const handleSaveProject = useCallback(
     async (title: string, setStatus: (s: string) => void) => {
@@ -2620,7 +2664,7 @@ const openEditor = useCallback(() => {
     },
     [saveNewProject, projectId, navigate]
   );
-  
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -2749,7 +2793,7 @@ const openEditor = useCallback(() => {
 
   return (
     <>
-     <div
+      <div
         style={{
           ...editorStyles.container,
           backgroundColor: colors.bgPrimary,
@@ -2759,15 +2803,15 @@ const openEditor = useCallback(() => {
       >
         {isLoading && <LoadingOverlay message="Loading project..." />}
 
-       {/* --- SIDEBAR / BOTTOM TABS --- */}
-       {isMobile ? (
+        {/* --- SIDEBAR / BOTTOM TABS --- */}
+        {isMobile ? (
           <MobileSidebarTabs
             activeTab={activeTab}
             onTabChange={(tab) => {
               setActiveTab(tab);
               setIsPanelOpen(tab !== null);
               setWatchCategory("main");
-              
+
               // ✅ ADD THIS: Close editors (deselect layer) when opening a tab
               if (tab !== null) {
                 setSelectedLayerId(null);
@@ -2799,702 +2843,762 @@ const openEditor = useCallback(() => {
 
         {/* --- LAYERS PANEL --- */}
         {((isPanelOpen && activeTab) || showEditPanel) && (
-         <MobilePanelWrapper
-  isOpen={isPanelOpen}
-   showEdit={showEditPanel}
-  onClose={() => {
-    setIsPanelOpen(false);
-    setActiveTab(null);
-  }}
-  isMobile={isMobile}
-  title={
-    showEditPanel
-      ? (selectedTextLayer ? "Edit Text" : 
-         selectedVideoLayer ? "Edit Video" : 
-         selectedImageLayer ? "Edit Image" : 
-         selectedAudioLayer ? "Edit Audio" : 
-         selectedChatLayer ? "Edit Chat" : "Edit Layer")
-      : activeTab === "chat"
-      ? "Chat Settings"
-      : activeTab === "watch"
-      ? "Showcase"
-      : activeTab === "carousel"
-      ? "Blur Style"
-      : activeTab === "collage"
-      ? "Grid Layout"
-      : activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : ""
-  }
->
-  <div
-    style={{
-      // Base styles
-      ...(!isMobile ? editorStyles.layersPanel : {
-        width: "100%",
-        height: "100%",
-        display: (isMobile && showEditPanel) ? "none" : "flex",
-        flexDirection: "column",
-        position: "relative",
-        border: "none",
-        backgroundColor: "transparent",
-      }),
-
-      // Desktop Overrides
-      ...(!isMobile ? {
-          backgroundColor: colors.bgPrimary,
-          position: "relative",
-          left: 0,
-          top: 0,
-          width: "100%",
-          height: "100%",
-          margin: 0,
-          boxShadow: "none",
-      } : {}),
-
-      // Shared styles
-      zIndex: 50,
-      pointerEvents: "auto",
-      
-      // ✅ FIX 1: Force hide this panel if we are editing (showEditPanel), 
-      // regardless of whether a tab is open.
-      display: !isMobile ? ((!isPanelOpen || showEditPanel) ? "none" : "flex") : undefined,
-      
-      ...(!isMobile && !isPanelOpen ? editorStyles.layersPanelClosed : {}),
-    }}
-    data-panel="true"
-  >
-          {isPanelOpen && (
-            <>
-            {!isMobile && (
-              <div
-                style={{
-                  ...editorStyles.layersPanelHeader,
-                  backgroundColor: colors.bgSecondary,
-                  borderBottom: `1px solid ${colors.border}`,
-                }}
-              >
-                {activeTab === "watch" && watchCategory !== "main" ? (
-                  <button
-                    onClick={() => setWatchCategory("main")}
-                    style={{
-                      background: "none",
+          <MobilePanelWrapper
+            isOpen={isPanelOpen}
+            showEdit={showEditPanel}
+            onClose={() => {
+              setIsPanelOpen(false);
+              setActiveTab(null);
+            }}
+            isMobile={isMobile}
+            title={
+              showEditPanel
+                ? selectedTextLayer
+                  ? "Edit Text"
+                  : selectedVideoLayer
+                  ? "Edit Video"
+                  : selectedImageLayer
+                  ? "Edit Image"
+                  : selectedAudioLayer
+                  ? "Edit Audio"
+                  : selectedChatLayer
+                  ? "Edit Chat"
+                  : "Edit Layer"
+                : activeTab === "chat"
+                ? "Chat Settings"
+                : activeTab === "watch"
+                ? "Showcase"
+                : activeTab === "carousel"
+                ? "Blur Style"
+                : activeTab === "collage"
+                ? "Grid Layout"
+                : activeTab
+                ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1)
+                : ""
+            }
+          >
+            <div
+              style={{
+                // Base styles
+                ...(!isMobile
+                  ? editorStyles.layersPanel
+                  : {
+                      width: "100%",
+                      height: "100%",
+                      display: isMobile && showEditPanel ? "none" : "flex",
+                      flexDirection: "column",
+                      position: "relative",
                       border: "none",
-                      color: colors.textSecondary,
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "5px",
-                    }}
-                  >
-                    <Icons.ChevronLeft /> Back
-                  </button>
-                ) : (
-                 <span
-                    style={{
-                      ...editorStyles.layersPanelTitle,
-                      color: colors.textPrimary,
-                    }}
-                  >
-                    {activeTab === "chat"
-                      ? "Chat Settings"
-                      : activeTab === "watch"
-                      ? "Showcase"
-                      : activeTab === "carousel"
-                      ? "Blur Style"
-                      : (activeTab ? activeTab.charAt(0).toUpperCase() + activeTab.slice(1) : "")}
-                  </span>
-                )}
-                <button
-                  style={{
-                    ...editorStyles.closeButton,
-                    color: colors.textMuted,
-                  }}
-                  onClick={() => setActiveTab(null)}
-                >
-                  <Icons.Close />
-                </button>
-              </div>
-            )}
+                      backgroundColor: "transparent",
+                    }),
 
+                // Desktop Overrides
+                ...(!isMobile
+                  ? {
+                      backgroundColor: colors.bgPrimary,
+                      position: "relative",
+                      left: 0,
+                      top: 0,
+                      width: "100%",
+                      height: "100%",
+                      margin: 0,
+                      boxShadow: "none",
+                    }
+                  : {}),
 
-              {/* Standard Media Library */}
-              {activeTab !== "tools" &&
-                activeTab !== "layout" &&
-                activeTab !== "chat" &&
-                activeTab !== "watch" &&
-                activeTab !== "carousel" && (
-                  <MediaLibrary
-                    activeTab={activeTab as any}
-                    projectAssets={projectAssets}
-                    onAddLayer={addMediaToCanvas}
-                    onOpenGallery={openMediaGallery}
-                    onAddText={handleAddText}
-                    currentFrame={currentFrame}
-                    totalFrames={totalFrames}
-                  />
-                )}
+                // Shared styles
+                zIndex: 50,
+                pointerEvents: "auto",
 
-              {/* --- CHAT PANEL (Dedicated Tab) --- */}
-              {activeTab === "chat" && template?.id === 9 && (
-                <div style={gridStyles.container}>
-                  {/* Style Switcher */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Interface Style</div>
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Chat />}
-                        title="Instagram"
-                        color="#E1306C"
-                        onClick={() => handleChatStyleChange("instagram")}
-                      />
-                      <ToolCard
-                        icon={<span style={{ fontSize: "18px" }}>💬</span>}
-                        title="iMessage"
-                        color="#007AFF"
-                        onClick={() => handleChatStyleChange("imessage")}
-                      />
-                      <ToolCard
-                        icon={<span style={{ fontSize: "18px" }}>📞</span>}
-                        title="WhatsApp"
-                        color="#25D366"
-                        onClick={() => handleChatStyleChange("whatsapp")}
-                      />
-                      <ToolCard
-                        icon={<span style={{ fontSize: "18px" }}>⚡</span>}
-                        title="Messenger"
-                        color="#0084FF"
-                        onClick={() => handleChatStyleChange("messenger")}
-                      />
-                      <ToolCard
-                        icon={<span style={{ fontSize: "18px" }}>🎬</span>}
-                        title="Cinematic"
-                        color="#0EA5E9"
-                        onClick={() =>
-                          handleChatStyleChange("fakechatconversation")
-                        }
-                      />
-                    </div>
-                  </div>
+                // ✅ FIX 1: Force hide this panel if we are editing (showEditPanel),
+                // regardless of whether a tab is open.
+                display: !isMobile
+                  ? !isPanelOpen || showEditPanel
+                    ? "none"
+                    : "flex"
+                  : undefined,
 
-                  {/* Chat Partner Info */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Chat Partner</div>
-                    <input
-                      type="text"
-                      placeholder="Partner Name (e.g. John)"
-                      value={chatPartnerName}
-                      onChange={(e) => handleUpdateChatPartner(e.target.value)}
-                      style={gridStyles.sleekInput}
-                    />
+                ...(!isMobile && !isPanelOpen
+                  ? editorStyles.layersPanelClosed
+                  : {}),
+              }}
+              data-panel="true"
+            >
+              {isPanelOpen && (
+                <>
+                  {!isMobile && (
                     <div
-                      style={gridStyles.card}
-                      onClick={() => chatAvatarInputRef.current?.click()}
+                      style={{
+                        ...editorStyles.layersPanelHeader,
+                        backgroundColor: colors.bgSecondary,
+                        borderBottom: `1px solid ${colors.border}`,
+                      }}
                     >
-                      <Icons.User />
-                      <span style={gridStyles.cardTitle}>Change Avatar</span>
-                    </div>
-                  </div>
-
-                  {/* Message Actions */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Add Messages</div>
-                    <input
-                      type="text"
-                      placeholder="Type a message..."
-                      value={chatInput}
-                      onChange={(e) => setChatInput(e.target.value)}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && handleAddMessage(true)
-                      } // Default to Me on Enter
-                      style={gridStyles.sleekInput}
-                    />
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Send />}
-                        title="Add (Me)"
-                        color="#3b82f6"
-                        onClick={() => handleAddMessage(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Chat />}
-                        title="Add (Them)"
-                        color="#10b981"
-                        onClick={() => handleAddMessage(false)}
-                      />
-                      <ToolCard
-                        icon={<span style={{ fontSize: "18px" }}>...</span>}
-                        title="Typing"
-                        color="#888"
-                        onClick={() => handleAddMessage(false, true)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* --- WATCH PANEL --- */}
-              {activeTab === "watch" && template?.id === 30 && (
-                <div style={gridStyles.container}>
-                  {watchCategory === "main" ? (
-                    <>
-                      <div style={gridStyles.section}>
-                        <div style={gridStyles.sectionTitle}>Details</div>
-                        <input
-                          type="text"
-                          placeholder="Watch Name (e.g. ROLEX)"
-                          value={watchNameInput}
-                          onChange={(e) => {
-                            setWatchNameInput(e.target.value);
-                            handleUpdateWatchText("name", e.target.value);
-                          }}
-                          style={gridStyles.sleekInput}
-                        />
-                        <textarea
-                          placeholder="Viral caption..."
-                          value={captionInput}
-                          onChange={(e) => {
-                            setCaptionInput(e.target.value);
-                            handleUpdateWatchText("caption", e.target.value);
-                          }}
+                      {activeTab === "watch" && watchCategory !== "main" ? (
+                        <button
+                          onClick={() => setWatchCategory("main")}
                           style={{
-                            ...gridStyles.sleekInput,
-                            minHeight: "60px",
-                            resize: "vertical",
-                          }}
-                        />
-                      </div>
-                      <div style={gridStyles.section}>
-                        <div style={gridStyles.sectionTitle}>Select Assets</div>
-                        <div
-                          style={{
-                            ...gridStyles.grid,
-                            gridTemplateColumns: "repeat(3, 1fr)",
+                            background: "none",
+                            border: "none",
+                            color: colors.textSecondary,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "5px",
                           }}
                         >
-                          <CompactCard
-                            icon={<Icons.Watch />}
-                            title="Watches"
-                            color="#fbbf24"
-                            onClick={() => setWatchCategory("watches")}
+                          <Icons.ChevronLeft /> Back
+                        </button>
+                      ) : (
+                        <span
+                          style={{
+                            ...editorStyles.layersPanelTitle,
+                            color: colors.textPrimary,
+                          }}
+                        >
+                          {activeTab === "chat"
+                            ? "Chat Settings"
+                            : activeTab === "watch"
+                            ? "Showcase"
+                            : activeTab === "carousel"
+                            ? "Blur Style"
+                            : activeTab
+                            ? activeTab.charAt(0).toUpperCase() +
+                              activeTab.slice(1)
+                            : ""}
+                        </span>
+                      )}
+                      <button
+                        style={{
+                          ...editorStyles.closeButton,
+                          color: colors.textMuted,
+                        }}
+                        onClick={() => setActiveTab(null)}
+                      >
+                        <Icons.Close />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Standard Media Library */}
+                  {activeTab !== "tools" &&
+                    activeTab !== "layout" &&
+                    activeTab !== "chat" &&
+                    activeTab !== "watch" &&
+                    activeTab !== "carousel" && (
+                      <MediaLibrary
+                        activeTab={activeTab as any}
+                        projectAssets={projectAssets}
+                        onAddLayer={addMediaToCanvas}
+                        onOpenGallery={openMediaGallery}
+                        onAddText={handleAddText}
+                        currentFrame={currentFrame}
+                        totalFrames={totalFrames}
+                      />
+                    )}
+
+                  {/* --- CHAT PANEL (Dedicated Tab) --- */}
+                  {activeTab === "chat" && template?.id === 9 && (
+                    <div style={gridStyles.container}>
+                      {/* Style Switcher */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>
+                          Interface Style
+                        </div>
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Chat />}
+                            title="Instagram"
+                            color="#E1306C"
+                            onClick={() => handleChatStyleChange("instagram")}
                           />
-                          <CompactCard
-                            icon={<Icons.Video />}
-                            title="Videos"
-                            color="#60a5fa"
-                            onClick={() => setWatchCategory("videos")}
+                          <ToolCard
+                            icon={<span style={{ fontSize: "18px" }}>💬</span>}
+                            title="iMessage"
+                            color="#007AFF"
+                            onClick={() => handleChatStyleChange("imessage")}
                           />
-                          <CompactCard
-                            icon={<Icons.Music />}
-                            title="Music"
-                            color="#c084fc"
-                            onClick={() => setWatchCategory("music")}
+                          <ToolCard
+                            icon={<span style={{ fontSize: "18px" }}>📞</span>}
+                            title="WhatsApp"
+                            color="#25D366"
+                            onClick={() => handleChatStyleChange("whatsapp")}
+                          />
+                          <ToolCard
+                            icon={<span style={{ fontSize: "18px" }}>⚡</span>}
+                            title="Messenger"
+                            color="#0084FF"
+                            onClick={() => handleChatStyleChange("messenger")}
+                          />
+                          <ToolCard
+                            icon={<span style={{ fontSize: "18px" }}>🎬</span>}
+                            title="Cinematic"
+                            color="#0EA5E9"
+                            onClick={() =>
+                              handleChatStyleChange("fakechatconversation")
+                            }
                           />
                         </div>
                       </div>
-                    </>
-                  ) : (
-                    <div style={gridStyles.section}>
-                      <div style={gridStyles.sectionTitle}>
-                        Select {watchCategory}
+
+                      {/* Chat Partner Info */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Chat Partner</div>
+                        <input
+                          type="text"
+                          placeholder="Partner Name (e.g. John)"
+                          value={chatPartnerName}
+                          onChange={(e) =>
+                            handleUpdateChatPartner(e.target.value)
+                          }
+                          style={gridStyles.sleekInput}
+                        />
+                        <div
+                          style={gridStyles.card}
+                          onClick={() => chatAvatarInputRef.current?.click()}
+                        >
+                          <Icons.User />
+                          <span style={gridStyles.cardTitle}>
+                            Change Avatar
+                          </span>
+                        </div>
                       </div>
-                      <div style={gridStyles.grid}>
-                        {CloudinaryAssets[watchCategory]?.map((asset: any) => (
-                          <div
-                            key={asset.id}
-                            style={{
-                              ...gridStyles.card,
-                              height: "110px",
-                              padding: "0",
-                              overflow: "hidden",
-                            }}
-                            onClick={() =>
-                              handleSelectWatchAsset(
-                                asset.src,
-                                watchCategory === "watches"
-                                  ? "image"
-                                  : watchCategory === "videos"
-                                  ? "video"
-                                  : "audio"
-                              )
-                            }
-                          >
-                            {watchCategory === "music" ? (
-                              <div
-                                style={{
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                  color: colors.textPrimary,
-                                }}
-                              >
-                                <Icons.Music />
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    color: colors.textSecondary,
-                                  }}
-                                >
-                                  {asset.name}
-                                </span>
-                              </div>
-                            ) : (
-                              <>
+
+                      {/* Message Actions */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Add Messages</div>
+                        <input
+                          type="text"
+                          placeholder="Type a message..."
+                          value={chatInput}
+                          onChange={(e) => setChatInput(e.target.value)}
+                          onKeyDown={(e) =>
+                            e.key === "Enter" && handleAddMessage(true)
+                          } // Default to Me on Enter
+                          style={gridStyles.sleekInput}
+                        />
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Send />}
+                            title="Add (Me)"
+                            color="#3b82f6"
+                            onClick={() => handleAddMessage(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Chat />}
+                            title="Add (Them)"
+                            color="#10b981"
+                            onClick={() => handleAddMessage(false)}
+                          />
+                          <ToolCard
+                            icon={<span style={{ fontSize: "18px" }}>...</span>}
+                            title="Typing"
+                            color="#888"
+                            onClick={() => handleAddMessage(false, true)}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* --- WATCH PANEL --- */}
+                  {activeTab === "watch" && template?.id === 30 && (
+                    <div style={gridStyles.container}>
+                      {watchCategory === "main" ? (
+                        <>
+                          <div style={gridStyles.section}>
+                            <div style={gridStyles.sectionTitle}>Details</div>
+                            <input
+                              type="text"
+                              placeholder="Watch Name (e.g. ROLEX)"
+                              value={watchNameInput}
+                              onChange={(e) => {
+                                setWatchNameInput(e.target.value);
+                                handleUpdateWatchText("name", e.target.value);
+                              }}
+                              style={gridStyles.sleekInput}
+                            />
+                            <textarea
+                              placeholder="Viral caption..."
+                              value={captionInput}
+                              onChange={(e) => {
+                                setCaptionInput(e.target.value);
+                                handleUpdateWatchText(
+                                  "caption",
+                                  e.target.value
+                                );
+                              }}
+                              style={{
+                                ...gridStyles.sleekInput,
+                                minHeight: "60px",
+                                resize: "vertical",
+                              }}
+                            />
+                          </div>
+                          <div style={gridStyles.section}>
+                            <div style={gridStyles.sectionTitle}>
+                              Select Assets
+                            </div>
+                            <div
+                              style={{
+                                ...gridStyles.grid,
+                                gridTemplateColumns: "repeat(3, 1fr)",
+                              }}
+                            >
+                              <CompactCard
+                                icon={<Icons.Watch />}
+                                title="Watches"
+                                color="#fbbf24"
+                                onClick={() => setWatchCategory("watches")}
+                              />
+                              <CompactCard
+                                icon={<Icons.Video />}
+                                title="Videos"
+                                color="#60a5fa"
+                                onClick={() => setWatchCategory("videos")}
+                              />
+                              <CompactCard
+                                icon={<Icons.Music />}
+                                title="Music"
+                                color="#c084fc"
+                                onClick={() => setWatchCategory("music")}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      ) : (
+                        <div style={gridStyles.section}>
+                          <div style={gridStyles.sectionTitle}>
+                            Select {watchCategory}
+                          </div>
+                          <div style={gridStyles.grid}>
+                            {CloudinaryAssets[watchCategory]?.map(
+                              (asset: any) => (
                                 <div
+                                  key={asset.id}
                                   style={{
-                                    width: "100%",
-                                    height: "80px",
+                                    ...gridStyles.card,
+                                    height: "110px",
+                                    padding: "0",
                                     overflow: "hidden",
                                   }}
+                                  onClick={() =>
+                                    handleSelectWatchAsset(
+                                      asset.src,
+                                      watchCategory === "watches"
+                                        ? "image"
+                                        : watchCategory === "videos"
+                                        ? "video"
+                                        : "audio"
+                                    )
+                                  }
                                 >
-                                  {watchCategory === "videos" ? (
-                                    <video
-                                      src={asset.src}
+                                  {watchCategory === "music" ? (
+                                    <div
                                       style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                        gap: "8px",
+                                        color: colors.textPrimary,
                                       }}
-                                      muted
-                                      loop
-                                      onMouseOver={(e) =>
-                                        e.currentTarget.play()
-                                      }
-                                      onMouseOut={(e) =>
-                                        e.currentTarget.pause()
-                                      }
-                                    />
+                                    >
+                                      <Icons.Music />
+                                      <span
+                                        style={{
+                                          fontSize: "12px",
+                                          color: colors.textSecondary,
+                                        }}
+                                      >
+                                        {asset.name}
+                                      </span>
+                                    </div>
                                   ) : (
-                                    <img
-                                      src={asset.src}
-                                      alt={asset.name}
-                                      style={{
-                                        width: "100%",
-                                        height: "100%",
-                                        objectFit: "cover",
-                                      }}
-                                    />
+                                    <>
+                                      <div
+                                        style={{
+                                          width: "100%",
+                                          height: "80px",
+                                          overflow: "hidden",
+                                        }}
+                                      >
+                                        {watchCategory === "videos" ? (
+                                          <video
+                                            src={asset.src}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
+                                            }}
+                                            muted
+                                            loop
+                                            onMouseOver={(e) =>
+                                              e.currentTarget.play()
+                                            }
+                                            onMouseOut={(e) =>
+                                              e.currentTarget.pause()
+                                            }
+                                          />
+                                        ) : (
+                                          <img
+                                            src={asset.src}
+                                            alt={asset.name}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                              objectFit: "cover",
+                                            }}
+                                          />
+                                        )}
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontSize: "11px",
+                                          color: colors.textSecondary,
+                                          padding: "4px",
+                                        }}
+                                      >
+                                        {asset.name}
+                                      </div>
+                                    </>
                                   )}
                                 </div>
-                                <div
-                                  style={{
-                                    fontSize: "11px",
-                                    color: colors.textSecondary,
-                                    padding: "4px",
-                                  }}
-                                >
-                                  {asset.name}
-                                </div>
-                              </>
+                              )
                             )}
+                            <div
+                              style={{
+                                ...gridStyles.card,
+                                color: colors.textPrimary,
+                              }}
+                              onClick={() => {
+                                if (watchCategory === "watches")
+                                  watchImageInputRef.current?.click();
+                                else if (watchCategory === "videos")
+                                  watchBgInputRef.current?.click();
+                                else if (watchCategory === "music")
+                                  watchAudioInputRef.current?.click();
+                              }}
+                            >
+                              <Icons.Download />
+                              <span
+                                style={{
+                                  fontSize: "11px",
+                                  color: colors.textSecondary,
+                                }}
+                              >
+                                Upload Custom
+                              </span>
+                            </div>
                           </div>
-                        ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* --- CAROUSEL / BLUR STYLE PANEL --- */}
+                  {activeTab === "carousel" && template?.id === 8 && (
+                    <div style={gridStyles.container}>
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Choose Layout</div>
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Video />}
+                            title="Cinema"
+                            color={
+                              carouselLayout === "cinema" ? "#3b82f6" : "#666"
+                            }
+                            onClick={() => setCarouselLayout("cinema")}
+                          />
+                          <ToolCard
+                            icon={<Icons.Image />}
+                            title="Full Screen"
+                            color={
+                              carouselLayout === "full" ? "#10b981" : "#666"
+                            }
+                            onClick={() => setCarouselLayout("full")}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Media</div>
                         <div
-                          style={{
-                            ...gridStyles.card,
-                            color: colors.textPrimary,
-                          }}
-                          onClick={() => {
-                            if (watchCategory === "watches")
-                              watchImageInputRef.current?.click();
-                            else if (watchCategory === "videos")
-                              watchBgInputRef.current?.click();
-                            else if (watchCategory === "music")
-                              watchAudioInputRef.current?.click();
-                          }}
+                          style={gridStyles.card}
+                          onClick={() => carouselInputRef.current?.click()}
                         >
                           <Icons.Download />
+                          <span style={gridStyles.cardTitle}>
+                            Insert Photos
+                          </span>
                           <span
                             style={{
-                              fontSize: "11px",
-                              color: colors.textSecondary,
+                              fontSize: "10px",
+                              color: colors.textMuted,
                             }}
                           >
-                            Upload Custom
+                            Bulk Upload
                           </span>
                         </div>
                       </div>
                     </div>
                   )}
-                </div>
-              )}
 
-              {/* --- CAROUSEL / BLUR STYLE PANEL --- */}
-              {activeTab === "carousel" && template?.id === 8 && (
-                <div style={gridStyles.container}>
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Choose Layout</div>
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Video />}
-                        title="Cinema"
-                        color={carouselLayout === "cinema" ? "#3b82f6" : "#666"}
-                        onClick={() => setCarouselLayout("cinema")}
-                      />
-                      <ToolCard
-                        icon={<Icons.Image />}
-                        title="Full Screen"
-                        color={carouselLayout === "full" ? "#10b981" : "#666"}
-                        onClick={() => setCarouselLayout("full")}
-                      />
+                  {/* --- PHOTO COLLAGE PANEL (TEMPLATE 19) --- */}
+                  {activeTab === "collage" && template?.id === 19 && (
+                    <CollagePanel
+                      onLayoutSelect={handleCollageLayoutSelect}
+                      selectedLayoutId={selectedCollageLayout?.id}
+                    />
+                  )}
+
+                  {/* Layout Panel */}
+                  {activeTab === "layout" && template?.id === 6 && (
+                    <div style={gridStyles.container}>
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Choose Layout</div>
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Layout />}
+                            title="Split Screen"
+                            color={layoutMode === "split" ? "#3b82f6" : "#666"}
+                            onClick={() => handleLayoutChange("split")}
+                          />
+                          <ToolCard
+                            icon={<Icons.Pip />}
+                            title="Pic-in-Pic"
+                            color={layoutMode === "pip" ? "#10b981" : "#666"}
+                            onClick={() => handleLayoutChange("pip")}
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Media</div>
-                    <div
-                      style={gridStyles.card}
-                      onClick={() => carouselInputRef.current?.click()}
-                    >
-                      <Icons.Download />
-                      <span style={gridStyles.cardTitle}>Insert Photos</span>
-                      <span
-                        style={{ fontSize: "10px", color: colors.textMuted }}
-                      >
-                        Bulk Upload
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
+                  {activeTab === "tools" && (
+                    <div style={gridStyles.container}>
+                      {/* Section: AI Generation */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>AI Generation</div>
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Image />}
+                            title="AI Images"
+                            color="#ec4899"
+                            onClick={() => setShowAIImageModal(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Video />}
+                            title="VEO Video"
+                            color="#a855f7"
+                            onClick={() => setShowVEOGeneratorModal(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Mic />}
+                            title="Voiceover"
+                            color="#8b5cf6"
+                            onClick={() => setShowVoiceoverModal(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Reddit />}
+                            title="Reddit Post"
+                            color="#ff4500"
+                            onClick={() => setShowRedditModal(true)}
+                          />
+                        </div>
+                      </div>
 
-              {/* --- PHOTO COLLAGE PANEL (TEMPLATE 19) --- */}
-              {activeTab === "collage" && template?.id === 19 && (
-                <CollagePanel
-                  onLayoutSelect={handleCollageLayoutSelect}
-                  selectedLayoutId={selectedCollageLayout?.id}
-                />
-              )}
+                      {/* Section: Editing & Enhancement */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Enhancement</div>
+                        <div style={gridStyles.grid}>
+                          <ToolCard
+                            icon={<Icons.Eraser />}
+                            title="Remove BG"
+                            color="#06b6d4"
+                            onClick={() => setShowRemoveBackgroundModal(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Waveform />}
+                            title="Enhance Audio"
+                            color="#14b8a6"
+                            onClick={() => setShowEnhanceSpeechModal(true)}
+                          />
+                          <ToolCard
+                            icon={<Icons.Crop />}
+                            title="Magic Crop"
+                            color="#10b981"
+                            onClick={() => setShowMagicCropModal(true)}
+                          />
+                        </div>
+                      </div>
 
-              {/* Layout Panel */}
-              {activeTab === "layout" && template?.id === 6 && (
-                <div style={gridStyles.container}>
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Choose Layout</div>
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Layout />}
-                        title="Split Screen"
-                        color={layoutMode === "split" ? "#3b82f6" : "#666"}
-                        onClick={() => handleLayoutChange("split")}
-                      />
-                      <ToolCard
-                        icon={<Icons.Pip />}
-                        title="Pic-in-Pic"
-                        color={layoutMode === "pip" ? "#10b981" : "#666"}
-                        onClick={() => handleLayoutChange("pip")}
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {activeTab === "tools" && (
-                <div style={gridStyles.container}>
-                  {/* Section: AI Generation */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>AI Generation</div>
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Image />}
-                        title="AI Images"
-                        color="#ec4899"
-                        onClick={() => setShowAIImageModal(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Video />}
-                        title="VEO Video"
-                        color="#a855f7"
-                        onClick={() => setShowVEOGeneratorModal(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Mic />}
-                        title="Voiceover"
-                        color="#8b5cf6"
-                        onClick={() => setShowVoiceoverModal(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Reddit />}
-                        title="Reddit Post"
-                        color="#ff4500"
-                        onClick={() => setShowRedditModal(true)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Section: Editing & Enhancement */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Enhancement</div>
-                    <div style={gridStyles.grid}>
-                      <ToolCard
-                        icon={<Icons.Eraser />}
-                        title="Remove BG"
-                        color="#06b6d4"
-                        onClick={() => setShowRemoveBackgroundModal(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Waveform />}
-                        title="Enhance Audio"
-                        color="#14b8a6"
-                        onClick={() => setShowEnhanceSpeechModal(true)}
-                      />
-                      <ToolCard
-                        icon={<Icons.Crop />}
-                        title="Magic Crop"
-                        color="#10b981"
-                        onClick={() => setShowMagicCropModal(true)}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Section: Utilities */}
-                  <div style={gridStyles.section}>
-                    <div style={gridStyles.sectionTitle}>Utilities</div>
-                    <div style={gridStyles.grid}>
-                      {/* <ToolCard
+                      {/* Section: Utilities */}
+                      <div style={gridStyles.section}>
+                        <div style={gridStyles.sectionTitle}>Utilities</div>
+                        <div style={gridStyles.grid}>
+                          {/* <ToolCard
                         icon={<Icons.Shuffle />}
                         title="Remix Shorts"
                         color="#3b82f6"
                         onClick={() => setShowRemixShortsModal(true)}
                       /> */}
-                      <ToolCard
-                        icon={<Icons.Smile />}
-                        title="Emoji"
-                        color="#f59e0b"
-                        onClick={() => setShowEmojiPickerModal(true)}
-                      />
-                      {/* <ToolCard
+                          <ToolCard
+                            icon={<Icons.Smile />}
+                            title="Emoji"
+                            color="#f59e0b"
+                            onClick={() => setShowEmojiPickerModal(true)}
+                          />
+                          {/* <ToolCard
                         icon={<Icons.Download />}
                         title="YT Download"
                         color="#ef4444"
                         onClick={() => setShowYoutubeDownloaderModal(true)}
                       /> */}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  )}
+                </>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {/* --- EDIT PANEL --- */}
-        <div
-        data-panel="true"
-         style={{
-  ...(!isMobile ? editorStyles.editPanel : {
-    width: "100%",
-    height: "100%",
-    display: showEditPanel ? "flex" : "none",
-    flexDirection: "column",
-    position: "relative",
-    backgroundColor: colors.bgPrimary,
-  }),
+            {/* --- EDIT PANEL --- */}
+            <div
+              data-panel="true"
+              style={{
+                ...(!isMobile
+                  ? editorStyles.editPanel
+                  : {
+                      width: "100%",
+                      height: "100%",
+                      display: showEditPanel ? "flex" : "none",
+                      flexDirection: "column",
+                      position: "relative",
+                      backgroundColor: colors.bgPrimary,
+                    }),
 
-  ...(!isMobile ? {
-      backgroundColor: colors.bgPrimary, // Force opaque background
-      position: "relative",              // Reset 'fixed' positioning
-      left: 0,                           // Reset left offset
-      top: 0,
-      width: "100%",                     // Fill the transparent wrapper
-      height: "100%",
-      margin: 0,
-      boxShadow: "none",
-  } : {}),
-  zIndex: 50,
-  display: !isMobile && !showEditPanel ? "none" : undefined,
-  pointerEvents: isMobile 
-  ? (showEditPanel ? "auto" : "none")
-  : (showEditPanel ? "auto" : "none"),
-  ...(!isMobile && showEditPanel
-    ? {}
-    : (!isMobile ? editorStyles.editPanelHidden : {})),
-}}
-        >
-          {showEditPanel && (
-            <>
-            {!isMobile && (
-              <div
-                style={{
-                  ...editorStyles.editPanelHeader,
-                  backgroundColor: colors.bgSecondary,
-                  borderBottom: `1px solid ${colors.border}`,
-                  justifyContent: "space-between",
-                }}
-              >
-                <span
-                  style={{
-                    ...editorStyles.editPanelTitle,
-                    color: colors.textPrimary,
-                  }}
-                >
-                  {selectedTextLayer && "Edit Text"}
-                  {selectedAudioLayer && "Edit Audio"}
-                  {selectedVideoLayer && "Edit Video"}
-                  {selectedImageLayer && "Edit Image"}
-                  {selectedChatLayer && "Edit Chat"}
-                </span>
-                <button
-                  style={editorStyles.backButton}
-                  onClick={() => setSelectedLayerId(null)}
-                >
-                  <Icons.Close />
-                </button>
-              </div>
-            )}
-              {selectedTextLayer && (
-                <TextEditor
-                  layer={selectedTextLayer}
-                  onUpdate={updateLayer}
-                  onDelete={deleteLayer}
-                  isMobile={isMobile}
-                />
+                ...(!isMobile
+                  ? {
+                      backgroundColor: colors.bgPrimary, // Force opaque background
+                      position: "relative", // Reset 'fixed' positioning
+                      left: 0, // Reset left offset
+                      top: 0,
+                      width: "100%", // Fill the transparent wrapper
+                      height: "100%",
+                      margin: 0,
+                      boxShadow: "none",
+                    }
+                  : {}),
+                zIndex: 50,
+                display: !isMobile && !showEditPanel ? "none" : undefined,
+                pointerEvents: isMobile
+                  ? showEditPanel
+                    ? "auto"
+                    : "none"
+                  : showEditPanel
+                  ? "auto"
+                  : "none",
+                ...(!isMobile && showEditPanel
+                  ? {}
+                  : !isMobile
+                  ? editorStyles.editPanelHidden
+                  : {}),
+              }}
+            >
+              {showEditPanel && (
+                <>
+                  {!isMobile && (
+                    <div
+                      style={{
+                        ...editorStyles.editPanelHeader,
+                        backgroundColor: colors.bgSecondary,
+                        borderBottom: `1px solid ${colors.border}`,
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span
+                        style={{
+                          ...editorStyles.editPanelTitle,
+                          color: colors.textPrimary,
+                        }}
+                      >
+                        {selectedTextLayer && "Edit Text"}
+                        {selectedAudioLayer && "Edit Audio"}
+                        {selectedVideoLayer && "Edit Video"}
+                        {selectedImageLayer && "Edit Image"}
+                        {selectedChatLayer && "Edit Chat"}
+                      </span>
+                      <button
+                        style={editorStyles.backButton}
+                        onClick={() => setSelectedLayerId(null)}
+                      >
+                        <Icons.Close />
+                      </button>
+                    </div>
+                  )}
+                  {selectedTextLayer && (
+                    <TextEditor
+                      layer={selectedTextLayer}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {selectedAudioLayer && (
+                    <AudioEditor
+                      layer={selectedAudioLayer}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                      totalFrames={totalFrames}
+                      onReplace={() =>
+                        openMediaGallery(
+                          "audio",
+                          selectedAudioLayer.id,
+                          "audio"
+                        )
+                      }
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {selectedLayer && isImageLayer(selectedLayer) && (
+                    <ImageEditor
+                      layer={selectedLayer}
+                      totalFrames={totalFrames}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                      onReplace={() =>
+                        openMediaGallery("media", selectedLayer.id, "image")
+                      }
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {selectedVideoLayer && (
+                    <VideoEditor
+                      layer={selectedVideoLayer}
+                      totalFrames={totalFrames}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                      onReplace={() =>
+                        openMediaGallery(
+                          "video",
+                          selectedVideoLayer.id,
+                          "video"
+                        )
+                      }
+                      isMobile={isMobile}
+                    />
+                  )}
+                  {selectedChatLayer && (
+                    <ChatEditor
+                      layer={selectedChatLayer}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                    />
+                  )}
+                </>
               )}
-              {selectedAudioLayer && (
-                <AudioEditor
-                  layer={selectedAudioLayer}
-                  onUpdate={updateLayer}
-                  onDelete={deleteLayer}
-                  totalFrames={totalFrames}
-                  onReplace={() =>
-                    openMediaGallery("audio", selectedAudioLayer.id, "audio")
-                  }
-                  isMobile={isMobile}
-                />
-              )}
-              {selectedLayer && isImageLayer(selectedLayer) && (
-                <ImageEditor
-                  layer={selectedLayer}
-                  totalFrames={totalFrames}
-                  onUpdate={updateLayer}
-                  onDelete={deleteLayer}
-                  onReplace={() =>
-                    openMediaGallery("media", selectedLayer.id, "image")
-                  }
-                isMobile={isMobile}
-                />
-              )}
-             {selectedVideoLayer && (
-                <VideoEditor
-                  layer={selectedVideoLayer}
-                  totalFrames={totalFrames}
-                  onUpdate={updateLayer}
-                  onDelete={deleteLayer}
-                  onReplace={() =>
-                    openMediaGallery("video", selectedVideoLayer.id, "video")
-                  }
-                  isMobile={isMobile}
-                />
-              )}
-              {selectedChatLayer && (
-                <ChatEditor
-                  layer={selectedChatLayer}
-                  onUpdate={updateLayer}
-                  onDelete={deleteLayer}
-                />
-              )}
-            </>
-          )}
-        </div>
-        </MobilePanelWrapper>
+            </div>
+          </MobilePanelWrapper>
         )}
 
         {/* --- MAIN AREA --- */}
@@ -3521,7 +3625,6 @@ const openEditor = useCallback(() => {
               gap: "12px",
             }}
           >
-
             {isMobile && (
               <button
                 onClick={() => navigate("/dashboard")}
@@ -3552,28 +3655,72 @@ const openEditor = useCallback(() => {
               </button>
             )}
 
-            <span
-              style={{ ...editorStyles.headerTitle, color: colors.textPrimary }}
-            >
-              {projectTitle || template?.displayName || "Video Editor"}
-            </span>
+            {projectTitle ? (
+              isEditingTitle ? (
+                <input
+                  type="text"
+                  value={editingTitleValue}
+                  onChange={(e) => setEditingTitleValue(e.target.value)}
+                  onBlur={() => {
+                    if (editingTitleValue.trim() && editingTitleValue !== projectTitle) {
+                      handleUpdateTitle(editingTitleValue);
+                    }
+                    setIsEditingTitle(false);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      if (editingTitleValue.trim() && editingTitleValue !== projectTitle) {
+                        handleUpdateTitle(editingTitleValue);
+                      }
+                      setIsEditingTitle(false);
+                    } else if (e.key === "Escape") {
+                      setIsEditingTitle(false);
+                      setEditingTitleValue(projectTitle);
+                    }
+                  }}
+                  style={{
+                    ...editorStyles.headerTitle,
+                    backgroundColor: colors.bgPrimary,
+                    border: `1px solid ${colors.border}`,
+                    borderRadius: "4px",
+                    padding: "4px 8px",
+                    color: colors.textPrimary,
+                    outline: "none",
+                    fontSize: "inherit",
+                    fontWeight: "inherit",
+                  }}
+                  autoFocus
+                />
+              ) : (
+                <span
+                  style={{ ...editorStyles.headerTitle, color: colors.textPrimary, cursor: "pointer" }}
+                  onClick={() => {
+                    setIsEditingTitle(true);
+                    setEditingTitleValue(projectTitle);
+                  }}
+                  title="Click to edit title"
+                >
+                  {projectTitle}
+                </span>
+              )
+            ) : (
+              <span
+                style={{ ...editorStyles.headerTitle, color: colors.textPrimary }}
+              >
+                {template?.displayName || "Video Editor"}
+              </span>
+            )}
             <div style={editorStyles.headerButtonsRight}>
               <ThemeToggle />
               <button
                 style={editorStyles.addButton}
                 onClick={async () => {
-                  const screenshoturl = await handleSaveThumbnail();
-                  if (screenshot) {
-                    if (projectId) {
-                      handleSaveExistingProject(screenshoturl as string);
-                      // handleSaveProject();
-                    } else {
-                      setShowSaveModal(true);
-                    }
+                  if (projectId) {
+                    const screenshoturl = await handleSaveThumbnail();
+                    handleSaveExistingProject(screenshoturl as string);
+                    // handleSaveProject();
                   } else {
-                    toast.error(
-                      "There was an error saving your project.\nTry again later."
-                    );
+                    setShowSaveModal(true);
                   }
                 }}
               >
@@ -3594,7 +3741,7 @@ const openEditor = useCallback(() => {
             </div>
           </div>
 
-        <div
+          <div
             style={{
               ...editorStyles.previewArea,
               backgroundColor: colors.bgPrimary,
@@ -3607,10 +3754,12 @@ const openEditor = useCallback(() => {
               minHeight: 0,
               position: "relative",
               pointerEvents: "auto",
-              ...(isMobile && isPanelOpen && showEditPanel ? {
-                height: "calc(100vh - 60px - 40vh - 64px)",
-                maxHeight: "calc(100vh - 60px - 40vh - 64px)",
-              } : {}),
+              ...(isMobile && isPanelOpen && showEditPanel
+                ? {
+                    height: "calc(100vh - 60px - 40vh - 64px)",
+                    maxHeight: "calc(100vh - 60px - 40vh - 64px)",
+                  }
+                : {}),
             }}
             ref={previewContainerRef}
           >
@@ -3621,7 +3770,7 @@ const openEditor = useCallback(() => {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                position: "relative", 
+                position: "relative",
                 pointerEvents: "none",
               }}
             >
@@ -3658,8 +3807,8 @@ const openEditor = useCallback(() => {
                       left: 0,
                       width: "100%",
                       height: "100%",
-                      pointerEvents: "auto", 
-                      zIndex: 1000, 
+                      pointerEvents: "auto",
+                      zIndex: 1000,
                     }}
                   >
                     <CropOverlay
@@ -3693,71 +3842,71 @@ const openEditor = useCallback(() => {
             </div>
           </div>
 
-         <div
-  ref={verticalResizerRef}
-  style={{
-    height: isMobile ? "12px" : "12px",
-    backgroundColor: colors.bgSecondary,
-    borderTop: `1px solid ${colors.borderLight}`,
-    borderBottom: `1px solid ${colors.borderLight}`,
-    cursor: "ns-resize",
-    flexShrink: 0,
-    zIndex: 1000,
-    transition: isResizingVertical
-      ? "none"
-      : "background-color 0.15s",
-    boxShadow: isResizingVertical
-      ? "0 0 10px rgba(59, 130, 246, 0.4)"
-      : "none",
-    touchAction: 'none',
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    pointerEvents: 'auto',
-  }}
-  onMouseDown={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizingVertical(true);
-  }}
-  onTouchStart={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizingVertical(true);
-  }}
-  onMouseOver={(e) => {
-    if (!isResizingVertical)
-      e.currentTarget.style.backgroundColor = colors.bgHover;
-  }}
-  onMouseOut={(e) => {
-    if (!isResizingVertical)
-      e.currentTarget.style.backgroundColor = colors.bgSecondary;
-  }}
->
-  {/* Arrow indicator - only show on mobile */}
-  {isMobile && (
-    <div
-      style={{
-        color: colors.textMuted,
-        opacity: isResizingVertical ? 1 : 0.6,
-        transition: 'opacity 0.2s',
-        pointerEvents: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '6px',
-        fontSize: '11px',
-        fontWeight: '500',
-      }}
-    >
-      <Icons.ExpandVertical />
-      <span>Drag to Resize</span>
-    </div>
-  )}
-</div>
+          <div
+            ref={verticalResizerRef}
+            style={{
+              height: isMobile ? "12px" : "12px",
+              backgroundColor: colors.bgSecondary,
+              borderTop: `1px solid ${colors.borderLight}`,
+              borderBottom: `1px solid ${colors.borderLight}`,
+              cursor: "ns-resize",
+              flexShrink: 0,
+              zIndex: 1000,
+              transition: isResizingVertical
+                ? "none"
+                : "background-color 0.15s",
+              boxShadow: isResizingVertical
+                ? "0 0 10px rgba(59, 130, 246, 0.4)"
+                : "none",
+              touchAction: "none",
+              WebkitTouchCallout: "none",
+              WebkitUserSelect: "none",
+              userSelect: "none",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              position: "relative",
+              pointerEvents: "auto",
+            }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsResizingVertical(true);
+            }}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsResizingVertical(true);
+            }}
+            onMouseOver={(e) => {
+              if (!isResizingVertical)
+                e.currentTarget.style.backgroundColor = colors.bgHover;
+            }}
+            onMouseOut={(e) => {
+              if (!isResizingVertical)
+                e.currentTarget.style.backgroundColor = colors.bgSecondary;
+            }}
+          >
+            {/* Arrow indicator - only show on mobile */}
+            {isMobile && (
+              <div
+                style={{
+                  color: colors.textMuted,
+                  opacity: isResizingVertical ? 1 : 0.6,
+                  transition: "opacity 0.2s",
+                  pointerEvents: "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  fontSize: "11px",
+                  fontWeight: "500",
+                }}
+              >
+                <Icons.ExpandVertical />
+                <span>Drag to Resize</span>
+              </div>
+            )}
+          </div>
           <Timeline
             tracks={timelineTracks}
             currentFrame={currentFrame}
@@ -3769,7 +3918,7 @@ const openEditor = useCallback(() => {
             onTracksChange={handleTracksChange}
             onReorderTracks={handleReorderTracks}
             onDeleteTrack={deleteLayer}
-            onCutTrack={splitLayer} 
+            onCutTrack={splitLayer}
             onEdit={openEditor}
             isPlaying={isPlaying}
             onPlayPause={togglePlayback}

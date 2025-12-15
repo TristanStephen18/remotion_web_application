@@ -10,7 +10,7 @@ const allViralMotions = Object.values(templateCategories).flat();
 // Specific templates to show in Explore Templates section (in order)
 const selectedTemplateNames = [
   "Split Screen",
-  "Reddit Post Narration",
+  "Dancing People",
   "Quote Spotlight",
   "Fake Text Conversation",
   "Photo Collage",

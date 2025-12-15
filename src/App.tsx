@@ -59,6 +59,7 @@ import "./styles/theme.css";
 import VideoEditorDemo from "./pages/trials/ScreenshotTrial.tsx";
 import PricingPage from "./pages/PricingPage.tsx";
 import { backendPrefix } from "./config";
+import { TemplateGallery } from "./components/ui/dsahboard/sections/refactored/TemplatesSection.tsx";
 
 // ✅ UPDATED: Auth Provider with subscription check
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -776,6 +777,8 @@ function App() {
 
             {/* ========== 404 FALLBACK ========== */}
             <Route path="*" element={<Navigate to="/" replace />} />
+            {/* trials */}
+            <Route path="/nana" element={<TemplateGallery/>} />
           </Routes>
 
           {/* Global Toast Notifications */}

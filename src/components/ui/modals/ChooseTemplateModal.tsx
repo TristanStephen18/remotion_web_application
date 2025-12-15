@@ -353,7 +353,7 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
             onClick={() => setSearchOpen(true)}
             sx={{
               position: "fixed",
-              bottom: 24,
+              top: 80,
               right: 24,
               zIndex: 1000,
               boxShadow: "0 4px 20px rgba(0,0,0,0.15)",

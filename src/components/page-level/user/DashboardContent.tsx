@@ -11,19 +11,17 @@ import { useUploadHooks } from "../../../hooks/dashboardhooks/UploadHooks";
 import { useRendersHooks } from "../../../hooks/dashboardhooks/RendersHooks";
 import { useProfileHooks } from "../../../hooks/datafetching/ProfileData";
 import { ProfilePage } from "../../../pages/user/Profile";
-import { MyTemplatesSection } from "../../ui/dsahboard/sections/MyDesignSection";
+// import { MyTemplatesSection } from "../../ui/dsahboard/sections/MyDesignSection";
 import { ToolsSection } from "../../ui/dsahboard/sections/ToolsSection";
 import SubscriptionPlan from "../../../pages/user/SubscriptionPlan";
 import type { DashboardSection } from "../../ui/navigations/DashboardSidenav";
+import { TemplateGallery } from "../../ui/dsahboard/sections/refactored/TemplatesSection";
 
 export const DashboardContent: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [toolsKey, setToolsKey] = useState(0); // Add this state for resetting tools
 
-  const {
-    fetchUserDatasets,
-    userDatasets,
-  } = useDatasetsFetching();
+  const { fetchUserDatasets, userDatasets } = useDatasetsFetching();
 
   const { search, setSearch, activeSection, setActiveSection } =
     useHomeSectionHooks();
@@ -32,6 +30,8 @@ export const DashboardContent: React.FC = () => {
     loadingProjects,
     fetchProjects,
     handleDeleteProjects,
+    handleRenameProject,
+    handleDeleteProject,
     hoveredId,
     projects,
     selectedProjects,
@@ -59,7 +59,7 @@ export const DashboardContent: React.FC = () => {
     fetchRenders,
     renders,
     handleDeleteRenders,
-    loadingRenders,
+    // loadingRenders,
     selectedRenders,
     setSelectedRenders,
   } = useRendersHooks();
@@ -71,7 +71,7 @@ export const DashboardContent: React.FC = () => {
   const handleSectionChange = (section: DashboardSection) => {
     // If clicking on Tools while already on Tools, reset it
     if (section === "tools" && activeSection === "tools") {
-      setToolsKey(prev => prev + 1); // Increment key to force remount
+      setToolsKey((prev) => prev + 1); // Increment key to force remount
     }
     setActiveSection(section);
   };
@@ -141,16 +141,15 @@ export const DashboardContent: React.FC = () => {
         )}
 
         {activeSection === "templates" && (
-          <MyTemplatesSection
-            clearSelection={() => setSelectedProjects([])}
-            hoveredId={hoveredId}
-            loadingProjects={loadingProjects}
-            onDeleteSelected={handleDeleteProjects}
-            projects={projects}
-            selectedProjects={selectedProjects}
-            setHoveredId={setHoveredId}
-            toggleProjectSelection={toggleProjectSelection}
-          />
+          <TemplateGallery />
+          // <MyTemplatesSection
+          //   hoveredId={hoveredId}
+          //   loadingProjects={loadingProjects}
+          //   onDelete={handleDeleteProject}
+          //   onRename={handleRenameProject}
+          //   projects={projects}
+          //   setHoveredId={setHoveredId}
+          // />
         )}
 
         {/* ProjectsSection - with renders props added */}
@@ -161,11 +160,16 @@ export const DashboardContent: React.FC = () => {
             selectedUploads={selectedUploads}
             setSelectedUploads={setSelectedUploads}
             handleDeleteUploads={handleDeleteUploads}
-            renders={renders}
-            loadingRenders={loadingRenders}
-            selectedRenders={selectedRenders}
-            setSelectedRenders={setSelectedRenders}
-            handleDeleteRenders={handleDeleteRenders}
+            clearSelection={() => setSelectedProjects([])}
+            hoveredId={hoveredId}
+            loadingProjects={loadingProjects}
+            onDeleteSelected={handleDeleteProjects}
+            projects={projects}
+            selectedProjects={selectedProjects}
+            setHoveredId={setHoveredId}
+            toggleProjectSelection={toggleProjectSelection}
+            handleDeleteProject={handleDeleteProject}
+            handleRenameProject={handleRenameProject}
           />
         )}
 
