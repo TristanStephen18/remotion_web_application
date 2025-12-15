@@ -270,6 +270,7 @@ function RootRedirect() {
 
   useEffect(() => {
     const checkAndRedirect = async () => {
+      console.log("Checking authentication: ", checking);
       const token = localStorage.getItem("token");
 
       // Not logged in → Show landing page

@@ -185,7 +185,7 @@ function CheckoutForm() {
 
   // ✅ Calculate dates - billing starts immediately (no additional trial)
   const today = new Date();
-  const billingStartDate = today; // Immediate billing
+  // const billingStartDate = today; // Immediate billing
   const nextBillingDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   return (
