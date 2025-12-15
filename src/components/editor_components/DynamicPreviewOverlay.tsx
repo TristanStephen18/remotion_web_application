@@ -419,7 +419,17 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
           newHeight = Math.max(5, dragStartPos.height - deltaHeightPercent);
           newY = dragStartPos.y + deltaHeightPercent / 2;
         }
-        
+
+
+        if (layer.type === "chat-bubble") {
+          const clampedWidth = Math.min(80, Math.max(20, newWidth));
+          if (clampedWidth !== newWidth && (corner === "l" || corner === "bl" || corner === "tl")) {
+             const widthDiff = clampedWidth - dragStartPos.width;
+             newX = dragStartPos.x + (widthDiff / 2);
+          }
+          
+          newWidth = clampedWidth;
+        }
 
         if (isTextLayer(layer)) {
           const scale = Math.sqrt(
@@ -811,19 +821,20 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
         let transformOrigin = "center center";
         
 
-        if (isChat) {
-  const chatLayer = layer as ChatBubbleLayer;
-  if (chatLayer.chatStyle !== 'fakechatconversation') {
-    if (chatLayer.isSender) {
-      // Sender bubbles: right: 2%
-      adjustedCenterX = 100 - 2 - (displayWidth / 2);
-    } else {
-      // Receiver bubbles: left: 2%
-      adjustedCenterX = 2 + (displayWidth / 2);
-    }
-  }
-}
+//         if (isChat) {
+//   const chatLayer = layer as ChatBubbleLayer;
+//   if (chatLayer.chatStyle !== 'fakechatconversation') {
+//     if (chatLayer.isSender) {
+//       // Sender bubbles: right: 2%
+//       adjustedCenterX = 100 - 2 - (displayWidth / 2);
+//     } else {
+//       // Receiver bubbles: left: 2%
+//       adjustedCenterX = 2 + (displayWidth / 2);
+//     }
+//   }
+// }
         
+
 
         if (isImageLayer(layer) && layer.crop && cropModeLayerId !== layer.id) {
           const crop = layer.crop;
@@ -831,8 +842,8 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
           displayHeight = layer.size.height * (crop.height / 100);
           
           // Calculate the center of the cropped region as percentage (0-100)
-          const cropCenterX = crop.x + crop.width / 2;  // Center X of crop in %
-          const cropCenterY = crop.y + crop.height / 2;  // Center Y of crop in %
+          const cropCenterX = crop.x + crop.width / 2;  
+          const cropCenterY = crop.y + crop.height / 2;  
           
           // Calculate offset from image center (50%) in percentage points
           const cropCenterOffsetX = ((cropCenterX - 50) / 100) * layer.size.width;
@@ -846,15 +857,22 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
           transformOrigin = `${50 + originOffsetX}% ${50 + originOffsetY}%`;
         }
 
-        // --- PRECISE POSITIONING MATCHING COMPOSITION ---
-        // Top-Left Coordinate = Adjusted Center - Half Display Size
-        const left = `${adjustedCenterX - displayWidth / 2}%`;
-        const top = `${adjustedCenterY - displayHeight / 2}%`;
-
-        // --- STRICT SIZING ---
-        // Overlay Box Size MUST match cropped size
+       const scaleFactor = actualHeight / 1920;
+        const isChatLayer = isChatBubbleLayer(layer); 
         const width = `${displayWidth}%`;
-        const height = `${displayHeight}%`;
+        const height = isChatLayer ? 'auto' : `${displayHeight}%`;
+        const minHeight = isChatLayer ? `${displayHeight}%` : undefined;
+        let left: string, top: string, transform: string;
+
+        if (isChatLayer) {
+          left = `${adjustedCenterX}%`;
+          top = `${adjustedCenterY}%`;
+          transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
+        } else {
+          left = `${adjustedCenterX - displayWidth / 2}%`;
+          top = `${adjustedCenterY - displayHeight / 2}%`;
+          transform = `rotate(${rotation}deg)`;
+        }
 
         const baseZIndex = visibleLayers.length - renderIndex;
 
@@ -867,6 +885,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
               top,
               width,
               height,
+              minHeight,
               zIndex: isSelected ? 100 : baseZIndex,
               ...(isSelected ? (isChat ? styles.elementBoxSelectedChat : styles.elementBoxSelected) : {}),
               cursor: isEditing
@@ -876,7 +895,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
                   ? "grabbing"
                   : "move"
                 : "pointer",
-              transform: `rotate(${rotation}deg)`,
+              transform,
               transformOrigin: transformOrigin,
 
               // --- CENTER CONTENT ---
@@ -888,6 +907,76 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
             onDoubleClick={(e) => handleDoubleClick(e, layer)}
             onMouseDown={(e) => !isEditing && handleMouseDown(e, layer)}
           >
+
+           {isChatLayer && (() => {
+               const chatLayer = layer as ChatBubbleLayer;
+               const scale = scaleFactor; 
+               
+               let padding = `${20 * scale}px ${28 * scale}px`; 
+               if (chatLayer.chatStyle === 'imessage') padding = `${22 * scale}px ${34 * scale}px`;
+               if (chatLayer.chatStyle === 'whatsapp') padding = `${16 * scale}px ${24 * scale}px`;
+               if (chatLayer.chatStyle === 'messenger') padding = `${20 * scale}px ${30 * scale}px`;
+               if (chatLayer.chatStyle === 'instagram') padding = `${24 * scale}px ${34 * scale}px`;
+
+               const isFakeChat = chatLayer.chatStyle === 'fakechatconversation';
+               const isMessengerOrInsta = ['messenger', 'instagram'].includes(chatLayer.chatStyle);
+               
+               const shouldShowAvatar = isFakeChat || (!chatLayer.isSender && isMessengerOrInsta);
+
+               // Calculate sizes
+               const avatarSize = (80 * (chatLayer.avatarScale || 1.0)) * scale;
+               const fontSize = (chatLayer.bubbleFontSize || 30) * scale;
+               const gap = 18 * scale;
+
+
+               const defaultFont = chatLayer.chatStyle === "imessage"
+                ? "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                : "Helvetica, Arial, sans-serif";
+
+               const fontFamily = (chatLayer as any).fontFamily || defaultFont;
+
+               return (
+                <div style={{
+                    display: "flex",
+                    flexDirection: chatLayer.isSender ? "row-reverse" : "row",
+                    alignItems: "flex-end",
+                    gap: `${gap}px`,
+                    width: "100%", 
+                    visibility: "hidden", 
+                    pointerEvents: "none",
+                    padding: 0,
+                    boxSizing: 'border-box',
+                }}>
+                    {/* Ghost Avatar */}
+                    <div style={{
+                         width: `${avatarSize}px`,
+                         height: `${avatarSize}px`,
+                         minWidth: `${avatarSize}px`,
+                         flex: "0 0 auto",
+                         border: `${4 * scale}px solid transparent`,
+                         display: shouldShowAvatar ? 'block' : 'none'
+                    }} />
+                    
+                    {/* Ghost Message Bubble */}
+                    <div style={{
+                        maxWidth: "80%",
+                        width: "fit-content",
+                        padding: padding,
+                        fontSize: `${fontSize}px`,
+                        lineHeight: 1.2, 
+                        fontFamily: fontFamily, 
+                        fontWeight: 400, 
+                        whiteSpace: "pre-wrap",
+                        wordWrap: "break-word",
+                        wordBreak: "break-word",
+                        borderBottom: `${20 * scale}px solid transparent` 
+                    }}>
+                        {chatLayer.message}
+                    </div>
+                </div>
+              );
+            })()}
+
             {isText && renderGhostText(layer as TextLayer)}
             {isEditing && isText && renderEditableText(layer as TextLayer)}
 
@@ -912,7 +1001,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
               </span>
             )}
 
-            {isSelected && !isEditing && !isChat && cropModeLayerId !== layer.id && (
+            {isSelected && !isEditing && cropModeLayerId !== layer.id && (
               <>
                 {/* Normal resize handles */}
                 <div style={styles.rotateLine} />

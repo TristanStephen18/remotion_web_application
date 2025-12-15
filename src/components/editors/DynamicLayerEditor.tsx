@@ -556,7 +556,7 @@ const DynamicLayerEditor: React.FC = () => {
   const [chatPartnerName, setChatPartnerName] = useState("User");
 
   const [timelineHeight, setTimelineHeight] = useState(
-  isMobile ? window.innerHeight * 0.4 : 200
+  isMobile ? window.innerHeight * 0.5 : 320
 );
   const [isResizingVertical, setIsResizingVertical] = useState(false);
   const verticalResizerRef = useRef<HTMLDivElement>(null);
@@ -1252,7 +1252,7 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
         senderName: currentName,
         avatarUrl: currentAvatar,
         position: { x: 50, y: startY }, // Centered X, Y increments automatically handled by rendering
-        size: { width: 100, height: 10 },
+        size: { width: 90, height: 10 },
         rotation: 0,
         opacity: 1,
         animation: { entrance: "slideUp", entranceDuration: 20 },
@@ -1482,7 +1482,7 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
     };
   }, [isResizingVertical]);
 
-  // ============================================================================
+ // ============================================================================
   // COLLAGE HANDLERS
   // ============================================================================
 
@@ -1490,80 +1490,95 @@ const [isPanelOpen, setIsPanelOpen] = useState(false);
     (layout: CollageLayout) => {
       setSelectedCollageLayout(layout);
 
-      // Sample images to cycle through
+      const existingCollageLayers = layers
+        .filter(
+          (l) =>
+            l.type === "image" &&
+            (l.name.startsWith("Collage Slot") ||
+             l.name.startsWith("Individual Photo"))
+        )
+        .sort((a, b) => {
+          const getNum = (str: string) => parseInt(str.match(/\d+/)?.[0] || "0");
+          return getNum(a.name) - getNum(b.name);
+        });
+
+      const existingSrcs = Array.from(new Set(existingCollageLayers.map((l) => (l as ImageLayer).src)));
+
       const sampleImages = [
-        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=1600&fit=crop", // Mountain landscape
-        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=1600&fit=crop", // Nature scene
-        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=1600&fit=crop", // Beach sunset
-        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=1600&fit=crop", // Beach view
-        "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&h=1600&fit=crop", // Ocean
-        "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&h=1600&fit=crop", // Lake
-        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=1600&fit=crop", // Forest
-        "https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=1200&h=1600&fit=crop", // Sunset
-        "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&h=1600&fit=crop", // Mountain peak
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1504893524553-b855bce32c67?w=1200&h=1600&fit=crop",
+        "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1200&h=1600&fit=crop",
       ];
 
-      // Animation options for variety
-      // const animations = ["fade", "slideUp", "scale", "zoomPunch"];
+      // Combine: Prioritize existing user images
+      const imagesToUse = [...existingSrcs];
+      let fillerIndex = 0;
+      
+      // If we don't have enough user images for the new layout slots + trailing photos, fill with samples
+      while (imagesToUse.length < layout.slots.length + 6) {
+        imagesToUse.push(sampleImages[fillerIndex % sampleImages.length]);
+        fillerIndex++;
+      }
 
       // Timing configuration
       const photoDelay = 18;
-const slideSpeed = 45;
-const holdTime = 45; // Time to view complete collage after all photos enter
-const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const slideSpeed = 45;
+      const holdTime = 45; 
+      const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
       const photoStartFrame = collageEndFrame; 
-      const photoDuration = 60; // Each photo shows for 2 seconds
+      const photoDuration = 60; 
 
+      const collageLayers: Layer[] = layout.slots.map((slot, index) => {
+        const layerId = generateId();
 
-const collageLayers: Layer[] = layout.slots.map((slot, index) => {
-  const layerId = generateId();
+        // Determine slide animation
+        let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
+        if (slot.slideDirection === "left") slideAnimation = "slideRight"; 
+        else if (slot.slideDirection === "right") slideAnimation = "slideLeft";
+        else if (slot.slideDirection === "up") slideAnimation = "slideDown";
+        else if (slot.slideDirection === "down") slideAnimation = "slideUp";
+        else slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
 
-  // Determine slide animation based on slot direction
-  let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
-  if (slot.slideDirection === "left") {
-    slideAnimation = "slideRight"; 
-  } else if (slot.slideDirection === "right") {
-    slideAnimation = "slideLeft";
-  } else if (slot.slideDirection === "up") {
-    slideAnimation = "slideDown";
-  } else if (slot.slideDirection === "down") {
-    slideAnimation = "slideUp";
-  } else {
-    slideAnimation = index % 2 === 0 ? "slideLeft" : "slideRight";
-  }
+        const imageLayer: ImageLayer = {
+          id: layerId,
+          name: `Collage Slot ${index + 1}`,
+          visible: true,
+          locked: false,
+          type: "image",
+          startFrame: index * photoDelay, 
+          endFrame: collageEndFrame,
+          position: {
+            x: slot.x + slot.width / 2,
+            y: slot.y + slot.height / 2,
+          },
+          size: {
+            width: slot.width,
+            height: slot.height,
+          },
+          rotation: slot.rotation || 0,
+          opacity: 1,
+          animation: {
+            entrance: slideAnimation,
+            entranceDuration: slideSpeed,
+          },
+          // ✅ USE THE PRESERVED IMAGE HERE
+          src: imagesToUse[index],
+          objectFit: "cover",
+          filter: slot.shadow
+            ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
+            : "brightness(1.05) contrast(1.05)",
+        };
 
-  const imageLayer: ImageLayer = {
-    id: layerId,
-    name: `Collage Slot ${index + 1}`,
-    visible: true,
-    locked: false,
-    type: "image",
-    startFrame: index * photoDelay, // Sequential: 0, 18, 36, 54, 72, 90
-    endFrame: collageEndFrame,
-    position: {
-      x: slot.x + slot.width / 2,
-      y: slot.y + slot.height / 2,
-    },
-    size: {
-      width: slot.width,
-      height: slot.height,
-    },
-    rotation: slot.rotation || 0,
-    opacity: 1,
-    animation: {
-      entrance: slideAnimation,
-      entranceDuration: slideSpeed,
-    },
-    src: sampleImages[index % sampleImages.length],
-    objectFit: "cover",
-    filter: slot.shadow
-      ? "drop-shadow(0px 12px 32px rgba(0, 0, 0, 0.6)) brightness(1.05) contrast(1.05)"
-      : "brightness(1.05) contrast(1.05)",
-  };
+        return imageLayer;
+      });
 
-  return imageLayer;
-});
-      // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS (aesthetic designs)
+      // 2. CREATE FULLSCREEN TRAILING INDIVIDUAL PHOTO LAYERS
       const trailingPhotoLayers: ImageLayer[] = [];
       const individualAnimations = ["zoomPunch", "scale", "fade"];
 
@@ -1577,27 +1592,24 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
           type: "image",
           startFrame: photoStartFrame + i * photoDuration,
           endFrame: photoStartFrame + (i + 1) * photoDuration,
-          position: { x: 50, y: 50 }, // Center
-          size: { width: 100, height: 100 }, // FULLSCREEN
+          position: { x: 50, y: 50 },
+          size: { width: 100, height: 100 }, 
           rotation: 0,
           opacity: 1,
           animation: {
-            entrance: individualAnimations[i % individualAnimations.length] as
-              | "fade"
-              | "scale"
-              | "zoomPunch",
+            entrance: individualAnimations[i % individualAnimations.length] as "fade" | "scale" | "zoomPunch",
             entranceDuration: 25,
           },
-          src: sampleImages[(layout.slots.length + i) % sampleImages.length],
+          // ✅ USE THE PRESERVED IMAGE HERE (offset by slot count)
+          src: imagesToUse[layout.slots.length + i],
           objectFit: "cover",
-          // Aesthetic enhancement filters
           filter: "brightness(1.08) contrast(1.1) saturate(1.15)",
         });
       }
 
       const textOverlay = layout.textOverlay;
 
-      // 3. CREATE AESTHETIC TEXT OVERLAY (only during collage section)
+      // 3. CREATE AESTHETIC TEXT OVERLAY
       const textLayer: TextLayer = {
         id: generateId(),
         name: "Collage Title",
@@ -1606,15 +1618,12 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         type: "text",
         startFrame: 0,
         endFrame: collageEndFrame,
-        position: { x: 50, y: 47 }, // Top center
+        position: { x: 50, y: 47 }, 
         size: { width: 85, height: 12 },
         rotation: 0,
         opacity: 1,
-        animation: {
-          entrance: "slideDown",
-          entranceDuration: 30,
-        },
-        content: textOverlay ? textOverlay.mainText : layout.name.toUpperCase(), // Uppercase for style
+        animation: { entrance: "slideDown", entranceDuration: 30 },
+        content: textOverlay ? textOverlay.mainText : layout.name.toUpperCase(),
         fontFamily: textOverlay ? textOverlay.mainFont : "Poppins",
         fontSize: 7,
         fontColor: "#ffffff",
@@ -1622,7 +1631,7 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         fontStyle: "normal",
         textAlign: "center",
         lineHeight: 1.3,
-        letterSpacing: 3, // Wide letter spacing for aesthetic
+        letterSpacing: 3, 
         textTransform: textOverlay ? "none" : "uppercase",
         textOutline: true,
         outlineColor: "#000000",
@@ -1634,40 +1643,37 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
       };
 
       const subtitleLayer: TextLayer | null = textOverlay ? {
-  id: generateId(),
-  name: "Collage Subtitle",
-  visible: true,
-  locked: false,
-  type: "text",
-  startFrame: 10,
-  endFrame: collageEndFrame,
-  position: { x: 50, y: 53 },
-  size: { width: 70, height: 8 },
-  rotation: 0,
-  opacity: 1,
-  animation: {
-    entrance: "fade",
-    entranceDuration: 20,
-  },
-  content: textOverlay.subText,
-  fontFamily: textOverlay.subFont,
-  fontSize: 4,
-  fontColor: "#ffffff",
-  fontWeight: "normal",
-  fontStyle: "italic",
-  textAlign: "center",
-  lineHeight: 1.2,
-  letterSpacing: 1,
-  textTransform: "none",
-  textOutline: false,
-  textShadow: true,
-  shadowColor: "#000000",
-  shadowX: 0,
-  shadowY: 3,
-  shadowBlur: 10,
-} : null;
+        id: generateId(),
+        name: "Collage Subtitle",
+        visible: true,
+        locked: false,
+        type: "text",
+        startFrame: 10,
+        endFrame: collageEndFrame,
+        position: { x: 50, y: 53 },
+        size: { width: 70, height: 8 },
+        rotation: 0,
+        opacity: 1,
+        animation: { entrance: "fade", entranceDuration: 20 },
+        content: textOverlay.subText,
+        fontFamily: textOverlay.subFont,
+        fontSize: 4,
+        fontColor: "#ffffff",
+        fontWeight: "normal",
+        fontStyle: "italic",
+        textAlign: "center",
+        lineHeight: 1.2,
+        letterSpacing: 1,
+        textTransform: "none",
+        textOutline: false,
+        textShadow: true,
+        shadowColor: "#000000",
+        shadowX: 0,
+        shadowY: 3,
+        shadowBlur: 10,
+      } : null;
 
-      // 4. CREATE SUBTLE GRADIENT OVERLAY (only during collage for depth)
+      // 4. CREATE OVERLAYS
       const gradientOverlay: ImageLayer = {
         id: generateId(),
         name: "Gradient Overlay",
@@ -1675,18 +1681,16 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         locked: true,
         type: "image",
         startFrame: 0,
-        endFrame: collageEndFrame, // Only during collage
+        endFrame: collageEndFrame, 
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
         rotation: 0,
-        opacity: 0.15, // Subtle overlay
-        // Black gradient from top (for text readability)
+        opacity: 0.15, 
         src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA4MCIgaGVpZ2h0PSIxOTIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAuOCIvPjxzdG9wIG9mZnNldD0iNDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDAwMDAwO3N0b3Atb3BhY2l0eTowIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDAwMDAwO3N0b3Atb3BhY2l0eTowIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwODAiIGhlaWdodD0iMTkyMCIgZmlsbD0idXJsKCNncmFkKSIvPjwvc3ZnPg==",
         objectFit: "cover",
         isBackground: false,
       };
 
-      // 5. CREATE BOTTOM VIGNETTE FOR INDIVIDUAL PHOTOS (for aesthetic depth)
       const bottomVignette: ImageLayer = {
         id: generateId(),
         name: "Bottom Vignette",
@@ -1694,52 +1698,30 @@ const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         locked: true,
         type: "image",
         startFrame: photoStartFrame,
-        endFrame: totalFrames, // During all individual photos
+        endFrame: totalFrames,
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
         rotation: 0,
-        opacity: 0.25, // Subtle vignette
-        // Dark edges vignette
+        opacity: 0.25, 
         src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA4MCIgaGVpZ2h0PSIxOTIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0idmlnIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI3MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAuOSIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjE5MjAiIGZpbGw9InVybCgjdmlnKSIvPjwvc3ZnPg==",
         objectFit: "cover",
         isBackground: false,
       };
 
-      // 6. COMBINE ALL LAYERS IN PROPER ORDER
+      // 6. COMBINE ALL LAYERS
       const allLayers: Layer[] = [
-  ...collageLayers,
-  gradientOverlay,
-  textLayer,
-  ...(subtitleLayer ? [subtitleLayer] : []), // ADDED THIS LINE
-  ...trailingPhotoLayers,
-  bottomVignette,
-];
-
-      // Remove ALL old layers and add new composition
-      console.log("=== CREATING AESTHETIC COLLAGE COMPOSITION ===");
-      console.log("Removing all", layers.length, "existing layers");
-      console.log("Adding", collageLayers.length, "collage slots (0-3s)");
-      console.log(
-        "Adding",
-        trailingPhotoLayers.length,
-        "fullscreen photos (3-15s)"
-      );
-      console.log("Adding text layer (0-3s only)");
-      console.log("Adding aesthetic overlays");
+        ...collageLayers,
+        gradientOverlay,
+        textLayer,
+        ...(subtitleLayer ? [subtitleLayer] : []), 
+        ...trailingPhotoLayers,
+        bottomVignette,
+      ];
 
       pushState(allLayers);
-
-      // Clear selection
       setSelectedLayerId(null);
       setEditingLayerId(null);
-
-      // Force cursor back to default
-      document.body.style.cursor = "default";
-      setTimeout(() => {
-        document.body.style.cursor = "default";
-      }, 0);
-
-      toast.success(`✨ Applied ${layout.name} with aesthetic design!`);
+      toast.success(`✨ Layout updated (Images Preserved)!`);
     },
     [layers, pushState, totalFrames, setSelectedLayerId, setEditingLayerId]
   );
@@ -3674,7 +3656,7 @@ const openEditor = useCallback(() => {
                   </div>
                 )}
 
-                {template?.id !== 8 && (
+               
                   <DynamicPreviewOverlay
                     layers={layers}
                     currentFrame={currentFrame}
@@ -3688,7 +3670,6 @@ const openEditor = useCallback(() => {
                     isPlaying={isPlaying}
                     onPlayingChange={setIsPlaying}
                   />
-                )}
               </div>
             </div>
           </div>

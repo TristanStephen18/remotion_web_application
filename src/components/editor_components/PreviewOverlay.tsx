@@ -323,9 +323,10 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
     setResizeDirection(null);
   };
 
+  // Add both mouse and touch event listeners
   document.addEventListener("mousemove", handleMouseMove);
   document.addEventListener("mouseup", handleMouseUp);
-  document.addEventListener("touchmove", handleMouseMove, { passive: false });
+  document.addEventListener("touchmove", handleMouseMove);
   document.addEventListener("touchend", handleMouseUp);
 
   return () => {
@@ -334,7 +335,9 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
     document.removeEventListener("touchmove", handleMouseMove);
     document.removeEventListener("touchend", handleMouseUp);
   };
-}, [dragMode, dragElement, dragStart, dragStartPos, grabOffset, rendered, onPositionChange, positions, resizeDirection]);
+}, [
+  dragMode,
+  dragElement, dragStart, dragStartPos, grabOffset, rendered, onPositionChange, positions, resizeDirection]);
 
   // Deselect when clicking overlay background
   const handleOverlayClick = useCallback((e: React.MouseEvent) => {
@@ -349,22 +352,24 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
 
   const styles: Record<string, React.CSSProperties> = {
     overlay: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      pointerEvents: "auto",
-      zIndex: 1000,
-    },
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+  pointerEvents: "auto",
+  touchAction: "none",
+  zIndex: 1000,
+},
     elementBox: {
-      position: "absolute",
-      border: "2px solid rgba(59, 130, 246, 0.6)",
-      background: "rgba(59, 130, 246, 0.05)",
-      pointerEvents: "auto",
-      transition: dragMode ? "none" : "border-color 0.2s, box-shadow 0.2s",
-      boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-    },
+  position: "absolute",
+  border: "2px solid rgba(59, 130, 246, 0.6)",
+  background: "rgba(59, 130, 246, 0.05)",
+  pointerEvents: "auto",
+  touchAction: "none",
+  transition: dragMode ? "none" : "border-color 0.2s, box-shadow 0.2s",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+},
     elementBoxSelected: {
       border: "2px solid #3b82f6",
       background: "rgba(59, 130, 246, 0.1)",
@@ -396,37 +401,40 @@ export const PreviewOverlay: React.FC<PreviewOverlayProps> = ({
       transformOrigin: "bottom center",
     },
     rotateHandle: {
-      position: "absolute",
-      top: -36,
-      left: "50%",
-      width: "24px",
-      height: "24px",
-      background: "white",
-      border: "2px solid #10b981",
-      borderRadius: "50%",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-      transformOrigin: "center center",
-    },
+  position: "absolute",
+  top: -36,
+  left: "50%",
+  width: "24px",
+  height: "24px",
+  background: "white",
+  border: "2px solid #10b981",
+  borderRadius: "50%",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+  touchAction: "none",
+  transformOrigin: "center center",
+},
     resizeHandle: {
-      position: "absolute",
-      width: "12px",
-      height: "12px",
-      background: "white",
-      border: "2px solid #3b82f6",
-      borderRadius: "50%",
-      boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
-      transformOrigin: "center center",
-    },
+  position: "absolute",
+  width: "12px",
+  height: "12px",
+  background: "white",
+  border: "2px solid #3b82f6",
+  borderRadius: "50%",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.2)",
+  touchAction: "none",
+  transformOrigin: "center center",
+},
     edgeHandle: {
-      position: "absolute",
-      background: "rgba(59, 130, 246, 0.3)",
-      border: "1px solid #3b82f6",
-      borderRadius: "2px",
-      transformOrigin: "center center",
-    },
+  position: "absolute",
+  background: "rgba(59, 130, 246, 0.3)",
+  border: "1px solid #3b82f6",
+  borderRadius: "2px",
+  touchAction: "none",
+  transformOrigin: "center center",
+},
     sizeIndicator: {
       position: "absolute",
       bottom: -24,
@@ -571,85 +579,92 @@ onTouchStart={(e) => handleRotateStart(e, element.id)}
 onTouchStart={(e) => handleResizeStart(e, element.id, "nw")}
                 />
                 <div
-                  style={{ 
-                    ...styles.resizeHandle, 
-                    top: -6, 
-                    right: -6, 
-                    cursor: "nesw-resize",
-                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "ne")}
-                />
+  style={{ 
+    ...styles.resizeHandle, 
+    top: -6, 
+    right: -6, 
+    cursor: "nesw-resize",
+    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "ne")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "ne")}
+/>
                 <div
-                  style={{ 
-                    ...styles.resizeHandle, 
-                    bottom: -6, 
-                    left: -6, 
-                    cursor: "nesw-resize",
-                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "sw")}
-                />
+  style={{ 
+    ...styles.resizeHandle, 
+    bottom: -6, 
+    left: -6, 
+    cursor: "nesw-resize",
+    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "sw")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "sw")}
+/>
                 <div
-                  style={{ 
-                    ...styles.resizeHandle, 
-                    bottom: -6, 
-                    right: -6, 
-                    cursor: "nwse-resize",
-                    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "se")}
-                />
+  style={{ 
+    ...styles.resizeHandle, 
+    bottom: -6, 
+    right: -6, 
+    cursor: "nwse-resize",
+    transform: `rotate(${-rotation}deg) scale(${1/scale})`,
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "se")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "se")}
+/>
 
                 {/* Edge handles */}
                 <div
-                  style={{ 
-                    ...styles.edgeHandle, 
-                    top: -4, 
-                    left: "50%",
-                    width: "30px",
-                    height: "8px",
-                    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
-                    cursor: "ns-resize",
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "n")}
-                />
+  style={{ 
+    ...styles.edgeHandle, 
+    top: -4, 
+    left: "50%",
+    width: "30px",
+    height: "8px",
+    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+    cursor: "ns-resize",
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "n")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "n")}
+/>
                 <div
-                  style={{ 
-                    ...styles.edgeHandle, 
-                    bottom: -4, 
-                    left: "50%",
-                    width: "30px",
-                    height: "8px",
-                    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
-                    cursor: "ns-resize",
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "s")}
-                />
+  style={{ 
+    ...styles.edgeHandle, 
+    bottom: -4, 
+    left: "50%",
+    width: "30px",
+    height: "8px",
+    transform: `translateX(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+    cursor: "ns-resize",
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "s")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "s")}
+/>
                 <div
-                  style={{ 
-                    ...styles.edgeHandle, 
-                    left: -4, 
-                    top: "50%",
-                    width: "8px",
-                    height: "30px",
-                    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
-                    cursor: "ew-resize",
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "w")}
-                />
-                <div
-                  style={{ 
-                    ...styles.edgeHandle, 
-                    right: -4, 
-                    top: "50%",
-                    width: "8px",
-                    height: "30px",
-                    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
-                    cursor: "ew-resize",
-                  }}
-                  onMouseDown={(e) => handleResizeStart(e, element.id, "e")}
-                />
+  style={{ 
+    ...styles.edgeHandle, 
+    left: -4, 
+    top: "50%",
+    width: "8px",
+    height: "30px",
+    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+    cursor: "ew-resize",
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "w")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "w")}
+/>
+               <div
+  style={{ 
+    ...styles.edgeHandle, 
+    right: -4, 
+    top: "50%",
+    width: "8px",
+    height: "30px",
+    transform: `translateY(-50%) rotate(${-rotation}deg) scale(${1/scale})`,
+    cursor: "ew-resize",
+  }}
+  onMouseDown={(e) => handleResizeStart(e, element.id, "e")}
+  onTouchStart={(e) => handleResizeStart(e, element.id, "e")}
+/>
               </>
             )}
 

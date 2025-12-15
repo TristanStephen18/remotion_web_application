@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useRef } from "react";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { ChatBubbleLayer } from "../remotion_compositions/DynamicLayerComposition";
+import { FONTS } from "../../data/editor_constants/fonts";
 
 interface ChatEditorProps {
   layer: ChatBubbleLayer;
@@ -16,6 +17,15 @@ export const ChatEditor: React.FC<ChatEditorProps> = ({
   isMobile = false 
 }) => {
   const { colors } = useTheme();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      onUpdate(layer.id, { avatarUrl: url });
+    }
+  };
 
   const styles = {
     container: {
@@ -100,6 +110,50 @@ export const ChatEditor: React.FC<ChatEditorProps> = ({
       transition: "all 0.2s",
       marginTop: isMobile ? "4px" : "8px",
     },
+    // Styles for avatar section
+    avatarContainer: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      padding: '10px',
+      backgroundColor: colors.bgSecondary,
+      borderRadius: '8px',
+      border: `1px solid ${colors.border}`,
+    },
+    avatarPreview: {
+      width: '40px',
+      height: '40px',
+      borderRadius: '50%',
+      backgroundColor: '#ccc',
+      objectFit: 'cover' as const,
+      flexShrink: 0,
+    },
+    uploadButton: {
+      padding: '6px 12px',
+      fontSize: '12px',
+      backgroundColor: colors.bgTertiary,
+      border: `1px solid ${colors.border}`,
+      borderRadius: '4px',
+      color: colors.textPrimary,
+      cursor: 'pointer',
+    },
+    row: {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    },
+    value: {
+      fontSize: isMobile ? "11px" : "12px",
+      color: colors.textSecondary,
+    },
+    rangeInput: {
+      width: "100%",
+      height: "6px",
+      borderRadius: "3px",
+      backgroundColor: colors.bgTertiary,
+      outline: "none",
+      cursor: "pointer",
+    },
   };
 
   return (
@@ -125,6 +179,87 @@ export const ChatEditor: React.FC<ChatEditorProps> = ({
         />
       </div>
 
+      {/* Individual Avatar Uploader */}
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Message Avatar</label>
+        <div style={styles.avatarContainer}>
+          {layer.avatarUrl ? (
+            <img src={layer.avatarUrl} style={styles.avatarPreview} alt="avatar" />
+          ) : (
+            <div style={styles.avatarPreview} />
+          )}
+          <input 
+            type="file" 
+            ref={fileInputRef}
+            onChange={handleAvatarUpload}
+            accept="image/*"
+            style={{ display: 'none' }}
+          />
+          <button 
+            style={styles.uploadButton}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            Change Image
+          </button>
+        </div>
+      </div>
+
+      {/* Font Family Selection */}
+      <div style={styles.formGroup}>
+        <label style={styles.label}>Font Family</label>
+       <select
+          value={layer.fontFamily || ""}
+          onChange={(e) => onUpdate(layer.id, { fontFamily: e.target.value })}
+          style={{
+            ...styles.select,
+            fontFamily: layer.fontFamily || "inherit"
+          }}
+        >
+          <option value="">Default (Style Based)</option>
+          {FONTS.map((font) => (
+            <option 
+              key={font.value} 
+              value={font.value}
+              style={{ fontFamily: font.value, fontSize: "16px", padding: "4px" }} 
+            >
+              {font.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={styles.formGroup}>
+        <div style={styles.row}>
+          <label style={styles.label}>Avatar Scale</label>
+          <span style={styles.value}>{(layer.avatarScale || 1).toFixed(1)}x</span>
+        </div>
+        <input
+          type="range"
+          min="0.5"
+          max="2.0"
+          step="0.1"
+          value={layer.avatarScale || 1.0}
+          onChange={(e) => onUpdate(layer.id, { avatarScale: parseFloat(e.target.value) })}
+          style={styles.rangeInput}
+        />
+      </div>
+
+      <div style={styles.formGroup}>
+        <div style={styles.row}>
+          <label style={styles.label}>Text Size</label>
+          <span style={styles.value}>{layer.bubbleFontSize || 30}px</span>
+        </div>
+        <input
+          type="range"
+          min="10"
+          max="60"
+          step="1"
+          value={layer.bubbleFontSize || 30}
+          onChange={(e) => onUpdate(layer.id, { bubbleFontSize: parseInt(e.target.value) })}
+          style={styles.rangeInput}
+        />
+      </div>
+
       <div style={styles.formGroup}>
         <label style={styles.checkboxLabel}>
           <input
@@ -133,23 +268,8 @@ export const ChatEditor: React.FC<ChatEditorProps> = ({
             onChange={(e) => onUpdate(layer.id, { isSender: e.target.checked })}
             style={styles.checkbox}
           />
-          This is your message
+          This is your message (Right Side)
         </label>
-      </div>
-
-      <div style={styles.formGroup}>
-        <label style={styles.label}>Chat Style</label>
-        <select
-          value={layer.chatStyle}
-          onChange={(e) => onUpdate(layer.id, { chatStyle: e.target.value as any })}
-          style={styles.select}
-        >
-          <option value="fakechatconversation">Fake Chat</option>
-          <option value="imessage">iMessage</option>
-          <option value="whatsapp">WhatsApp</option>
-          <option value="instagram">Instagram</option>
-          <option value="messenger">Messenger</option>
-        </select>
       </div>
 
       <button
