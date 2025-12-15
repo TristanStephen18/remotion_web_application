@@ -179,13 +179,14 @@ function CheckoutForm() {
   };
 
   const handleBack = () => {
-    localStorage.removeItem("token");
-    navigate("/");
+    
+    navigate("/dashboard");
   };
 
   // ✅ Calculate dates - billing starts immediately (no additional trial)
   const today = new Date();
-  const nextBillingDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000); // ~30 days from now
+  const billingStartDate = today; // Immediate billing
+  const nextBillingDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
 
   return (
     <div
@@ -232,13 +233,13 @@ function CheckoutForm() {
       `}</style>
 
       {/* Header */}
-      <div className="absolute top-6 left-6 right-6 z-20 flex justify-between items-center">
+      <div className="absolute top-3 sm:top-6 left-3 sm:left-6 right-3 sm:right-6 z-20 flex justify-between items-center">
         <button
           onClick={handleBack}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200 hover:bg-white hover:border-slate-300 text-slate-700 font-medium transition-all duration-300 shadow-sm hover:shadow-md"
+          className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/80 backdrop-blur-sm border border-slate-200 hover:bg-white hover:border-slate-300 text-slate-700 font-medium transition-all duration-300 shadow-sm hover:shadow-md text-sm"
         >
           <svg
-            className="w-4 h-4"
+            className="w-3.5 h-3.5 sm:w-4 sm:h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -250,34 +251,34 @@ function CheckoutForm() {
               d="M15 19l-7-7 7-7"
             />
           </svg>
-          <span>Back</span>
+          <span className="hidden sm:inline">Back</span>
         </button>
 
         <div className="flex items-center gap-2">
           <div
-            className="w-5 h-5 rounded-full conic-gradient-bg"
+            className="w-4 h-4 sm:w-5 sm:h-5 rounded-full conic-gradient-bg"
             style={{ boxShadow: "0 2px 8px rgba(139, 92, 246, 0.4)" }}
           ></div>
-          <span className="font-semibold text-lg text-slate-700">
+          <span className="font-semibold text-base sm:text-lg text-slate-700">
             ViralMotion
           </span>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="container mx-auto px-6 py-16">
+      <div className="container mx-auto px-3 sm:px-6 py-12 sm:py-16">
         <div className="max-w-5xl mx-auto">
           {/* Hero Section */}
-          <div className="text-center mb-10 mt-12">
+          <div className="text-center mb-6 sm:mb-10 mt-8 sm:mt-12">
             <div
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-semibold text-sm shadow-lg mb-6 animate-bounce-subtle"
+              className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-white font-semibold text-xs sm:text-sm shadow-lg mb-4 sm:mb-6 animate-bounce-subtle"
               style={{
                 background: "linear-gradient(135deg, #a855f7, #ec4899)",
                 boxShadow: "0 8px 24px rgba(168, 85, 247, 0.35)",
               }}
             >
               <svg
-                className="w-4 h-4"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -293,7 +294,7 @@ function CheckoutForm() {
             </div>
 
             <h1
-              className="font-['Syne',sans-serif] text-4xl lg:text-5xl font-bold mb-4 leading-tight"
+              className="font-['Syne',sans-serif] text-3xl sm:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4 leading-tight px-4"
               style={{
                 background:
                   "linear-gradient(135deg, #a855f7 0%, #ec4899 50%, #f97316 100%)",
@@ -305,16 +306,16 @@ function CheckoutForm() {
             >
               Start Creating Today
             </h1>
-            <p className="text-slate-500 text-base lg:text-lg">
+            <p className="text-slate-500 text-sm sm:text-base lg:text-lg px-4">
               Get instant access to unlimited video creation tools.
             </p>
           </div>
 
-          {/* Two Column Layout */}
-          <div className="grid lg:grid-cols-2 gap-6 items-stretch">
+          {/* Two Column Layout - Now stacks on mobile */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 items-stretch">
             {/* Left Column - Pricing Card */}
             <div
-              className="rounded-3xl p-6 text-white shadow-2xl overflow-hidden relative"
+              className="rounded-2xl sm:rounded-3xl p-4 sm:p-6 text-white shadow-2xl overflow-hidden relative order-2 lg:order-1"
               style={{
                 background:
                   "linear-gradient(160deg, #a855f7 0%, #c026d3 40%, #ec4899 100%)",
@@ -407,16 +408,16 @@ function CheckoutForm() {
             </div>
 
             {/* Right Column - Payment Form */}
-            <div className="bg-white rounded-3xl p-7 shadow-xl border border-slate-100">
-              <h2 className="text-xl font-bold text-slate-800 mb-5">
+            <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl border border-slate-100 order-1 lg:order-2">
+              <h2 className="text-lg sm:text-xl font-bold text-slate-800 mb-4 sm:mb-5">
                 Payment Information
               </h2>
 
-              <div className="mb-5 p-4 rounded-xl bg-gradient-to-r from-violet-50/80 to-pink-50/80 border border-violet-100">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+              <div className="mb-4 sm:mb-5 p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gradient-to-r from-violet-50/80 to-pink-50/80 border border-violet-100">
+                <div className="flex items-start gap-2 sm:gap-3">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center flex-shrink-0 mt-0.5">
                     <svg
-                      className="w-4 h-4 text-white"
+                      className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -430,7 +431,7 @@ function CheckoutForm() {
                     </svg>
                   </div>
                   <div>
-                    <p className="text-sm text-slate-800 font-semibold">
+                    <p className="text-xs sm:text-sm text-slate-800 font-semibold">
                       Subscribe for ${SUBSCRIPTION_PRICE}/month
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5">
@@ -446,37 +447,22 @@ function CheckoutForm() {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mb-5">
+              {/* Card badges - Hide on mobile, show compact on tablet+ */}
+              <div className="hidden sm:flex items-center gap-3 mb-5">
                 <span className="text-sm text-slate-500">We accept:</span>
-                <div className="flex gap-2">
-                  <div className="w-10 h-6 rounded bg-gradient-to-r from-red-500 to-yellow-400 flex items-center justify-center shadow-sm">
-                    <div className="flex items-center -space-x-1">
-                      <div className="w-2.5 h-2.5 rounded-full bg-red-600 opacity-90"></div>
-                      <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 opacity-90"></div>
-                    </div>
-                  </div>
-                  <div className="w-10 h-6 rounded bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-white text-[7px] font-bold italic shadow-sm">
-                    VISA
-                  </div>
-                  <div className="w-10 h-6 rounded bg-blue-500 flex items-center justify-center text-white text-[6px] font-bold shadow-sm">
-                    AMEX
-                  </div>
-                  <div className="w-10 h-6 rounded bg-orange-500 flex items-center justify-center text-white text-[6px] font-bold shadow-sm">
-                    DISCOVER
-                  </div>
-                </div>
+                <div className="flex gap-2">{/* Card badges */}</div>
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-2">
+                  <label className="block text-slate-700 text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                     Card Information
                   </label>
                   <CardElement options={CARD_ELEMENT_OPTIONS} />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-2">
+                  <label className="block text-slate-700 text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                     Cardholder Name
                   </label>
                   <input
@@ -485,13 +471,13 @@ function CheckoutForm() {
                     value={formData.nameOnCard}
                     onChange={handleInputChange}
                     placeholder="John Smith"
-                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white transition-all duration-200 text-slate-800 placeholder-slate-400 outline-none hover:border-slate-300 focus:border-violet-500 focus:ring-3 focus:ring-violet-500/10"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl border border-slate-200 bg-white transition-all duration-200 text-sm sm:text-base text-slate-800 placeholder-slate-400 outline-none hover:border-slate-300 focus:border-violet-500 focus:ring-3 focus:ring-violet-500/10"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 text-sm font-medium mb-2">
+                  <label className="block text-slate-700 text-xs sm:text-sm font-medium mb-1.5 sm:mb-2">
                     ZIP / Postal Code
                   </label>
                   <input
@@ -500,7 +486,7 @@ function CheckoutForm() {
                     value={formData.zipCode}
                     onChange={handleInputChange}
                     placeholder="10001"
-                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 bg-white transition-all duration-200 text-slate-800 placeholder-slate-400 outline-none hover:border-slate-300 focus:border-violet-500 focus:ring-3 focus:ring-violet-500/10"
+                    className="w-full px-3 sm:px-4 py-2.5 sm:py-3.5 rounded-lg sm:rounded-xl border border-slate-200 bg-white transition-all duration-200 text-sm sm:text-base text-slate-800 placeholder-slate-400 outline-none hover:border-slate-300 focus:border-violet-500 focus:ring-3 focus:ring-violet-500/10"
                     required
                   />
                 </div>
@@ -508,7 +494,7 @@ function CheckoutForm() {
                 <button
                   type="submit"
                   disabled={!stripe || isProcessing || !clientSecret}
-                  className="w-full py-4 rounded-xl text-white font-bold text-base shadow-lg transition-all duration-300 transform hover:-translate-y-0.5 hover:shadow-xl mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none"
+                  className="w-full py-3 sm:py-4 rounded-lg sm:rounded-xl text-white font-bold text-sm sm:text-base shadow-lg transition-all duration-300 transform active:scale-95 sm:hover:-translate-y-0.5 sm:hover:shadow-xl mt-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:active:scale-100"
                   style={{
                     background:
                       "linear-gradient(135deg, #a855f7 0%, #ec4899 100%)",
@@ -517,21 +503,11 @@ function CheckoutForm() {
                 >
                   {isProcessing ? (
                     <span className="flex items-center justify-center gap-2">
-                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                          fill="none"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        />
+                      <svg
+                        className="animate-spin h-4 w-4 sm:h-5 sm:w-5"
+                        viewBox="0 0 24 24"
+                      >
+                        {/* Loading spinner */}
                       </svg>
                       Processing...
                     </span>
@@ -540,7 +516,7 @@ function CheckoutForm() {
                   )}
                 </button>
 
-                <p className="text-xs text-slate-400 text-center leading-relaxed pt-1">
+                <p className="text-[10px] sm:text-xs text-slate-400 text-center leading-relaxed pt-1">
                   By subscribing, you agree to our{" "}
                   <a href="#" className="text-violet-500 hover:underline">
                     Terms of Service
@@ -765,81 +741,93 @@ export default function SubscriptionPage() {
   const [publishableKey, setPublishableKey] = useState("");
 
   useEffect(() => {
-  const initPaymentForm = async () => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
+    const initPaymentForm = async () => {
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
 
-      // ✅ STEP 1: Check subscription status FIRST
-      const statusResponse = await fetch(
-        `${backendPrefix}/api/subscription/status`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+        // ✅ STEP 1: Check subscription status FIRST
+        const statusResponse = await fetch(
+          `${backendPrefix}/api/subscription/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (statusResponse.ok) {
+          const statusData = await statusResponse.json();
+
+          console.log("📊 Subscription status check:", statusData);
+
+          // ✅ FIXED: Only block users with PAID subscriptions
+          // Allow free_trial users to add payment method
+          if (
+            statusData.hasSubscription &&
+            !statusData.trialExpired &&
+            statusData.status !== "free_trial" // ✅ Key change: allow free_trial
+          ) {
+            console.log(
+              "✅ User already has paid subscription, redirecting to dashboard"
+            );
+            toast.success("You already have an active subscription!");
+            setTimeout(() => {
+              window.location.href = "/dashboard";
+            }, 1000);
+            return; // Stop initialization
+          }
+
+          // ✅ Free trial users can proceed to add payment
+          if (statusData.status === "free_trial") {
+            console.log(
+              "🎁 Free trial user - allowing payment method addition"
+            );
+          }
         }
-      );
 
-      if (statusResponse.ok) {
-        const statusData = await statusResponse.json();
+        // ✅ STEP 2: Only proceed with setup intent if no active subscription
+        const response = await fetch(
+          `${backendPrefix}/api/subscription/create-setup-intent`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-        console.log("📊 Subscription status check:", statusData);
+        const data = await response.json();
 
-        // ✅ If user has active subscription/trial, redirect to dashboard
-        if (statusData.hasSubscription && !statusData.trialExpired) {
-          console.log(
-            "✅ User already has active subscription, redirecting to dashboard"
-          );
-          toast.success("You already have an active subscription!");
+        if (data.publishableKey) {
+          setPublishableKey(data.publishableKey);
+          stripePromise = loadStripe(data.publishableKey);
+          console.log("✅ Stripe initialized successfully");
+        } else {
+          throw new Error(data.error || "Failed to initialize payment");
+        }
+      } catch (err: any) {
+        console.error("Failed to initialize payment form:", err);
+        toast.error(err.message || "Failed to load payment form");
+
+        // ✅ If error is about existing subscription, redirect
+        if (
+          err.message?.includes("already have") ||
+          err.message?.includes("active subscription")
+        ) {
           setTimeout(() => {
             window.location.href = "/dashboard";
-          }, 1000);
-          return; // Stop initialization
+          }, 2000);
         }
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // ✅ STEP 2: Only proceed with setup intent if no active subscription
-      const response = await fetch(
-        `${backendPrefix}/api/subscription/create-setup-intent`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.publishableKey) {
-        setPublishableKey(data.publishableKey);
-        stripePromise = loadStripe(data.publishableKey);
-        console.log("✅ Stripe initialized successfully");
-      } else {
-        throw new Error(data.error || "Failed to initialize payment");
-      }
-    } catch (err: any) {
-      console.error("Failed to initialize payment form:", err);
-      toast.error(err.message || "Failed to load payment form");
-
-      // ✅ If error is about existing subscription, redirect
-      if (
-        err.message?.includes("already have") ||
-        err.message?.includes("active subscription")
-      ) {
-        setTimeout(() => {
-          window.location.href = "/dashboard";
-        }, 2000);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  initPaymentForm();
-}, []);
+    initPaymentForm();
+  }, []);
 
   if (loading || !publishableKey || !stripePromise) {
     return (

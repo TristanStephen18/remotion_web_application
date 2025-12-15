@@ -514,29 +514,29 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
         </div>
 
         <div className="flex-1 z-10">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
             {isEditingUsername ? (
               <input
                 type="text"
                 value={usernameValue}
                 onChange={(e) => setUsernameValue(e.target.value)}
-                className="text-2xl font-semibold border-b-2 border-indigo-500 focus:outline-none bg-transparent"
+                className="text-xl sm:text-2xl font-semibold border-b-2 border-indigo-500 focus:outline-none bg-transparent w-full"
               />
             ) : (
-              <h2 className="text-2xl font-semibold text-gray-800">
+              <h2 className="text-xl sm:text-2xl font-semibold text-gray-800 break-words">
                 {usernameValue || "User"}
               </h2>
             )}
             {!isEditingUsername ? (
               <button
                 onClick={() => setIsEditingUsername(true)}
-                className="text-gray-400 hover:text-indigo-500 transition"
+                className="text-gray-400 hover:text-indigo-500 transition flex-shrink-0"
                 aria-label="Edit username"
               >
                 <FiEdit2 />
               </button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:flex-nowrap">
                 <button
                   onClick={async () => {
                     setIsUpdatingUsername(true);
@@ -551,18 +551,17 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
                       setIsEditingUsername(false);
                     }
                   }}
-                  className="px-3 py-1 rounded-full text-white bg-indigo-500 hover:bg-indigo-600 text-sm"
+                  className="flex-1 sm:flex-none px-4 py-1.5 rounded-full text-white bg-indigo-500 hover:bg-indigo-600 text-sm font-medium whitespace-nowrap"
                 >
                   {isUpdatingUsername ? "Saving..." : "Save"}
                 </button>
                 <button
                   onClick={() => {
                     setIsEditingUsername(false);
-
                     setUsernameValue(userData.name);
                   }}
-                  aria-label="Edit username"
-                  className="px-3 py-1 border border-gray-300 rounded-full text-sm hover:bg-gray-100"
+                  aria-label="Cancel edit"
+                  className="flex-1 sm:flex-none px-4 py-1.5 border border-gray-300 rounded-full text-sm hover:bg-gray-100 font-medium whitespace-nowrap"
                 >
                   Cancel
                 </button>

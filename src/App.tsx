@@ -262,8 +262,9 @@ function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 // ✅ FIXED: RootRedirect - only shows landing page for non-authenticated users
+// ✅ NEW: Smart redirect for root route
 function RootRedirect() {
-  const [isRedirecting, setIsRedirecting] = useState(true);
+  const [checking, setChecking] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -272,11 +273,11 @@ function RootRedirect() {
 
       // Not logged in → Show landing page
       if (!token) {
-        setIsRedirecting(false);
+        setChecking(false);
         return;
       }
 
-      // Logged in → Check subscription and redirect (don't render landing page)
+      // Logged in → Check subscription status
       try {
         const response = await fetch(
           `${backendPrefix}/api/subscription/status`,
@@ -294,30 +295,40 @@ function RootRedirect() {
 
         if (data.success) {
           if (data.hasSubscription && !data.trialExpired) {
+            // Has active subscription/trial → Dashboard
             console.log("✅ Redirecting to dashboard");
             navigate("/dashboard", { replace: true });
           } else if (data.trialExpired) {
+            // Trial expired → Subscription page
             console.log("⏰ Trial expired, redirecting to subscription");
             navigate("/subscription", { replace: true });
           } else {
+            // Edge case → Dashboard (fail open)
             console.log("⚠️ Edge case, redirecting to dashboard");
             navigate("/dashboard", { replace: true });
           }
         }
       } catch (error) {
         console.error("Error checking subscription:", error);
-        navigate("/dashboard", { replace: true });
+        navigate("/dashboard", { replace: true }); // Fail open
+      } finally {
+        setChecking(false);
       }
     };
 
     checkAndRedirect();
   }, [navigate]);
 
-  // If logged in, keep showing the loader (from AuthProvider) until redirect happens
-  // If not logged in, show landing page
-  if (isRedirecting) {
-    return null; // AuthProvider's loader is still showing, so return nothing
-  }
+  // if (checking) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
+  //       <div className="text-center">
+  //         <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+  //         <p className="text-gray-600">Loading...</p>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   return <LandingPage />;
 }
