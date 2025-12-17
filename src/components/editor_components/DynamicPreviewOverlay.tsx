@@ -88,7 +88,7 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
     fontSize: 0,
   });
   const [elementCenter, setElementCenter] = useState({ x: 0, y: 0 });
-
+  
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -431,14 +431,23 @@ setDragStart({ x: clientX, y: clientY });
 
 
         if (layer.type === "chat-bubble") {
-          const clampedWidth = Math.min(80, Math.max(20, newWidth));
-          if (clampedWidth !== newWidth && (corner === "l" || corner === "bl" || corner === "tl")) {
-             const widthDiff = clampedWidth - dragStartPos.width;
-             newX = dragStartPos.x + (widthDiff / 2);
-          }
-          
-          newWidth = clampedWidth;
-        }
+  const clampedWidth = Math.min(80, Math.max(20, newWidth));
+  if (clampedWidth !== newWidth && (corner === "l" || corner === "bl" || corner === "tl")) {
+     const widthDiff = clampedWidth - dragStartPos.width;
+     newX = dragStartPos.x + (widthDiff / 2);
+  }
+  newWidth = clampedWidth;
+
+  // const clampedHeight = Math.min(60, Math.max(10, newHeight));
+  // if (clampedHeight !== newHeight && (corner === "t" || corner === "tl" || corner === "tr")) {
+  //    const heightDiff = clampedHeight - dragStartPos.height;
+  //    newY = dragStartPos.y + (heightDiff / 2);
+  // }
+  // newHeight = clampedHeight;
+
+  newHeight = dragStartPos.height;
+  newY = dragStartPos.y;
+}
 
         if (isTextLayer(layer)) {
           const scale = Math.sqrt(
@@ -880,10 +889,11 @@ document.removeEventListener("touchend", handleMouseUp);
         let left: string, top: string, transform: string;
 
         if (isChatLayer) {
-          left = `${adjustedCenterX}%`;
-          top = `${adjustedCenterY}%`;
-          transform = `translate(-50%, -50%) rotate(${rotation}deg)`;
-        } else {
+  const chatLayer = layer as ChatBubbleLayer;
+  left = `${adjustedCenterX}%`;
+  top = `${adjustedCenterY}%`;
+  transform = `translate(${chatLayer.isSender ? -30 : -80}%, -50%) rotate(${rotation}deg)`;
+} else {
           left = `${adjustedCenterX - displayWidth / 2}%`;
           top = `${adjustedCenterY - displayHeight / 2}%`;
           transform = `rotate(${rotation}deg)`;

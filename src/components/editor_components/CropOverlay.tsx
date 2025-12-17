@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
-import type { ImageLayer } from "../remotion_compositions//DynamicLayerComposition";
+import type { ImageLayer } from "../remotion_compositions/DynamicLayerComposition";
 
 // ============================================================================
 // TYPES
@@ -23,6 +23,26 @@ interface CropOverlayProps {
 }
 
 type ResizeHandle = "nw" | "ne" | "sw" | "se" | "n" | "s" | "e" | "w" | "move" | null;
+
+// ============================================================================
+// HELPER: Get coordinates from mouse or touch event
+// ============================================================================
+
+const getEventCoordinates = (e: MouseEvent | TouchEvent): { clientX: number; clientY: number } => {
+  if ("touches" in e) {
+    // Touch event - use touches for move, changedTouches for end
+    const touch = e.touches[0] || e.changedTouches[0];
+    return {
+      clientX: touch?.clientX ?? 0,
+      clientY: touch?.clientY ?? 0,
+    };
+  }
+  // Mouse event
+  return {
+    clientX: e.clientX,
+    clientY: e.clientY,
+  };
+};
 
 // ============================================================================
 // CROP OVERLAY COMPONENT
@@ -84,37 +104,37 @@ export const CropOverlay: React.FC<CropOverlayProps> = ({
     };
   }, [rendered]);
 
-
   // Handle mouse/touch down on resize handles
-const handleMouseDown = useCallback(
-  (e: React.MouseEvent | React.TouchEvent, handle: ResizeHandle) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Get coordinates from mouse or touch
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    setIsDragging(true);
-    setDragHandle(handle);
-    setDragStart({ x: clientX, y: clientY });
-    setInitialCrop(crop);
-  },
-  [crop]
-);
+  const handlePointerDown = useCallback(
+    (e: React.MouseEvent | React.TouchEvent, handle: ResizeHandle) => {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      // Get coordinates from mouse or touch
+      const { clientX, clientY } = "touches" in e 
+        ? { clientX: e.touches[0].clientX, clientY: e.touches[0].clientY }
+        : { clientX: e.clientX, clientY: e.clientY };
+      
+      setIsDragging(true);
+      setDragHandle(handle);
+      setDragStart({ x: clientX, y: clientY });
+      setInitialCrop(crop);
+    },
+    [crop]
+  );
 
-  // Handle mouse move for dragging
   // Handle mouse/touch move for dragging
-useEffect(() => {
-  if (!isDragging || !dragHandle) return;
+  useEffect(() => {
+    if (!isDragging || !dragHandle) return;
 
-  const handleMouseMove = (e: MouseEvent | TouchEvent) => {
-    // Get coordinates from mouse or touch
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
-    const deltaX = clientX - dragStart.x;
-    const deltaY = clientY - dragStart.y;
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      // Prevent scrolling on mobile
+      e.preventDefault();
+      
+      const { clientX, clientY } = getEventCoordinates(e);
+      
+      const deltaX = clientX - dragStart.x;
+      const deltaY = clientY - dragStart.y;
 
       // Convert to percentage
       const deltaXPercent = (deltaX / rendered.width) * 100;
@@ -124,13 +144,11 @@ useEffect(() => {
 
       switch (dragHandle) {
         case "move":
-          // Move entire crop area
           newCrop.x = Math.max(0, Math.min(100 - initialCrop.width, initialCrop.x + deltaXPercent));
           newCrop.y = Math.max(0, Math.min(100 - initialCrop.height, initialCrop.y + deltaYPercent));
           break;
 
         case "nw":
-          // Resize from top-left corner
           newCrop.x = Math.max(0, Math.min(initialCrop.x + initialCrop.width - 10, initialCrop.x + deltaXPercent));
           newCrop.y = Math.max(0, Math.min(initialCrop.y + initialCrop.height - 10, initialCrop.y + deltaYPercent));
           newCrop.width = Math.max(10, initialCrop.width - deltaXPercent);
@@ -138,43 +156,36 @@ useEffect(() => {
           break;
 
         case "ne":
-          // Resize from top-right corner
           newCrop.y = Math.max(0, Math.min(initialCrop.y + initialCrop.height - 10, initialCrop.y + deltaYPercent));
           newCrop.width = Math.max(10, Math.min(100 - initialCrop.x, initialCrop.width + deltaXPercent));
           newCrop.height = Math.max(10, initialCrop.height - deltaYPercent);
           break;
 
         case "sw":
-          // Resize from bottom-left corner
           newCrop.x = Math.max(0, Math.min(initialCrop.x + initialCrop.width - 10, initialCrop.x + deltaXPercent));
           newCrop.width = Math.max(10, initialCrop.width - deltaXPercent);
           newCrop.height = Math.max(10, Math.min(100 - initialCrop.y, initialCrop.height + deltaYPercent));
           break;
 
         case "se":
-          // Resize from bottom-right corner
           newCrop.width = Math.max(10, Math.min(100 - initialCrop.x, initialCrop.width + deltaXPercent));
           newCrop.height = Math.max(10, Math.min(100 - initialCrop.y, initialCrop.height + deltaYPercent));
           break;
 
         case "n":
-          // Resize from top edge
           newCrop.y = Math.max(0, Math.min(initialCrop.y + initialCrop.height - 10, initialCrop.y + deltaYPercent));
           newCrop.height = Math.max(10, initialCrop.height - deltaYPercent);
           break;
 
         case "s":
-          // Resize from bottom edge
           newCrop.height = Math.max(10, Math.min(100 - initialCrop.y, initialCrop.height + deltaYPercent));
           break;
 
         case "e":
-          // Resize from right edge
           newCrop.width = Math.max(10, Math.min(100 - initialCrop.x, initialCrop.width + deltaXPercent));
           break;
 
         case "w":
-          // Resize from left edge
           newCrop.x = Math.max(0, Math.min(initialCrop.x + initialCrop.width - 10, initialCrop.x + deltaXPercent));
           newCrop.width = Math.max(10, initialCrop.width - deltaXPercent);
           break;
@@ -192,26 +203,26 @@ useEffect(() => {
       onCropChange(newCrop);
     };
 
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       setIsDragging(false);
       setDragHandle(null);
     };
 
-
-
-    document.addEventListener("mousemove", handleMouseMove);
-    document.addEventListener("mouseup", handleMouseUp);
-    document.addEventListener("touchmove", handleMouseMove);
-    document.addEventListener("touchend", handleMouseUp);
+    // Add listeners with { passive: false } to allow preventDefault
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleEnd);
+    document.addEventListener("touchmove", handleMove, { passive: false });
+    document.addEventListener("touchend", handleEnd);
+    document.addEventListener("touchcancel", handleEnd);
 
     return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("touchmove", handleMouseMove);
-      document.removeEventListener("touchend", handleMouseUp);
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleMove);
+      document.removeEventListener("touchend", handleEnd);
+      document.removeEventListener("touchcancel", handleEnd);
     };
   }, [isDragging, dragHandle, dragStart, initialCrop, rendered, onCropChange]);
-
 
   const cropPx = cropToPixels(crop);
 
@@ -221,56 +232,55 @@ useEffect(() => {
 
   const styles: Record<string, React.CSSProperties> = {
     overlay: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  width: "100%",
-  height: "100%",
-  pointerEvents: "all",
-  touchAction: "none",
-  zIndex: 1000,
-},
-    darkOverlay: {
       position: "absolute",
       top: 0,
       left: 0,
       width: "100%",
       height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
-      pointerEvents: "none",
+      pointerEvents: "all",
+      touchAction: "none",
+      zIndex: 1000,
+      userSelect: "none",
+      WebkitUserSelect: "none",
     },
-   cropArea: {
-  position: "absolute",
-  left: `${cropPx.x}px`,
-  top: `${cropPx.y}px`,
-  width: `${cropPx.width}px`,
-  height: `${cropPx.height}px`,
-  border: "2px solid #3b82f6",
-  boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)",
-  cursor: isDragging && dragHandle === "move" ? "grabbing" : "move",
-  pointerEvents: "all",
-  touchAction: "none",
-},
+    cropArea: {
+      position: "absolute",
+      left: `${cropPx.x}px`,
+      top: `${cropPx.y}px`,
+      width: `${cropPx.width}px`,
+      height: `${cropPx.height}px`,
+      border: "2px solid #3b82f6",
+      boxShadow: "0 0 0 9999px rgba(0, 0, 0, 0.6)",
+      cursor: isDragging && dragHandle === "move" ? "grabbing" : "move",
+      pointerEvents: "all",
+      touchAction: "none",
+      userSelect: "none",
+      WebkitUserSelect: "none",
+    },
     handle: {
-  position: "absolute",
-  width: "12px",
-  height: "12px",
-  backgroundColor: "#3b82f6",
-  border: "2px solid white",
-  borderRadius: "50%",
-  pointerEvents: "all",
-  touchAction: "none",
-  zIndex: 10,
-},
+      position: "absolute",
+      width: "20px",  // Larger for mobile
+      height: "20px", // Larger for mobile
+      backgroundColor: "#3b82f6",
+      border: "2px solid white",
+      borderRadius: "50%",
+      pointerEvents: "all",
+      touchAction: "none",
+      zIndex: 10,
+      userSelect: "none",
+      WebkitUserSelect: "none",
+    },
     edgeHandle: {
-  position: "absolute",
-  backgroundColor: "#3b82f6",
-  border: "1px solid white",
-  borderRadius: "2px",
-  pointerEvents: "all",
-  touchAction: "none",
-  zIndex: 10,
-},
+      position: "absolute",
+      backgroundColor: "#3b82f6",
+      border: "1px solid white",
+      borderRadius: "2px",
+      pointerEvents: "all",
+      touchAction: "none",
+      zIndex: 10,
+      userSelect: "none",
+      WebkitUserSelect: "none",
+    },
     toolbar: {
       position: "absolute",
       top: `${cropPx.y - 50}px`,
@@ -283,16 +293,18 @@ useEffect(() => {
       zIndex: 1001,
     },
     toolbarButton: {
-  padding: "6px 12px",
-  backgroundColor: "#3b82f6",
-  color: "white",
-  border: "none",
-  borderRadius: "4px",
-  cursor: "pointer",
-  fontSize: "12px",
-  fontWeight: "600",
-  touchAction: "manipulation",
-},
+      padding: "10px 16px", // Larger for mobile
+      backgroundColor: "#3b82f6",
+      color: "white",
+      border: "none",
+      borderRadius: "4px",
+      cursor: "pointer",
+      fontSize: "14px",
+      fontWeight: "600",
+      touchAction: "manipulation",
+      userSelect: "none",
+      WebkitUserSelect: "none",
+    },
     cropInfo: {
       position: "absolute",
       bottom: `${containerHeight - cropPx.y}px`,
@@ -316,85 +328,85 @@ useEffect(() => {
     <div ref={overlayRef} style={styles.overlay}>
       {/* Crop area with border and shadow overlay */}
       <div
-  style={styles.cropArea}
-  onMouseDown={(e) => handleMouseDown(e, "move")}
-  onTouchStart={(e) => handleMouseDown(e, "move")}
->
-        {/* Corner handles */}
+        style={styles.cropArea}
+        onMouseDown={(e) => handlePointerDown(e, "move")}
+        onTouchStart={(e) => handlePointerDown(e, "move")}
+      >
+        {/* Corner handles - larger touch targets */}
         <div
-  style={{ ...styles.handle, top: "-6px", left: "-6px", cursor: "nwse-resize" }}
-  onMouseDown={(e) => handleMouseDown(e, "nw")}
-  onTouchStart={(e) => handleMouseDown(e, "nw")}
-/>
-       <div
-  style={{ ...styles.handle, top: "-6px", right: "-6px", cursor: "nesw-resize" }}
-  onMouseDown={(e) => handleMouseDown(e, "ne")}
-  onTouchStart={(e) => handleMouseDown(e, "ne")}
-/>
+          style={{ ...styles.handle, top: "-10px", left: "-10px", cursor: "nwse-resize" }}
+          onMouseDown={(e) => handlePointerDown(e, "nw")}
+          onTouchStart={(e) => handlePointerDown(e, "nw")}
+        />
         <div
-  style={{ ...styles.handle, bottom: "-6px", left: "-6px", cursor: "nesw-resize" }}
-  onMouseDown={(e) => handleMouseDown(e, "sw")}
-  onTouchStart={(e) => handleMouseDown(e, "sw")}
-/>
-       <div
-  style={{ ...styles.handle, bottom: "-6px", right: "-6px", cursor: "nwse-resize" }}
-  onMouseDown={(e) => handleMouseDown(e, "se")}
-  onTouchStart={(e) => handleMouseDown(e, "se")}
-/>
+          style={{ ...styles.handle, top: "-10px", right: "-10px", cursor: "nesw-resize" }}
+          onMouseDown={(e) => handlePointerDown(e, "ne")}
+          onTouchStart={(e) => handlePointerDown(e, "ne")}
+        />
+        <div
+          style={{ ...styles.handle, bottom: "-10px", left: "-10px", cursor: "nesw-resize" }}
+          onMouseDown={(e) => handlePointerDown(e, "sw")}
+          onTouchStart={(e) => handlePointerDown(e, "sw")}
+        />
+        <div
+          style={{ ...styles.handle, bottom: "-10px", right: "-10px", cursor: "nwse-resize" }}
+          onMouseDown={(e) => handlePointerDown(e, "se")}
+          onTouchStart={(e) => handlePointerDown(e, "se")}
+        />
 
-        {/* Edge handles */}
+        {/* Edge handles - larger for mobile */}
         <div
-  style={{
-    ...styles.edgeHandle,
-    top: "-4px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "40px",
-    height: "8px",
-    cursor: "ns-resize",
-  }}
-  onMouseDown={(e) => handleMouseDown(e, "n")}
-  onTouchStart={(e) => handleMouseDown(e, "n")}
-/>
+          style={{
+            ...styles.edgeHandle,
+            top: "-6px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "50px",
+            height: "12px",
+            cursor: "ns-resize",
+          }}
+          onMouseDown={(e) => handlePointerDown(e, "n")}
+          onTouchStart={(e) => handlePointerDown(e, "n")}
+        />
         <div
-  style={{
-    ...styles.edgeHandle,
-    bottom: "-4px",
-    left: "50%",
-    transform: "translateX(-50%)",
-    width: "40px",
-    height: "8px",
-    cursor: "ns-resize",
-  }}
-  onMouseDown={(e) => handleMouseDown(e, "s")}
-  onTouchStart={(e) => handleMouseDown(e, "s")}
-/>
+          style={{
+            ...styles.edgeHandle,
+            bottom: "-6px",
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "50px",
+            height: "12px",
+            cursor: "ns-resize",
+          }}
+          onMouseDown={(e) => handlePointerDown(e, "s")}
+          onTouchStart={(e) => handlePointerDown(e, "s")}
+        />
         <div
-  style={{
-    ...styles.edgeHandle,
-    left: "-4px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    width: "8px",
-    height: "40px",
-    cursor: "ew-resize",
-  }}
-  onMouseDown={(e) => handleMouseDown(e, "w")}
-  onTouchStart={(e) => handleMouseDown(e, "w")}
-/>
+          style={{
+            ...styles.edgeHandle,
+            left: "-6px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "12px",
+            height: "50px",
+            cursor: "ew-resize",
+          }}
+          onMouseDown={(e) => handlePointerDown(e, "w")}
+          onTouchStart={(e) => handlePointerDown(e, "w")}
+        />
         <div
-  style={{
-    ...styles.edgeHandle,
-    right: "-4px",
-    top: "50%",
-    transform: "translateY(-50%)",
-    width: "8px",
-    height: "40px",
-    cursor: "ew-resize",
-  }}
-  onMouseDown={(e) => handleMouseDown(e, "e")}
-  onTouchStart={(e) => handleMouseDown(e, "e")}
-/>
+          style={{
+            ...styles.edgeHandle,
+            right: "-6px",
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "12px",
+            height: "50px",
+            cursor: "ew-resize",
+          }}
+          onMouseDown={(e) => handlePointerDown(e, "e")}
+          onTouchStart={(e) => handlePointerDown(e, "e")}
+        />
 
         {/* Grid lines (rule of thirds) */}
         <div style={{

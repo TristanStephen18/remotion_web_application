@@ -109,15 +109,13 @@ export const MobilePanelWrapper: React.FC<MobilePanelWrapperProps> = ({
 
   const styles = {
     overlay: {
-      display: "none",
+      display: isOpen && isMobile ? "block" : "none",
       position: "fixed" as const,
       top: 0,
       left: 0,
       right: 0,
-      bottom: "60px", // Above bottom tabs
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      bottom: "60px", 
       zIndex: 150,
-      backdropFilter: "blur(2px)",
       animation: "fadeIn 0.2s ease-in-out",
     },
     panel: {
