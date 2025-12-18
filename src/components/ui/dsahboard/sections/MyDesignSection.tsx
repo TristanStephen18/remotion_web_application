@@ -25,7 +25,6 @@ interface MyDesignProps {
 export const MyProjectsSection: React.FC<MyDesignProps> = ({
   projects,
   loadingProjects,
-  hoveredId,
   setHoveredId,
   onDelete,
   onRename,
@@ -274,13 +273,7 @@ export const MyProjectsSection: React.FC<MyDesignProps> = ({
                   </div>
 
                   {/* 3-Dots Menu - Top Right */}
-                  <div
-                    className={`absolute top-2 right-2 z-20 transition-all duration-200 ${
-                      hoveredId === project.id
-                        ? "opacity-100 scale-100"
-                        : "opacity-0 scale-90 pointer-events-none"
-                    }`}
-                  >
+                  <div className="absolute top-2 right-2 z-20">
                     <IconButton
                       size="small"
                       onClick={(e) => handleMenuClick(e, project.id)}
