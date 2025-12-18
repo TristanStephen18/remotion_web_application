@@ -32,7 +32,9 @@ export interface LayerBase {
     | "slideRight"
     | "scale"
     | "zoomPunch"
-    | "none";
+    | "none"
+    | "typewriter"
+    | "kinetic";
   entranceDuration?: number;
 };
 }
@@ -1252,7 +1254,7 @@ const ChatBubbleComponent: React.FC<{
     height: "auto", 
     minHeight: "0px",
     
-    transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
+    transform: `translate(${layer.isSender ? -45 : -70}%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
     opacity: layer.opacity * entrance.opacity,
     display: "flex",
     flexDirection: layer.isSender ? "row-reverse" : "row",
@@ -1419,8 +1421,7 @@ const ChatBubbleComponent: React.FC<{
             padding: "20px 28px",
             fontSize: fontSize,
             lineHeight: 1.6,
-            fontFamily:
-              '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            fontFamily: layer.fontFamily || '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
             fontWeight: 600,
             boxShadow: "0 8px 22px rgba(0,0,0,0.18)",
             position: "relative",
@@ -1598,14 +1599,222 @@ const TextLayerComponent: React.FC<{
   width: number;
   height: number;
 }> = ({ layer, relativeFrame, fps, height }) => {
-  const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+  const animationType = layer.animation?.entrance || "fade";
+  const duration = layer.animation?.entranceDuration || 30;
   const scaledFontSize = (layer.fontSize / 100) * height;
-  const words = layer.content.split(/\s+/).filter(Boolean);
   const rotation = layer.rotation || 0;
 
+  // Common base styles (keeps original text properties)
+  const baseStyle: React.CSSProperties = {
+    position: "absolute",
+    left: `${layer.position.x - layer.size.width / 2}%`,
+    top: `${layer.position.y - layer.size.height / 2}%`,
+    width: `${layer.size.width}%`,
+    minHeight: `${layer.size.height}%`,
+    fontFamily: layer.fontFamily,
+    fontSize: scaledFontSize,
+    fontWeight: layer.fontWeight,
+    fontStyle: layer.fontStyle,
+    color: layer.fontColor,
+    textAlign: layer.textAlign,
+    lineHeight: layer.lineHeight,
+    letterSpacing: layer.letterSpacing,
+    textTransform: layer.textTransform,
+    textShadow: layer.textShadow
+      ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}`
+      : "none",
+    whiteSpace: "pre-wrap",
+    wordWrap: "break-word",
+    overflowWrap: "break-word",
+    display: "block",
+    padding: "0",
+  };
+
+  // ========== TYPEWRITER ANIMATION ==========
+  if (animationType === "typewriter") {
+    const typewriterProgress = interpolate(relativeFrame, [0, duration * 1.5], [0, 1], {
+      extrapolateRight: "clamp",
+    });
+    const entranceOpacity = interpolate(relativeFrame, [0, duration * 0.1], [0, 1], {
+      extrapolateRight: "clamp",
+    });
+    const entranceScale = interpolate(relativeFrame, [0, 15], [0.98, 1], {
+      extrapolateRight: "clamp",
+    });
+    
+    const totalChars = layer.content.length;
+    const charsToShow = Math.floor(typewriterProgress * totalChars);
+    const visibleText = layer.content.substring(0, charsToShow);
+    const isComplete = charsToShow >= totalChars;
+    const cursorVisible = relativeFrame % 30 < 15 && !isComplete;
+
+    const highlightColor = layer.highlightColor || "rgba(255, 215, 0, 0.4)";
+    const hasHighlights = layer.highlightWords && layer.highlightWords.length > 0;
+    
+    const shouldHighlightWord = (word: string): boolean => {
+      if (!layer.highlightWords || layer.highlightWords.length === 0) return false;
+      const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
+      return layer.highlightWords.some((hw) => hw.toLowerCase() === cleanWord);
+    };
+
+    // Render visible text with highlights
+    const renderTypewriterText = () => {
+      if (!hasHighlights) {
+        return visibleText;
+      }
+      
+      const result: React.ReactNode[] = [];
+      let currentWord = "";
+      let currentIndex = 0;
+      
+      for (let i = 0; i < visibleText.length; i++) {
+        const char = visibleText[i];
+        if (char === " " || char === "\n" || char === "\t") {
+          if (currentWord) {
+            const highlighted = shouldHighlightWord(currentWord);
+            result.push(
+              <span
+                key={currentIndex}
+                style={{
+                  backgroundColor: highlighted ? highlightColor : "transparent",
+                  padding: highlighted ? "2px 4px" : "0",
+                  borderRadius: highlighted ? "3px" : "0",
+                }}
+              >
+                {currentWord}
+              </span>
+            );
+            currentIndex++;
+            currentWord = "";
+          }
+          result.push(<span key={`space-${i}`}>{char}</span>);
+        } else {
+          currentWord += char;
+        }
+      }
+      
+      if (currentWord) {
+        const highlighted = shouldHighlightWord(currentWord);
+        result.push(
+          <span
+            key={currentIndex}
+            style={{
+              backgroundColor: highlighted ? highlightColor : "transparent",
+              padding: highlighted ? "2px 4px" : "0",
+              borderRadius: highlighted ? "3px" : "0",
+            }}
+          >
+            {currentWord}
+          </span>
+        );
+      }
+      
+      return result;
+    };
+
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          transform: `rotate(${rotation}deg) scale(${entranceScale})`,
+          transformOrigin: "center center",
+          opacity: layer.opacity * entranceOpacity,
+        }}
+      >
+        {renderTypewriterText()}
+        {cursorVisible && (
+          <span style={{ color: layer.fontColor, fontWeight: "100" }}>|</span>
+        )}
+      </div>
+    );
+  }
+
+  // ========== KINETIC ANIMATION ==========
+  if (animationType === "kinetic") {
+    const words = layer.content.split(/\s+/).filter(Boolean);
+    const staggerDelay = Math.max(4, Math.floor(duration / (words.length + 2)));
+
+    const highlightColor = layer.highlightColor || "rgba(255, 215, 0, 0.4)";
+    const hasHighlights = layer.highlightWords && layer.highlightWords.length > 0;
+    
+    const shouldHighlightWord = (word: string): boolean => {
+      if (!layer.highlightWords || layer.highlightWords.length === 0) return false;
+      const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
+      return layer.highlightWords.some((hw) => hw.toLowerCase() === cleanWord);
+    };
+
+    return (
+      <div
+        style={{
+          ...baseStyle,
+          transform: `rotate(${rotation}deg)`,
+          transformOrigin: "center center",
+          opacity: layer.opacity,
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: layer.textAlign === "center" ? "center" : 
+                         layer.textAlign === "right" ? "flex-end" : "flex-start",
+          gap: `0 ${scaledFontSize * 0.3}px`,
+        }}
+      >
+        {words.map((word, index) => {
+          const wordStartFrame = index * staggerDelay;
+          const wordFrame = Math.max(0, relativeFrame - wordStartFrame);
+          
+          const springProgress = spring({
+            frame: wordFrame,
+            fps,
+            config: { damping: 12, stiffness: 100 },
+            durationInFrames: staggerDelay * 2,
+          });
+          
+          // Entry directions based on word index
+          const directions = [
+            { x: 0, y: -80 },    // top
+            { x: 80, y: 0 },     // right
+            { x: 0, y: 80 },     // bottom
+            { x: -80, y: 0 },    // left
+            { x: -60, y: -60 },  // top-left
+            { x: 60, y: -60 },   // top-right
+          ];
+          const dir = directions[index % directions.length];
+          
+          const translateX = interpolate(springProgress, [0, 1], [dir.x, 0]);
+          const translateY = interpolate(springProgress, [0, 1], [dir.y, 0]);
+          const wordScale = interpolate(springProgress, [0, 0.5, 0.75, 1], [0.3, 1.15, 0.95, 1]);
+          const wordOpacity = interpolate(springProgress, [0, 0.25], [0, 1], {
+            extrapolateRight: "clamp",
+          });
+          const wordRotation = interpolate(springProgress, [0, 1], [index % 2 === 0 ? -12 : 12, 0]);
+          const highlighted = hasHighlights && shouldHighlightWord(word);
+
+          return (
+            <span
+              key={index}
+              style={{
+                display: "inline-block",
+                transform: `translate(${translateX}px, ${translateY}px) scale(${wordScale}) rotate(${wordRotation}deg)`,
+                opacity: wordOpacity,
+                transformOrigin: "center center",
+                backgroundColor: highlighted ? highlightColor : "transparent",
+                padding: highlighted ? "2px 4px" : "0",
+                borderRadius: highlighted ? "3px" : "0",
+              }}
+            >
+              {word}
+            </span>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // ========== ALL OTHER ANIMATIONS (fade, slideUp, scale, etc.) ==========
+  const entrance = getEntranceAnimation(layer, relativeFrame, fps);
+  const words = layer.content.split(/\s+/).filter(Boolean);
+
   const shouldHighlight = (word: string): boolean => {
-    if (!layer.highlightWords || layer.highlightWords.length === 0)
-      return false;
+    if (!layer.highlightWords || layer.highlightWords.length === 0) return false;
     const cleanWord = word.toLowerCase().replace(/[.,!?;:'"]/g, "");
     return layer.highlightWords.some((hw) => hw.toLowerCase() === cleanWord);
   };
@@ -1616,31 +1825,10 @@ const TextLayerComponent: React.FC<{
   return (
     <div
       style={{
-        position: "absolute",
-        left: `${layer.position.x - layer.size.width / 2}%`,
-        top: `${layer.position.y - layer.size.height / 2}%`,
-        width: `${layer.size.width}%`,
-        minHeight: `${layer.size.height}%`,
-        fontFamily: layer.fontFamily,
-        fontSize: scaledFontSize,
-        fontWeight: layer.fontWeight,
-        fontStyle: layer.fontStyle,
-        color: layer.fontColor,
-        textAlign: layer.textAlign,
-        lineHeight: layer.lineHeight,
-        letterSpacing: layer.letterSpacing,
-        textTransform: layer.textTransform,
-        textShadow: layer.textShadow
-          ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}`
-          : "none",
+        ...baseStyle,
         transform: `rotate(${rotation}deg) ${entrance.transform}`,
         transformOrigin: "center center",
         opacity: layer.opacity * entrance.opacity,
-        whiteSpace: "pre-wrap",
-        wordWrap: "break-word",
-        overflowWrap: "break-word",
-        display: "block",
-        padding: "0",
       }}
     >
       {hasHighlights
@@ -1648,9 +1836,7 @@ const TextLayerComponent: React.FC<{
             <React.Fragment key={i}>
               <span
                 style={{
-                  backgroundColor: shouldHighlight(word)
-                    ? highlightColor
-                    : "transparent",
+                  backgroundColor: shouldHighlight(word) ? highlightColor : "transparent",
                   padding: shouldHighlight(word) ? "2px 4px" : "0",
                   borderRadius: shouldHighlight(word) ? "3px" : "0",
                 }}

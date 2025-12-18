@@ -767,6 +767,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               <option value="zoomPunch">Zoom Punch</option>
               <option value="popIn">Pop In</option>
               <option value="rotate">Rotate</option>
+              <option value="typewriter">Typewriter</option>
+              <option value="kinetic">Kinetic</option>
             </select>
           </div>
 
@@ -1297,6 +1299,8 @@ export const TextEditor: React.FC<TextEditorProps> = ({
               <option value="zoomPunch">Zoom Punch</option>
               <option value="popIn">Pop In</option>
               <option value="rotate">Rotate</option>
+              <option value="typewriter">Typewriter</option>
+              <option value="kinetic">Kinetic (Word Burst)</option>
             </select>
 
             {/* ANIMATION SPEED */}

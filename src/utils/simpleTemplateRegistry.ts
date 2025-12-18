@@ -307,8 +307,8 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
 
       // Define layout properties
       const layoutProps = layout === 'layout1'
-        ? { width: 100, height: 100, objectFit: 'contain' as const } // Layout 1: Full Center
-        : { width: 80, height: 60, objectFit: 'cover' as const };    // Layout 2: Small Square
+        ? { width: 100, height: 100, objectFit: 'contain' as const } 
+        : { width: 80, height: 60, objectFit: 'cover' as const };   
 
       // 2. Generate Foreground Layers from Sequence
       defaultSequence.forEach((item, index) => {

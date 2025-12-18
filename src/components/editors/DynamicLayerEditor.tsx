@@ -57,6 +57,7 @@ import {
 
 // Hooks
 import { useProjectSave } from "../../hooks/SaveProject";
+import { usePersistedEditorState, getPersistedLayersForTemplate, clearPersistedStateForTemplate } from "../../hooks/editor_hooks/usePersistedEditorState";
 // import { renderVideo } from "../../utils/VideoRenderer";
 
 // UI Components
@@ -604,6 +605,12 @@ const DynamicLayerEditor: React.FC = () => {
     useState(false);
   const [showVEOGeneratorModal, setShowVEOGeneratorModal] = useState(false);
 
+  const { clearPersistedState } = usePersistedEditorState(layers, {
+    templateId: template?.id,
+    projectId,
+  });
+
+
   const [previewDimensions, setPreviewDimensions] = useState({
     width: 0,
     height: 0,
@@ -856,20 +863,33 @@ const DynamicLayerEditor: React.FC = () => {
       const templateDef = getTemplate(templateId);
       if (templateDef) {
         setTemplate(templateDef);
-        const defaultLayers = templateDef.createDefaultLayers();
-        pushState(defaultLayers);
-        if (templateDef.calculateDuration) {
-          setDuration(
-            Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS)
-          );
-        }
-        // Initialize chat name
-        if (templateId === 9) {
-          const firstBubble = defaultLayers.find(
-            (l: any) => l.type === "chat-bubble"
-          );
-          if (firstBubble)
-            setChatPartnerName((firstBubble as any).senderName || "User");
+
+        const persistedLayers = getPersistedLayersForTemplate(templateId);
+
+        if (persistedLayers && persistedLayers.length > 0) {
+          pushState(persistedLayers);
+          
+          const maxEndFrame = Math.max(...persistedLayers.map((l) => l.endFrame));
+          setDuration(Math.max(Math.ceil(maxEndFrame / FPS) + 1, 5));
+          
+          if (templateId === 9) {
+            const firstBubble = persistedLayers.find((l: any) => l.type === "chat-bubble");
+            if (firstBubble) setChatPartnerName((firstBubble as any).senderName || "User");
+          }
+          
+          toast.success("Your previous edits have been restored!");
+        } else {
+          const defaultLayers = templateDef.createDefaultLayers();
+          pushState(defaultLayers);
+          
+          if (templateDef.calculateDuration) {
+            setDuration(Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS));
+          }
+          
+          if (templateId === 9) {
+            const firstBubble = defaultLayers.find((l: any) => l.type === "chat-bubble");
+            if (firstBubble) setChatPartnerName((firstBubble as any).senderName || "User");
+          }
         }
       } else {
         toast.error("Template not found");
@@ -1073,34 +1093,51 @@ const DynamicLayerEditor: React.FC = () => {
     [replacingVideoLayerId, updateLayer]
   );
 
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (previewContainerRef.current) {
-        const container = previewContainerRef.current;
-        const containerWidth = container.clientWidth;
-        const containerHeight = container.clientHeight;
-        const aspectRatio = 9 / 16;
-        let width = containerWidth * 0.95;
-        let height = width / aspectRatio;
-        if (height > containerHeight * 0.95) {
-          height = containerHeight * 0.95;
-          width = height * aspectRatio;
+useEffect(() => {
+  const updateDimensions = () => {
+    if (previewContainerRef.current) {
+      const container = previewContainerRef.current;
+      const containerWidth = container.clientWidth;
+      const containerHeight = container.clientHeight;
+      const aspectRatio = 9 / 16;
+      
+      if (isMobile && isPanelOpen) {
+        // 64 = header, 40vh = panel, 60 = bottom tabs (no timeline)
+        const panelHeight = window.innerHeight * 0.4;
+        const availableHeight = window.innerHeight - 64 - panelHeight - 60 - 20;
+        const availableWidth = window.innerWidth - 32; 
+        
+        let height = availableHeight;
+        let width = height * aspectRatio;
+        
+        if (width > availableWidth) {
+          width = availableWidth;
+          height = width / aspectRatio;
         }
+        
         setPreviewDimensions({ width, height });
+        return;
       }
-    };
+      
+      let width = containerWidth * 0.95;
+      let height = width / aspectRatio;
+      if (height > containerHeight * 0.95) {
+        height = containerHeight * 0.95;
+        width = height * aspectRatio;
+      }
+      setPreviewDimensions({ width, height });
+    }
+  };
 
-    updateDimensions();
+  updateDimensions();
+  const timeoutId = setTimeout(updateDimensions, 100);
 
-    // Force recalculation after a short delay to ensure layout has updated
-    const timeoutId = setTimeout(updateDimensions, 100);
-
-    window.addEventListener("resize", updateDimensions);
-    return () => {
-      window.removeEventListener("resize", updateDimensions);
-      clearTimeout(timeoutId);
-    };
-  }, [timelineHeight, showEditPanel, isPanelOpen]);
+  window.addEventListener("resize", updateDimensions);
+  return () => {
+    window.removeEventListener("resize", updateDimensions);
+    clearTimeout(timeoutId);
+  };
+}, [timelineHeight, showEditPanel, isPanelOpen, isMobile]);
 
   // --- SPLIT SCREEN HANDLERS ---
   const getLayoutMode = () => {
@@ -1237,6 +1274,16 @@ const DynamicLayerEditor: React.FC = () => {
         return;
       }
 
+
+     
+const baseFontSize = 30;
+const avgCharWidth = baseFontSize * 0.5; 
+const padding = 60; 
+const avatarSpace = currentStyle === "fakechatconversation" ? 100 : 0;
+const messageWidthPx = (chatInput.length * avgCharWidth) + padding + avatarSpace;
+const compositionWidth = 1080;
+const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compositionWidth) * 100));
+
       const newMsg: ChatBubbleLayer = {
         id: `msg-${Date.now()}`,
         type: "chat-bubble",
@@ -1255,8 +1302,8 @@ const DynamicLayerEditor: React.FC = () => {
         chatStyle: currentStyle,
         senderName: currentName,
         avatarUrl: currentAvatar,
-        position: { x: 50, y: startY }, // Centered X, Y increments automatically handled by rendering
-        size: { width: 90, height: 10 },
+        position: { x: isSender ? 80 : 20, y: startY },
+        size: { width: estimatedWidthPercent, height: 10 },
         rotation: 0,
         opacity: 1,
         animation: { entrance: "slideUp", entranceDuration: 20 },
@@ -2500,9 +2547,12 @@ const DynamicLayerEditor: React.FC = () => {
             };
             processed.push(bgLayer as Layer);
 
+
+            const isDefaultSize = layer.size.width === 100 && layer.size.height === 100;
+            
             const fgLayer = {
               ...layer,
-              size: { width: 85, height: 65 },
+              size: isDefaultSize ? { width: 85, height: 65 } : layer.size,
               objectFit: "cover",
               animation: {
                 ...layer.animation,
@@ -2634,12 +2684,16 @@ const DynamicLayerEditor: React.FC = () => {
           setProjectId(savedProjectId);
           navigate(`/editor?project=${savedProjectId}`, { replace: true });
         }
+        if (template?.id) {
+          clearPersistedStateForTemplate(template.id);
+        }
+        clearPersistedState();
       } catch (error) {
         setStatus("Error");
         toast.error("Save failed");
       }
     },
-    [saveNewProject, projectId, navigate]
+    [saveNewProject, projectId, navigate, clearPersistedState]
   );
 
   useEffect(() => {
@@ -3733,8 +3787,9 @@ const DynamicLayerEditor: React.FC = () => {
               pointerEvents: "auto",
               ...(isMobile && isPanelOpen
                 ? {
-                    height: "calc(100vh - 60px - 40vh - 64px)",
-                    maxHeight: "calc(100vh - 60px - 40vh - 64px)",
+                    height: "calc(100vh - 64px - 40vh - 60px)",
+                    maxHeight: "calc(100vh - 64px - 40vh - 60px)",
+                    flex: 1,
                   }
                 : {}),
             }}
@@ -3757,6 +3812,7 @@ const DynamicLayerEditor: React.FC = () => {
                   position: "relative",
                   display: "inline-block",
                   pointerEvents: "auto",
+                  zIndex: isMobile && isPanelOpen ? 160 : "auto",
                 }}
               >
                 <RemotionPreview
@@ -3802,7 +3858,7 @@ const DynamicLayerEditor: React.FC = () => {
 
                
                   <DynamicPreviewOverlay
-                    layers={layers}
+                    layers={processedLayers.filter((l) => !l.id.startsWith("bg-"))}
                     currentFrame={currentFrame}
                     selectedLayerId={selectedLayerId}
                     editingLayerId={editingLayerId}
@@ -3822,6 +3878,7 @@ const DynamicLayerEditor: React.FC = () => {
             ref={verticalResizerRef}
             style={{
               height: isMobile ? "12px" : "12px",
+              display: isMobile && isPanelOpen ? "none" : "flex",
               backgroundColor: colors.bgSecondary,
               borderTop: `1px solid ${colors.borderLight}`,
               borderBottom: `1px solid ${colors.borderLight}`,
@@ -3838,7 +3895,6 @@ const DynamicLayerEditor: React.FC = () => {
               WebkitTouchCallout: "none",
               WebkitUserSelect: "none",
               userSelect: "none",
-              display: "flex",
               alignItems: "center",
               justifyContent: "center",
               position: "relative",
@@ -3883,29 +3939,30 @@ const DynamicLayerEditor: React.FC = () => {
               </div>
             )}
           </div>
-          <Timeline
-            tracks={timelineTracks}
-            currentFrame={currentFrame}
-            totalFrames={totalFrames}
-            fps={FPS}
-            selectedTrackId={selectedLayerId}
-            onFrameChange={handleFrameChange}
-            onTrackSelect={handleTrackSelect}
-            onTracksChange={handleTracksChange}
-            onReorderTracks={handleReorderTracks}
-            onDeleteTrack={deleteLayer}
-            onCutTrack={splitLayer}
-            onEdit={openEditor}
-            isPlaying={isPlaying}
-            onPlayPause={togglePlayback}
-            data-timeline="true"
-            onUndo={undo}
-            onRedo={redo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            // 🎯 NEW: Pass the dynamic height
-            height={`${timelineHeight}px`}
-          />
+          {!(isMobile && isPanelOpen) && (
+            <Timeline
+              tracks={timelineTracks}
+              currentFrame={currentFrame}
+              totalFrames={totalFrames}
+              fps={FPS}
+              selectedTrackId={selectedLayerId}
+              onFrameChange={handleFrameChange}
+              onTrackSelect={handleTrackSelect}
+              onTracksChange={handleTracksChange}
+              onReorderTracks={handleReorderTracks}
+              onDeleteTrack={deleteLayer}
+              onCutTrack={splitLayer}
+              onEdit={openEditor}
+              isPlaying={isPlaying}
+              onPlayPause={togglePlayback}
+              data-timeline="true"
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              height={`${timelineHeight}px`}
+            />
+          )}
         </div>
       </div>
 
