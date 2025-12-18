@@ -61,6 +61,15 @@ import PricingPage from "./pages/PricingPage.tsx";
 import { backendPrefix } from "./config";
 // import { TemplateGallery } from "./components/ui/dsahboard/sections/refactored/TemplatesSection.tsx";
 
+import { AdminProvider } from "./contexts/AdminContext";
+import { AdminLogin } from "./pages/admin/AdminLogin";
+import { AdminDashboard } from "./pages/admin/AdminDashboard";
+import { AdminUsers } from "./pages/admin/AdminUsers";
+import { AdminSetup } from "./pages/admin/AdminSetup";
+import { usePageTracking } from "./hooks/usePageTracking";
+import { AdminUserDetail } from "./pages/admin/AdminUserDetail";
+
+
 // ✅ UPDATED: Auth Provider with subscription check
 function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
@@ -351,137 +360,287 @@ function PublicOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+// ✅ NEW: AppContent component with page tracking
+function AppContent() {
+  usePageTracking(); // Track all page views
+  
+  return (
+    <Routes>
+      {/* ========== PUBLIC ROUTES (Redirect to subscription if logged in) ========== */}
+      
+      <Route path="/" element={<RootRedirect />} />
+
+      <Route
+        path="/login"
+        element={
+          <PublicOnlyRoute>
+            <LoginPage />
+          </PublicOnlyRoute>
+        }
+      />
+
+      <Route
+        path="/signup"
+        element={
+          <PublicOnlyRoute>
+            <SignupPage />
+          </PublicOnlyRoute>
+        }
+      />
+
+      <Route
+        path="/forgot-password"
+        element={
+          <PublicOnlyRoute>
+            <ForgotPasswordPage />
+          </PublicOnlyRoute>
+        }
+      />
+
+      <Route
+        path="/pricing"
+        element={
+          <PublicOnlyRoute>
+            <PricingPage />
+          </PublicOnlyRoute>
+        }
+      />
+
+      {/* Loading pages (no protection needed) */}
+      <Route path="/loading" element={<GoogleLoading />} />
+      <Route path="/initializing-login" element={<LoginLoading />} />
+
+      {/* ========== PROTECTED ROUTES (Require authentication) ========== */}
+      <Route
+        path="/subscription"
+        element={
+          <ProtectedRoute>
+            <SubscriptionPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/editor"
+        element={
+          <ProtectedRoute>
+            <DynamicLayerEditor />
+          </ProtectedRoute>
+        }
+      />
+      
+      {/* ========== TOOLS ========== */}
+      <Route
+        path="/tools/ai-image"
+        element={
+          <ProtectedRoute>
+            <AIToolsPanel />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== TEST ROUTES ========== */}
+      <Route
+        path="/tester"
+        element={
+          <ProtectedRoute>
+            <QuoteGenerator />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/qtester"
+        element={
+          <ProtectedRoute>
+            <QuoteTester />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ========== ADMIN ROUTES ========== */}
+      <Route path="/admin/setup" element={<AdminSetup />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin/dashboard" element={<AdminDashboard />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
+
+      {/* ========== 404 FALLBACK ========== */}
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+
 function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            {/* ========== PUBLIC ROUTES (Redirect to subscription if logged in) ========== */}
-            
-            <Route path="/" element={<RootRedirect />} />
+          <AdminProvider>
+            <AppContent />
 
-            <Route
-              path="/login"
-              element={
-                <PublicOnlyRoute>
-                  <LoginPage />
-                </PublicOnlyRoute>
-              }
-            />
-
-            <Route
-              path="/signup"
-              element={
-                <PublicOnlyRoute>
-                  <SignupPage />
-                </PublicOnlyRoute>
-              }
-            />
-
-            <Route
-              path="/forgot-password"
-              element={
-                <PublicOnlyRoute>
-                  <ForgotPasswordPage />
-                </PublicOnlyRoute>
-              }
-            />
-
-            <Route
-              path="/pricing"
-              element={
-                <PublicOnlyRoute>
-                  <PricingPage />
-                </PublicOnlyRoute>
-              }
-            />
-
-            {/* Loading pages (no protection needed) */}
-            <Route path="/loading" element={<GoogleLoading />} />
-            <Route path="/initializing-login" element={<LoginLoading />} />
-            {/* <Route path="/pricing" element={<PricingPage />} /> */}
-
-            {/* ========== PROTECTED ROUTES (Require authentication) ========== */}
-            <Route
-              path="/subscription"
-              element={
-                <ProtectedRoute>
-                  <SubscriptionPage /> {/* ✅ REMOVED SubscriptionGuard */}
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-
-            <Route
-              path="/editor"
-              element={
-                <ProtectedRoute>
-                  <DynamicLayerEditor />
-                </ProtectedRoute>
-              }
-            />
-            
-            {/* ========== TOOLS ========== */}
-            <Route
-              path="/tools/ai-image"
-              element={
-                <ProtectedRoute>
-                  <AIToolsPanel />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ========== TEST ROUTES ========== */}
-            <Route
-              path="/tester"
-              element={
-                <ProtectedRoute>
-                  <QuoteGenerator />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/qtester"
-              element={
-                <ProtectedRoute>
-                  <QuoteTester />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* ========== 404 FALLBACK ========== */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-
-          {/* Global Toast Notifications */}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              style: {
-                background: "#fff",
-                color: "#333",
-              },
-              success: {
-                iconTheme: {
-                  primary: "#4f46e5",
-                  secondary: "#fff",
+            {/* Global Toast Notifications */}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                style: {
+                  background: "#fff",
+                  color: "#333",
                 },
-              },
-            }}
-          />
+                success: {
+                  iconTheme: {
+                    primary: "#4f46e5",
+                    secondary: "#fff",
+                  },
+                },
+              }}
+            />
+          </AdminProvider>
         </AuthProvider>
       </BrowserRouter>
     </ThemeProvider>
   );
 }
+
+// function App() {
+//   return (
+//     <ThemeProvider>
+//       <BrowserRouter>
+//         <AuthProvider>
+//           <Routes>
+//             {/* ========== PUBLIC ROUTES (Redirect to subscription if logged in) ========== */}
+            
+//             <Route path="/" element={<RootRedirect />} />
+
+//             <Route
+//               path="/login"
+//               element={
+//                 <PublicOnlyRoute>
+//                   <LoginPage />
+//                 </PublicOnlyRoute>
+//               }
+//             />
+
+//             <Route
+//               path="/signup"
+//               element={
+//                 <PublicOnlyRoute>
+//                   <SignupPage />
+//                 </PublicOnlyRoute>
+//               }
+//             />
+
+//             <Route
+//               path="/forgot-password"
+//               element={
+//                 <PublicOnlyRoute>
+//                   <ForgotPasswordPage />
+//                 </PublicOnlyRoute>
+//               }
+//             />
+
+//             <Route
+//               path="/pricing"
+//               element={
+//                 <PublicOnlyRoute>
+//                   <PricingPage />
+//                 </PublicOnlyRoute>
+//               }
+//             />
+
+//             {/* Loading pages (no protection needed) */}
+//             <Route path="/loading" element={<GoogleLoading />} />
+//             <Route path="/initializing-login" element={<LoginLoading />} />
+//             {/* <Route path="/pricing" element={<PricingPage />} /> */}
+
+//             {/* ========== PROTECTED ROUTES (Require authentication) ========== */}
+//             <Route
+//               path="/subscription"
+//               element={
+//                 <ProtectedRoute>
+//                   <SubscriptionPage /> {/* ✅ REMOVED SubscriptionGuard */}
+//                 </ProtectedRoute>
+//               }
+//             />
+
+//             <Route
+//               path="/dashboard"
+//               element={
+//                 <ProtectedRoute>
+//                   <Dashboard />
+//                 </ProtectedRoute>
+//               }
+//             />
+
+//             <Route
+//               path="/editor"
+//               element={
+//                 <ProtectedRoute>
+//                   <DynamicLayerEditor />
+//                 </ProtectedRoute>
+//               }
+//             />
+            
+//             {/* ========== TOOLS ========== */}
+//             <Route
+//               path="/tools/ai-image"
+//               element={
+//                 <ProtectedRoute>
+//                   <AIToolsPanel />
+//                 </ProtectedRoute>
+//               }
+//             />
+
+//             {/* ========== TEST ROUTES ========== */}
+//             <Route
+//               path="/tester"
+//               element={
+//                 <ProtectedRoute>
+//                   <QuoteGenerator />
+//                 </ProtectedRoute>
+//               }
+//             />
+//             <Route
+//               path="/qtester"
+//               element={
+//                 <ProtectedRoute>
+//                   <QuoteTester />
+//                 </ProtectedRoute>
+//               }
+//             />
+
+//             {/* ========== 404 FALLBACK ========== */}
+//             <Route path="*" element={<Navigate to="/" replace />} />
+//           </Routes>
+
+//           {/* Global Toast Notifications */}
+//           <Toaster
+//             position="top-right"
+//             toastOptions={{
+//               style: {
+//                 background: "#fff",
+//                 color: "#333",
+//               },
+//               success: {
+//                 iconTheme: {
+//                   primary: "#4f46e5",
+//                   secondary: "#fff",
+//                 },
+//               },
+//             }}
+//           />
+//         </AuthProvider>
+//       </BrowserRouter>
+//     </ThemeProvider>
+//   );
+// }
 
 export default App;

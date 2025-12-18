@@ -16,6 +16,7 @@ import { ToolsSection } from "../../ui/dsahboard/sections/ToolsSection";
 import SubscriptionPlan from "../../../pages/user/SubscriptionPlan";
 import type { DashboardSection } from "../../ui/navigations/DashboardSidenav";
 import { TemplateGallery } from "../../ui/dsahboard/sections/refactored/TemplatesSection";
+import { SettingsPage } from "../../../pages/user/Settings";
 
 export const DashboardContent: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -192,6 +193,13 @@ export const DashboardContent: React.FC = () => {
             fetchProfileDetails={fetchProfileDetails}
           />
         )}
+
+        {activeSection === "settings" && (
+  <SettingsPage
+    userData={userData}
+    fetchProfileDetails={fetchProfileDetails}
+  />
+)}
 
         {activeSection === "tools" && <ToolsSection key={toolsKey} />}
 

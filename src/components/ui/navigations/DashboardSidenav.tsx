@@ -26,8 +26,8 @@ export type DashboardSection =
   | "renders"
   | "profile"
   | "tools"
-  | "subscription";
-  
+  | "subscription"
+  | "settings";
 
 interface DashboardSidebarNavProps {
   userPfp: string | null;
@@ -52,58 +52,68 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
 
   // Check subscription status
   useEffect(() => {
-  const checkStatus = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      
-      if (!token) {
-        navigate("/login");
-        return;
-      }
+    const checkStatus = async () => {
+      try {
+        const token = localStorage.getItem("token");
 
-      const response = await fetch(`${backendPrefix}/api/subscription/status`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (!token) {
+          navigate("/login");
+          return;
         }
-      });
 
-      const data = await response.json();
+        const response = await fetch(
+          `${backendPrefix}/api/subscription/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      console.log('🔍 Dashboard subscription check:', data);
+        const data = await response.json();
 
-      // ✅ NEW: Only redirect if trial expired AND no subscription
-      if (data.success) {
-        if (!data.hasSubscription && data.trialExpired) {
-          toast.error('Your free trial has expired. Please subscribe to continue.', {
-            duration: 5000,
-            icon: '⏰'
-          });
-          navigate("/subscription");
+        console.log("🔍 Dashboard subscription check:", data);
+
+        // ✅ NEW: Only redirect if trial expired AND no subscription
+        if (data.success) {
+          if (!data.hasSubscription && data.trialExpired) {
+            toast.error(
+              "Your free trial has expired. Please subscribe to continue.",
+              {
+                duration: 5000,
+                icon: "⏰",
+              }
+            );
+            navigate("/subscription");
+          }
+          // If hasSubscription is true, user can stay (includes free trial)
         }
-        // If hasSubscription is true, user can stay (includes free trial)
+      } catch (error) {
+        console.error("Error checking subscription:", error);
+        // Don't redirect on error - fail open
       }
-    } catch (error) {
-      console.error('Error checking subscription:', error);
-      // Don't redirect on error - fail open
-    }
-  };
+    };
 
-  checkStatus();
-}, [navigate]);
+    checkStatus();
+  }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/login";
   };
 
-  const navItems: Array<{ id: DashboardSection; label: string; icon: React.ReactNode }> = [
-  { id: "home", label: "Home", icon: <FiHome /> },
-  { id: "files", label: "Projects", icon: <FiFolder /> },
-  { id: "templates", label: "Templates", icon: <FiGrid /> },
-  { id: "tools", label: "Tools", icon: <LuSparkles /> },
-  // { id: "home", label: "ViralMotion AI", icon: null },
-];
+  const navItems: Array<{
+    id: DashboardSection;
+    label: string;
+    icon: React.ReactNode;
+  }> = [
+    { id: "home", label: "Home", icon: <FiHome /> },
+    { id: "files", label: "Projects", icon: <FiFolder /> },
+    { id: "templates", label: "Templates", icon: <FiGrid /> },
+    { id: "tools", label: "Tools", icon: <LuSparkles /> },
+    // { id: "home", label: "ViralMotion AI", icon: null },
+  ];
 
   return (
     <>
@@ -261,7 +271,7 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
               <button
                 onClick={() => {
                   setMenuOpen(false);
-                  toast("Settings coming soon!", { icon: "⚙️" });
+                  onChange("settings"); // ✅ Navigate to settings
                 }}
                 className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
               >
@@ -366,8 +376,8 @@ export const DashboardSidebarNav: React.FC<DashboardSidebarNavProps> = ({
           </button>
           <button
             onClick={() => {
+              onChange("settings"); // ✅ Navigate to settings
               setMobileOpen(false);
-              toast("Settings coming soon!", { icon: "⚙️" });
             }}
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
           >
