@@ -31,7 +31,9 @@
 
 /* Offset for sticky nav when scrolling to sections */
 #features,
-#templates {
+#templates,
+#about,
+#faq {
   scroll-margin-top: 80px;
 }
 
