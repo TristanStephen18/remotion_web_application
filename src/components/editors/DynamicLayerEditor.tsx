@@ -57,7 +57,11 @@ import {
 
 // Hooks
 import { useProjectSave } from "../../hooks/SaveProject";
-import { usePersistedEditorState, getPersistedLayersForTemplate, clearPersistedStateForTemplate } from "../../hooks/editor_hooks/usePersistedEditorState";
+import {
+  usePersistedEditorState,
+  getPersistedLayersForTemplate,
+  clearPersistedStateForTemplate,
+} from "../../hooks/editor_hooks/usePersistedEditorState";
 // import { renderVideo } from "../../utils/VideoRenderer";
 
 // UI Components
@@ -94,7 +98,8 @@ import { compareProjectProps } from "../../utils/projectPropsComparison";
 import { saveExistingProject } from "../../utils/projectSaver";
 
 import { CropOverlay, type CropData } from "../editor_components/CropOverlay";
-import { renderVideoUsingLambdaWithoutSaving } from "../../utils/lambdaRenderingwithoutdbsave";
+// import { renderVideoUsingLambdaWithoutSaving } from "../../utils/lambdaRenderingwithoutdbsave";
+import { renderVideoUsingLambda } from "../../utils/lambdarendering";
 
 const getEventCoordinates = (
   e: MouseEvent | TouchEvent
@@ -560,8 +565,8 @@ const DynamicLayerEditor: React.FC = () => {
   const [chatPartnerName, setChatPartnerName] = useState("User");
 
   const [timelineHeight, setTimelineHeight] = useState(
-  isMobile ? window.innerHeight * 0.5 : 320
-);
+    isMobile ? window.innerHeight * 0.5 : 320
+  );
   const [isResizingVertical, setIsResizingVertical] = useState(false);
   const verticalResizerRef = useRef<HTMLDivElement>(null);
 
@@ -609,7 +614,6 @@ const DynamicLayerEditor: React.FC = () => {
     templateId: template?.id,
     projectId,
   });
-
 
   const [previewDimensions, setPreviewDimensions] = useState({
     width: 0,
@@ -856,8 +860,7 @@ const DynamicLayerEditor: React.FC = () => {
       return;
     }
 
-
-// ✅ Handle MyFiles redirect
+    // ✅ Handle MyFiles redirect
     if (
       location.state?.fromMyFiles &&
       location.state?.mediaData &&
@@ -935,34 +938,47 @@ const DynamicLayerEditor: React.FC = () => {
 
         if (persistedLayers && persistedLayers.length > 0) {
           pushState(persistedLayers);
-          
-          const maxEndFrame = Math.max(...persistedLayers.map((l) => l.endFrame));
+
+          const maxEndFrame = Math.max(
+            ...persistedLayers.map((l) => l.endFrame)
+          );
           setDuration(Math.max(Math.ceil(maxEndFrame / FPS) + 1, 5));
-          
+
           if (templateId === 9) {
-            const firstBubble = persistedLayers.find((l: any) => l.type === "chat-bubble");
-            if (firstBubble) setChatPartnerName((firstBubble as any).senderName || "User");
+            const firstBubble = persistedLayers.find(
+              (l: any) => l.type === "chat-bubble"
+            );
+            if (firstBubble)
+              setChatPartnerName((firstBubble as any).senderName || "User");
           }
-          
+
           toast.success("Your previous edits have been restored!");
         } else {
           const defaultLayers = templateDef.createDefaultLayers();
 
-          const audioLayers = defaultLayers.filter(l => l.type === 'audio');
-console.log("🔊 Audio layers created:", audioLayers.map(l => ({
-  name: l.name,
-  src: (l as any).src?.substring(0, 50) + '...',
-})));
+          const audioLayers = defaultLayers.filter((l) => l.type === "audio");
+          console.log(
+            "🔊 Audio layers created:",
+            audioLayers.map((l) => ({
+              name: l.name,
+              src: (l as any).src?.substring(0, 50) + "...",
+            }))
+          );
 
           pushState(defaultLayers);
-          
+
           if (templateDef.calculateDuration) {
-            setDuration(Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS));
+            setDuration(
+              Math.ceil(templateDef.calculateDuration(defaultLayers) / FPS)
+            );
           }
-          
+
           if (templateId === 9) {
-            const firstBubble = defaultLayers.find((l: any) => l.type === "chat-bubble");
-            if (firstBubble) setChatPartnerName((firstBubble as any).senderName || "User");
+            const firstBubble = defaultLayers.find(
+              (l: any) => l.type === "chat-bubble"
+            );
+            if (firstBubble)
+              setChatPartnerName((firstBubble as any).senderName || "User");
           }
         }
       } else {
@@ -1167,51 +1183,52 @@ console.log("🔊 Audio layers created:", audioLayers.map(l => ({
     [replacingVideoLayerId, updateLayer]
   );
 
-useEffect(() => {
-  const updateDimensions = () => {
-    if (previewContainerRef.current) {
-      const container = previewContainerRef.current;
-      const containerWidth = container.clientWidth;
-      const containerHeight = container.clientHeight;
-      const aspectRatio = 9 / 16;
-      
-      if (isMobile && isPanelOpen) {
-        // 64 = header, 40vh = panel, 60 = bottom tabs (no timeline)
-        const panelHeight = window.innerHeight * 0.4;
-        const availableHeight = window.innerHeight - 64 - panelHeight - 60 - 20;
-        const availableWidth = window.innerWidth - 32; 
-        
-        let height = availableHeight;
-        let width = height * aspectRatio;
-        
-        if (width > availableWidth) {
-          width = availableWidth;
-          height = width / aspectRatio;
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (previewContainerRef.current) {
+        const container = previewContainerRef.current;
+        const containerWidth = container.clientWidth;
+        const containerHeight = container.clientHeight;
+        const aspectRatio = 9 / 16;
+
+        if (isMobile && isPanelOpen) {
+          // 64 = header, 40vh = panel, 60 = bottom tabs (no timeline)
+          const panelHeight = window.innerHeight * 0.4;
+          const availableHeight =
+            window.innerHeight - 64 - panelHeight - 60 - 20;
+          const availableWidth = window.innerWidth - 32;
+
+          let height = availableHeight;
+          let width = height * aspectRatio;
+
+          if (width > availableWidth) {
+            width = availableWidth;
+            height = width / aspectRatio;
+          }
+
+          setPreviewDimensions({ width, height });
+          return;
         }
-        
+
+        let width = containerWidth * 0.95;
+        let height = width / aspectRatio;
+        if (height > containerHeight * 0.95) {
+          height = containerHeight * 0.95;
+          width = height * aspectRatio;
+        }
         setPreviewDimensions({ width, height });
-        return;
       }
-      
-      let width = containerWidth * 0.95;
-      let height = width / aspectRatio;
-      if (height > containerHeight * 0.95) {
-        height = containerHeight * 0.95;
-        width = height * aspectRatio;
-      }
-      setPreviewDimensions({ width, height });
-    }
-  };
+    };
 
-  updateDimensions();
-  const timeoutId = setTimeout(updateDimensions, 100);
+    updateDimensions();
+    const timeoutId = setTimeout(updateDimensions, 100);
 
-  window.addEventListener("resize", updateDimensions);
-  return () => {
-    window.removeEventListener("resize", updateDimensions);
-    clearTimeout(timeoutId);
-  };
-}, [timelineHeight, showEditPanel, isPanelOpen, isMobile]);
+    window.addEventListener("resize", updateDimensions);
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+      clearTimeout(timeoutId);
+    };
+  }, [timelineHeight, showEditPanel, isPanelOpen, isMobile]);
 
   // --- SPLIT SCREEN HANDLERS ---
   const getLayoutMode = () => {
@@ -1348,15 +1365,17 @@ useEffect(() => {
         return;
       }
 
-
-     
-const baseFontSize = 30;
-const avgCharWidth = baseFontSize * 0.5; 
-const padding = 60; 
-const avatarSpace = currentStyle === "fakechatconversation" ? 100 : 0;
-const messageWidthPx = (chatInput.length * avgCharWidth) + padding + avatarSpace;
-const compositionWidth = 1080;
-const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compositionWidth) * 100));
+      const baseFontSize = 30;
+      const avgCharWidth = baseFontSize * 0.5;
+      const padding = 60;
+      const avatarSpace = currentStyle === "fakechatconversation" ? 100 : 0;
+      const messageWidthPx =
+        chatInput.length * avgCharWidth + padding + avatarSpace;
+      const compositionWidth = 1080;
+      const estimatedWidthPercent = Math.min(
+        80,
+        Math.max(25, (messageWidthPx / compositionWidth) * 100)
+      );
 
       const newMsg: ChatBubbleLayer = {
         id: `msg-${Date.now()}`,
@@ -1610,7 +1629,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
     };
   }, [isResizingVertical]);
 
- // ============================================================================
+  // ============================================================================
   // COLLAGE HANDLERS
   // ============================================================================
 
@@ -1623,14 +1642,17 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
           (l) =>
             l.type === "image" &&
             (l.name.startsWith("Collage Slot") ||
-             l.name.startsWith("Individual Photo"))
+              l.name.startsWith("Individual Photo"))
         )
         .sort((a, b) => {
-          const getNum = (str: string) => parseInt(str.match(/\d+/)?.[0] || "0");
+          const getNum = (str: string) =>
+            parseInt(str.match(/\d+/)?.[0] || "0");
           return getNum(a.name) - getNum(b.name);
         });
 
-      const existingSrcs = Array.from(new Set(existingCollageLayers.map((l) => (l as ImageLayer).src)));
+      const existingSrcs = Array.from(
+        new Set(existingCollageLayers.map((l) => (l as ImageLayer).src))
+      );
 
       const sampleImages = [
         "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1200&h=1600&fit=crop",
@@ -1647,7 +1669,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
       // Combine: Prioritize existing user images
       const imagesToUse = [...existingSrcs];
       let fillerIndex = 0;
-      
+
       // If we don't have enough user images for the new layout slots + trailing photos, fill with samples
       while (imagesToUse.length < layout.slots.length + 6) {
         imagesToUse.push(sampleImages[fillerIndex % sampleImages.length]);
@@ -1657,17 +1679,22 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
       // Timing configuration
       const photoDelay = 18;
       const slideSpeed = 45;
-      const holdTime = 45; 
-      const collageEndFrame = (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
-      const photoStartFrame = collageEndFrame; 
-      const photoDuration = 60; 
+      const holdTime = 45;
+      const collageEndFrame =
+        (layout.slots.length - 1) * photoDelay + slideSpeed + holdTime;
+      const photoStartFrame = collageEndFrame;
+      const photoDuration = 60;
 
       const collageLayers: Layer[] = layout.slots.map((slot, index) => {
         const layerId = generateId();
 
         // Determine slide animation
-        let slideAnimation: "slideUp" | "slideDown" | "slideLeft" | "slideRight";
-        if (slot.slideDirection === "left") slideAnimation = "slideRight"; 
+        let slideAnimation:
+          | "slideUp"
+          | "slideDown"
+          | "slideLeft"
+          | "slideRight";
+        if (slot.slideDirection === "left") slideAnimation = "slideRight";
         else if (slot.slideDirection === "right") slideAnimation = "slideLeft";
         else if (slot.slideDirection === "up") slideAnimation = "slideDown";
         else if (slot.slideDirection === "down") slideAnimation = "slideUp";
@@ -1679,7 +1706,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
           visible: true,
           locked: false,
           type: "image",
-          startFrame: index * photoDelay, 
+          startFrame: index * photoDelay,
           endFrame: collageEndFrame,
           position: {
             x: slot.x + slot.width / 2,
@@ -1721,11 +1748,14 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
           startFrame: photoStartFrame + i * photoDuration,
           endFrame: photoStartFrame + (i + 1) * photoDuration,
           position: { x: 50, y: 50 },
-          size: { width: 100, height: 100 }, 
+          size: { width: 100, height: 100 },
           rotation: 0,
           opacity: 1,
           animation: {
-            entrance: individualAnimations[i % individualAnimations.length] as "fade" | "scale" | "zoomPunch",
+            entrance: individualAnimations[i % individualAnimations.length] as
+              | "fade"
+              | "scale"
+              | "zoomPunch",
             entranceDuration: 25,
           },
           // ✅ USE THE PRESERVED IMAGE HERE (offset by slot count)
@@ -1746,7 +1776,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         type: "text",
         startFrame: 0,
         endFrame: collageEndFrame,
-        position: { x: 50, y: 47 }, 
+        position: { x: 50, y: 47 },
         size: { width: 85, height: 12 },
         rotation: 0,
         opacity: 1,
@@ -1759,7 +1789,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         fontStyle: "normal",
         textAlign: "center",
         lineHeight: 1.3,
-        letterSpacing: 3, 
+        letterSpacing: 3,
         textTransform: textOverlay ? "none" : "uppercase",
         textOutline: true,
         outlineColor: "#000000",
@@ -1770,36 +1800,38 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         shadowBlur: 12,
       };
 
-      const subtitleLayer: TextLayer | null = textOverlay ? {
-        id: generateId(),
-        name: "Collage Subtitle",
-        visible: true,
-        locked: false,
-        type: "text",
-        startFrame: 10,
-        endFrame: collageEndFrame,
-        position: { x: 50, y: 53 },
-        size: { width: 70, height: 8 },
-        rotation: 0,
-        opacity: 1,
-        animation: { entrance: "fade", entranceDuration: 20 },
-        content: textOverlay.subText,
-        fontFamily: textOverlay.subFont,
-        fontSize: 4,
-        fontColor: "#ffffff",
-        fontWeight: "normal",
-        fontStyle: "italic",
-        textAlign: "center",
-        lineHeight: 1.2,
-        letterSpacing: 1,
-        textTransform: "none",
-        textOutline: false,
-        textShadow: true,
-        shadowColor: "#000000",
-        shadowX: 0,
-        shadowY: 3,
-        shadowBlur: 10,
-      } : null;
+      const subtitleLayer: TextLayer | null = textOverlay
+        ? {
+            id: generateId(),
+            name: "Collage Subtitle",
+            visible: true,
+            locked: false,
+            type: "text",
+            startFrame: 10,
+            endFrame: collageEndFrame,
+            position: { x: 50, y: 53 },
+            size: { width: 70, height: 8 },
+            rotation: 0,
+            opacity: 1,
+            animation: { entrance: "fade", entranceDuration: 20 },
+            content: textOverlay.subText,
+            fontFamily: textOverlay.subFont,
+            fontSize: 4,
+            fontColor: "#ffffff",
+            fontWeight: "normal",
+            fontStyle: "italic",
+            textAlign: "center",
+            lineHeight: 1.2,
+            letterSpacing: 1,
+            textTransform: "none",
+            textOutline: false,
+            textShadow: true,
+            shadowColor: "#000000",
+            shadowX: 0,
+            shadowY: 3,
+            shadowBlur: 10,
+          }
+        : null;
 
       // 4. CREATE OVERLAYS
       const gradientOverlay: ImageLayer = {
@@ -1809,11 +1841,11 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         locked: true,
         type: "image",
         startFrame: 0,
-        endFrame: collageEndFrame, 
+        endFrame: collageEndFrame,
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
         rotation: 0,
-        opacity: 0.15, 
+        opacity: 0.15,
         src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA4MCIgaGVpZ2h0PSIxOTIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxsaW5lYXJHcmFkaWVudCBpZD0iZ3JhZCIgeDE9IjAlIiB5MT0iMCUiIHgyPSIwJSIgeTI9IjEwMCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAuOCIvPjxzdG9wIG9mZnNldD0iNDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDAwMDAwO3N0b3Atb3BhY2l0eTowIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdHlsZT0ic3RvcC1jb2xvcjojMDAwMDAwO3N0b3Atb3BhY2l0eTowIi8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwODAiIGhlaWdodD0iMTkyMCIgZmlsbD0idXJsKCNncmFkKSIvPjwvc3ZnPg==",
         objectFit: "cover",
         isBackground: false,
@@ -1830,7 +1862,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         position: { x: 50, y: 50 },
         size: { width: 100, height: 100 },
         rotation: 0,
-        opacity: 0.25, 
+        opacity: 0.25,
         src: "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTA4MCIgaGVpZ2h0PSIxOTIwIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0idmlnIiBjeD0iNTAlIiBjeT0iNTAlIiByPSI3MCUiPjxzdG9wIG9mZnNldD0iMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAiLz48c3RvcCBvZmZzZXQ9IjEwMCUiIHN0eWxlPSJzdG9wLWNvbG9yOiMwMDAwMDA7c3RvcC1vcGFjaXR5OjAuOSIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDgwIiBoZWlnaHQ9IjE5MjAiIGZpbGw9InVybCgjdmlnKSIvPjwvc3ZnPg==",
         objectFit: "cover",
         isBackground: false,
@@ -1841,7 +1873,7 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
         ...collageLayers,
         gradientOverlay,
         textLayer,
-        ...(subtitleLayer ? [subtitleLayer] : []), 
+        ...(subtitleLayer ? [subtitleLayer] : []),
         ...trailingPhotoLayers,
         bottomVignette,
       ];
@@ -2129,10 +2161,10 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
 
         if (isMobile) {
           setActiveTab(null);
-          // setIsPanelOpen(true);  
+          // setIsPanelOpen(true);
         } else {
           setIsPanelOpen(false);
-          setActiveTab(null); 
+          setActiveTab(null);
         }
       } else {
         if (isMobile) {
@@ -2151,9 +2183,9 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
   }, [isMobile, selectedLayerId]);
 
   const handleAddText = useCallback(() => {
-  addTextLayer();
-  setActiveTab(null);
-}, [addTextLayer]);
+    addTextLayer();
+    setActiveTab(null);
+  }, [addTextLayer]);
 
   const addMediaToCanvas = useCallback(
     (media: any) => {
@@ -2621,9 +2653,9 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
             };
             processed.push(bgLayer as Layer);
 
+            const isDefaultSize =
+              layer.size.width === 100 && layer.size.height === 100;
 
-            const isDefaultSize = layer.size.width === 100 && layer.size.height === 100;
-            
             const fgLayer = {
               ...layer,
               size: isDefaultSize ? { width: 85, height: 65 } : layer.size,
@@ -2674,8 +2706,9 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
             duration,
           },
         };
-        const videoUrl = await renderVideoUsingLambdaWithoutSaving(
+        const videoUrl = await renderVideoUsingLambda(
           inputProps,
+          template?.id as number,
           format
         );
         setExportUrl(videoUrl);
@@ -2723,14 +2756,17 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
     if (!projectId || !newTitle.trim()) return;
 
     try {
-      const response = await fetch(`${backendPrefix}/projects/update-name/${projectId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ title: newTitle.trim() }),
-      });
+      const response = await fetch(
+        `${backendPrefix}/projects/update-name/${projectId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({ title: newTitle.trim() }),
+        }
+      );
 
       if (response.ok) {
         setProjectTitle(newTitle.trim());
@@ -3767,14 +3803,20 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
                   value={editingTitleValue}
                   onChange={(e) => setEditingTitleValue(e.target.value)}
                   onBlur={() => {
-                    if (editingTitleValue.trim() && editingTitleValue !== projectTitle) {
+                    if (
+                      editingTitleValue.trim() &&
+                      editingTitleValue !== projectTitle
+                    ) {
                       handleUpdateTitle(editingTitleValue);
                     }
                     setIsEditingTitle(false);
                   }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
-                      if (editingTitleValue.trim() && editingTitleValue !== projectTitle) {
+                      if (
+                        editingTitleValue.trim() &&
+                        editingTitleValue !== projectTitle
+                      ) {
                         handleUpdateTitle(editingTitleValue);
                       }
                       setIsEditingTitle(false);
@@ -3798,7 +3840,11 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
                 />
               ) : (
                 <span
-                  style={{ ...editorStyles.headerTitle, color: colors.textPrimary, cursor: "pointer" }}
+                  style={{
+                    ...editorStyles.headerTitle,
+                    color: colors.textPrimary,
+                    cursor: "pointer",
+                  }}
                   onClick={() => {
                     setIsEditingTitle(true);
                     setEditingTitleValue(projectTitle);
@@ -3810,7 +3856,10 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
               )
             ) : (
               <span
-                style={{ ...editorStyles.headerTitle, color: colors.textPrimary }}
+                style={{
+                  ...editorStyles.headerTitle,
+                  color: colors.textPrimary,
+                }}
               >
                 {template?.displayName || "Video Editor"}
               </span>
@@ -3930,20 +3979,21 @@ const estimatedWidthPercent = Math.min(80, Math.max(25, (messageWidthPx / compos
                   </div>
                 )}
 
-               
-                  <DynamicPreviewOverlay
-                    layers={processedLayers.filter((l) => !l.id.startsWith("bg-"))}
-                    currentFrame={currentFrame}
-                    selectedLayerId={selectedLayerId}
-                    editingLayerId={editingLayerId}
-                    onSelectLayer={selectLayerAndCloseTab}
-                    onLayerUpdate={updateLayer}
-                    containerWidth={previewDimensions.width}
-                    containerHeight={previewDimensions.height}
-                    onEditingLayerChange={setEditingLayerId}
-                    isPlaying={isPlaying}
-                    onPlayingChange={setIsPlaying}
-                  />
+                <DynamicPreviewOverlay
+                  layers={processedLayers.filter(
+                    (l) => !l.id.startsWith("bg-")
+                  )}
+                  currentFrame={currentFrame}
+                  selectedLayerId={selectedLayerId}
+                  editingLayerId={editingLayerId}
+                  onSelectLayer={selectLayerAndCloseTab}
+                  onLayerUpdate={updateLayer}
+                  containerWidth={previewDimensions.width}
+                  containerHeight={previewDimensions.height}
+                  onEditingLayerChange={setEditingLayerId}
+                  isPlaying={isPlaying}
+                  onPlayingChange={setIsPlaying}
+                />
               </div>
             </div>
           </div>
