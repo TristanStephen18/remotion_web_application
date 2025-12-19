@@ -317,7 +317,7 @@ const RedditVideoWizard: React.FC = () => {
         });
       });
       
-      audio.addEventListener('error', (e) => {
+      audio.addEventListener('error', () => {
         console.error("❌ Audio error:", audio.error);
         toast.error("Audio load error");
       });
