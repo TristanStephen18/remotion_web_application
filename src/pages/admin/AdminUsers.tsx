@@ -142,6 +142,9 @@ export const AdminUsers: React.FC = () => {
     setActiveSection(section);
     if (section === "dashboard") {
       navigate("/admin/dashboard");
+    } else if (section === "security") {
+      // ✅ Add this
+      navigate("/admin/security");
     }
   };
 

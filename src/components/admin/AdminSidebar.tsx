@@ -12,7 +12,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 
-export type AdminSection = "dashboard" | "users" | "analytics";
+export type AdminSection = "dashboard" | "users" | "analytics" | "security";
 
 interface AdminSidebarProps {
   active: AdminSection;
@@ -40,6 +40,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const navItems = [
     { id: "dashboard" as AdminSection, label: "Dashboard", icon: <FiHome /> },
     { id: "users" as AdminSection, label: "Users", icon: <FiUsers /> },
+    { id: "security" as AdminSection, label: "Security", icon: <FiShield /> },
   ];
 
   return (

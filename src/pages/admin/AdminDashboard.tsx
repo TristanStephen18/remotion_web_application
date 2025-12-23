@@ -49,7 +49,7 @@ export const AdminDashboard: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
   const [isCollapsed, setIsCollapsed] = useState(false);
-  
+
   const { admin, token, logout, isLoading } = useAdmin();
   const navigate = useNavigate();
 
@@ -127,6 +127,8 @@ export const AdminDashboard: React.FC = () => {
     setActiveSection(section);
     if (section === "users") {
       navigate("/admin/users");
+    } else if (section === "security") {
+      navigate("/admin/security");
     }
   };
 
@@ -161,7 +163,9 @@ export const AdminDashboard: React.FC = () => {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
           <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">Failed to Load Dashboard</h2>
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            Failed to Load Dashboard
+          </h2>
           <p className="text-gray-600 mb-6">{error}</p>
           <div className="flex gap-3 justify-center">
             <button
@@ -271,7 +275,9 @@ export const AdminDashboard: React.FC = () => {
             disabled={loading}
             className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FiRefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+            <FiRefreshCw
+              className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+            />
             <span className="hidden sm:inline">Refresh</span>
           </button>
         </div>
@@ -324,9 +330,7 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
-                  Total Active
-                </span>
+                <span className="text-gray-700 font-medium">Total Active</span>
                 <span className="font-bold text-gray-600 text-lg">
                   {stats.subscriptions.total}
                 </span>
@@ -357,9 +361,7 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
-                  Visits (30d)
-                </span>
+                <span className="text-gray-700 font-medium">Visits (30d)</span>
                 <span className="font-bold text-cyan-600 text-lg">
                   {stats.visits.last30Days.toLocaleString()}
                 </span>

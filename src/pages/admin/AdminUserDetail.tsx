@@ -22,6 +22,7 @@ import {
   FiTrash2,
   FiAlertTriangle,
 } from "react-icons/fi";
+import { useReAuth } from "../../contexts/ReAuthContext";
 
 interface UserDetail {
   id: number;
@@ -89,6 +90,7 @@ export const AdminUserDetail: React.FC = () => {
 
   const { token, logout, isLoading } = useAdmin();
   const navigate = useNavigate();
+  const { requestReAuth } = useReAuth(); 
 
   const fetchUserDetails = async () => {
     setLoading(true);
@@ -138,6 +140,9 @@ export const AdminUserDetail: React.FC = () => {
       navigate("/admin/dashboard");
     } else if (section === "users") {
       navigate("/admin/users");
+    } else if (section === "security") {
+      // ✅ Add this
+      navigate("/admin/security");
     }
   };
 
@@ -153,196 +158,158 @@ export const AdminUserDetail: React.FC = () => {
   );
 
   const handleGrantLifetime = async () => {
-    setGrantingLifetime(true);
-    try {
-      const response = await fetch(
-        `${backendPrefix}/admin/subscriptions/grant-lifetime`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: userId,
-            companyName: companyName.trim() || null,
-            notes: specialNotes.trim() || null,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Lifetime access granted successfully!", {
-          duration: 4000,
-          position: "top-right",
-          style: {
-            background: "#10b981",
-            color: "#fff",
-            fontWeight: "600",
-            padding: "16px",
-            borderRadius: "12px",
-          },
-          iconTheme: {
-            primary: "#fff",
-            secondary: "#10b981",
-          },
-        });
-        setShowGrantModal(false);
-        setCompanyName("");
-        setSpecialNotes("");
-        // Refresh user details
-        fetchUserDetails();
-      } else {
-        throw new Error(data.error || "Failed to grant lifetime access");
-      }
-    } catch (error: any) {
-      console.error("Grant lifetime error:", error);
-      toast.error(`❌ ${error.message}`, {
-        duration: 4000,
-        position: "top-right",
-        style: {
-          background: "#ef4444",
-          color: "#fff",
-          fontWeight: "600",
-          padding: "16px",
-          borderRadius: "12px",
-        },
-        iconTheme: {
-          primary: "#fff",
-          secondary: "#ef4444",
-        },
-      });
-    } finally {
+  setGrantingLifetime(true);
+  
+  try {
+    // ✅ REQUEST RE-AUTH FIRST
+    const reAuthToken = await requestReAuth("Grant Lifetime Access");
+    
+    if (!reAuthToken) {
+      // User canceled the re-auth modal
       setGrantingLifetime(false);
+      return;
     }
-  };
 
-  // ✅ NEW: Handle revoke lifetime access
-  const handleRevokeLifetime = async () => {
-    setRevokingLifetime(true);
-    try {
-      const response = await fetch(
-        `${backendPrefix}/admin/subscriptions/revoke-lifetime`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            userId: userId,
-          }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("Lifetime access revoked successfully!", {
-          duration: 4000,
-          position: "top-right",
-          style: {
-            background: "#10b981",
-            color: "#fff",
-            fontWeight: "600",
-            padding: "16px",
-            borderRadius: "12px",
-          },
-          iconTheme: {
-            primary: "#fff",
-            secondary: "#10b981",
-          },
-        });
-        setShowRevokeModal(false);
-        // Refresh user details
-        fetchUserDetails();
-      } else {
-        throw new Error(data.error || "Failed to revoke lifetime access");
+    const response = await fetch(
+      `${backendPrefix}/admin/subscriptions/grant-lifetime`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
+        },
+        body: JSON.stringify({
+          userId: userId,
+          companyName: companyName.trim() || null,
+          notes: specialNotes.trim() || null,
+        }),
       }
-    } catch (error: any) {
-      console.error("Revoke lifetime error:", error);
-      toast.error(`❌ ${error.message}`, {
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      toast.success("✅ Lifetime access granted successfully!", {
         duration: 4000,
         position: "top-right",
-        style: {
-          background: "#ef4444",
-          color: "#fff",
-          fontWeight: "600",
-          padding: "16px",
-          borderRadius: "12px",
-        },
-        iconTheme: {
-          primary: "#fff",
-          secondary: "#ef4444",
-        },
       });
-    } finally {
-      setRevokingLifetime(false);
+      setShowGrantModal(false);
+      setCompanyName("");
+      setSpecialNotes("");
+      fetchUserDetails();
+    } else {
+      throw new Error(data.error || "Failed to grant lifetime access");
     }
-  };
+  } catch (error: any) {
+    console.error("Grant lifetime error:", error);
+    toast.error(`❌ ${error.message}`, {
+      duration: 4000,
+      position: "top-right",
+    });
+  } finally {
+    setGrantingLifetime(false);
+  }
+};
+
+ const handleRevokeLifetime = async () => {
+  setRevokingLifetime(true);
+  
+  try {
+    // ✅ REQUEST RE-AUTH FIRST
+    const reAuthToken = await requestReAuth("Revoke Lifetime Access");
+    
+    if (!reAuthToken) {
+      setRevokingLifetime(false);
+      return;
+    }
+
+    const response = await fetch(
+      `${backendPrefix}/admin/subscriptions/revoke-lifetime`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
+        },
+        body: JSON.stringify({ userId: userId }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      toast.success("✅ Lifetime access revoked successfully!", {
+        duration: 4000,
+        position: "top-right",
+      });
+      setShowRevokeModal(false);
+      fetchUserDetails();
+    } else {
+      throw new Error(data.error || "Failed to revoke lifetime access");
+    }
+  } catch (error: any) {
+    console.error("Revoke lifetime error:", error);
+    toast.error(`❌ ${error.message}`, {
+      duration: 4000,
+      position: "top-right",
+    });
+  } finally {
+    setRevokingLifetime(false);
+  }
+};
 
   // ✅ NEW: Handle delete user
   const handleDeleteUser = async () => {
-    setDeletingUser(true);
-    try {
-      const response = await fetch(`${backendPrefix}/admin/users/${userId}`, {
+  setDeletingUser(true);
+  
+  try {
+    // ✅ REQUEST RE-AUTH FIRST
+    const reAuthToken = await requestReAuth("Delete User Account");
+    
+    if (!reAuthToken) {
+      setDeletingUser(false);
+      return;
+    }
+
+    const response = await fetch(
+      `${backendPrefix}/admin/users/${userId}`,
+      {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
+          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
         },
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("User deleted successfully! Redirecting...", {
-          duration: 4000,
-          position: "top-right",
-          style: {
-            background: "#10b981",
-            color: "#fff",
-            fontWeight: "600",
-            padding: "16px",
-            borderRadius: "12px",
-          },
-          iconTheme: {
-            primary: "#fff",
-            secondary: "#10b981",
-          },
-        });
-        setShowDeleteModal(false);
-
-        // Wait a moment before redirecting so user sees the toast
-        setTimeout(() => {
-          navigate("/admin/users");
-        }, 1000);
-      } else {
-        throw new Error(data.error || "Failed to delete user");
       }
-    } catch (error: any) {
-      console.error("Delete user error:", error);
-      toast.error(`❌ ${error.message}`, {
+    );
+
+    const data = await response.json();
+
+    if (data.success) {
+      toast.success("✅ User deleted successfully! Redirecting...", {
         duration: 4000,
         position: "top-right",
-        style: {
-          background: "#ef4444",
-          color: "#fff",
-          fontWeight: "600",
-          padding: "16px",
-          borderRadius: "12px",
-        },
-        iconTheme: {
-          primary: "#fff",
-          secondary: "#ef4444",
-        },
       });
-    } finally {
-      setDeletingUser(false);
+      setShowDeleteModal(false);
+      
+      setTimeout(() => {
+        navigate("/admin/users");
+      }, 1000);
+    } else {
+      throw new Error(data.error || "Failed to delete user");
     }
-  };
+  } catch (error: any) {
+    console.error("Delete user error:", error);
+    toast.error(`❌ ${error.message}`, {
+      duration: 4000,
+      position: "top-right",
+    });
+  } finally {
+    setDeletingUser(false);
+  }
+};
 
   const getSubscriptionBadge = (status: string) => {
     const badges: Record<string, { color: string; label: string }> = {

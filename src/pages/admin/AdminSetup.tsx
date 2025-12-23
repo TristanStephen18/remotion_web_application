@@ -44,6 +44,16 @@ export const AdminSetup: React.FC = () => {
     }
   };
 
+  const handleSectionChange = (section: AdminSection) => {
+  setActiveSection(section);
+  if (section === "dashboard") {
+    navigate("/admin/dashboard");
+  } else if (section === "users") {
+    navigate("/admin/users");
+  }
+  // Security is already the current page, no need to navigate
+};
+
   if (success) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-600 to-emerald-500 flex items-center justify-center p-4">

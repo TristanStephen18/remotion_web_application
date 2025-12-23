@@ -67,12 +67,15 @@ import { backendPrefix } from "./config";
 // import { TemplateGallery } from "./components/ui/dsahboard/sections/refactored/TemplatesSection.tsx";
 
 import { AdminProvider } from "./contexts/AdminContext";
+import { ReAuthProvider } from "./contexts/ReAuthContext";
 import { AdminLogin } from "./pages/admin/AdminLogin";
 import { AdminDashboard } from "./pages/admin/AdminDashboard";
 import { AdminUsers } from "./pages/admin/AdminUsers";
 import { AdminSetup } from "./pages/admin/AdminSetup";
 import { usePageTracking } from "./hooks/usePageTracking";
 import { AdminUserDetail } from "./pages/admin/AdminUserDetail";
+import { AdminSecurity } from "./pages/admin/AdminSecurity";
+import { AdminManagement } from "./pages/admin/AdminManagement";
 
 
 // ✅ UPDATED: Auth Provider with subscription check
@@ -616,6 +619,9 @@ function AppContent() {
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
       <Route path="/admin/users" element={<AdminUsers />} />
       <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
+      <Route path="/admin/security" element={<AdminSecurity />} />
+      <Route path="/admin/manage" element={<AdminManagement />} /> 
+      
 
       {/* ========== 404 FALLBACK ========== */}
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -629,6 +635,7 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <AdminProvider>
+            <ReAuthProvider>
             <AppContent />
 
             {/* Global Toast Notifications */}
@@ -647,6 +654,7 @@ function App() {
                 },
               }}
             />
+            </ReAuthProvider>
           </AdminProvider>
         </AuthProvider>
       </BrowserRouter>
