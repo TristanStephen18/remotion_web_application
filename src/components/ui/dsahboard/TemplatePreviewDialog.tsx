@@ -13,6 +13,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import { templateUrlFinder } from "../../../data/DashboardCardsData";
 import { TEMPLATE_NAME_TO_ID } from "../../../utils/simpleTemplateRegistry";
+import { TemplateNavigator } from "../../../utils/TemplateNavigator";
 import toast from "react-hot-toast";
 
 interface TemplatePreviewDialogProps {
@@ -266,16 +267,23 @@ export const TemplatePreviewDialog: React.FC<TemplatePreviewDialogProps> = ({
             variant="contained"
             disabled={!TEMPLATE_NAME_TO_ID[selectedTemplate || ""]}
             onClick={() => {
-              const templateId = TEMPLATE_NAME_TO_ID[selectedTemplate || ""];
-              if (templateId) {
-                const location = `/editor?template=${templateId}`;
-                window.location.assign(location);
-              } else {
-                toast.error("This template is currently unavailable");
-                return;
-              }
-              onClose();
-            }}
+  const templateId = TEMPLATE_NAME_TO_ID[selectedTemplate || ""];
+  if (templateId) {
+    // Check TemplateNavigator first for wizard routes
+    const route = TemplateNavigator(selectedTemplate || "");
+    
+    // If it's a wizard route (not /template/... and not /), use it
+    if (route && !route.startsWith("/template") && route !== "/") {
+      window.location.assign(route);
+    } else {
+      window.location.assign(`/editor?template=${templateId}`);
+    }
+  } else {
+    toast.error("This template is currently unavailable");
+    return;
+  }
+  onClose();
+}}
             fullWidth
             size={isMobile ? "large" : "large"}
             sx={{

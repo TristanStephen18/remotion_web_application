@@ -55,6 +55,10 @@ function isChatBubbleLayer(layer: Layer): layer is ChatBubbleLayer {
   return layer.type === "chat-bubble";
 }
 
+function isRedditCardLayer(layer: Layer): boolean {
+  return layer.type === "reddit-card";
+}
+
 
 export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   layers,
@@ -882,10 +886,11 @@ document.removeEventListener("touchend", handleMouseUp);
         }
 
        const scaleFactor = actualHeight / 1920;
-        const isChatLayer = isChatBubbleLayer(layer); 
+        const isChatLayer = isChatBubbleLayer(layer);
+        const isRedditCard = isRedditCardLayer(layer);
         const width = `${displayWidth}%`;
-        const height = isChatLayer ? 'auto' : `${displayHeight}%`;
-        const minHeight = isChatLayer ? `${displayHeight}%` : undefined;
+        const height = (isChatLayer || isRedditCard) ? 'auto' : `${displayHeight}%`;
+        const minHeight = (isChatLayer || isRedditCard) ? `${displayHeight}%` : undefined;
         let left: string, top: string, transform: string;
 
         if (isChatLayer) {

@@ -26,6 +26,12 @@ type RedditCardConfig = {
   commentCount: string;
   awardsCount: string;
   avatarUrl: string;
+   titleFontSize?: number;
+  textFontSize?: number;
+  displayDuration?: number;
+  headerFontSize?: number;
+  metricsFontSize?: number;
+  textMaxLength?: number;
 };
 
 type MyRedditVideoProps = {
@@ -42,6 +48,10 @@ type MyRedditVideoProps = {
   backgroundMusicPath?: string;
   backgroundVideo: string;
   musicVolume?: number;
+  cardPosition?: { x: number; y: number };
+  cardSize?: { width: number; height: number };
+  storyPosition?: { x: number; y: number };
+  storySize?: { width: number; height: number };
 };
 
 // ------------------ Main Video ------------------
@@ -58,6 +68,10 @@ export const MyRedditVideo: React.FC<MyRedditVideoProps> = ({
   backgroundMusicPath,
   musicVolume = 0.15,
   backgroundVideo,
+   cardPosition = { x: 50, y: 50 },
+  cardSize = { width: 90, height: 45 },
+  storyPosition = { x: 50, y: 50 },
+  storySize = { width: 90, height: 60 },
 }) => {
   const { fps, durationInFrames } = useVideoConfig();
   
@@ -69,7 +83,7 @@ export const MyRedditVideo: React.FC<MyRedditVideoProps> = ({
   
   const bg = backgroundVideo || "https://res.cloudinary.com/dcu9xuof0/video/upload/v1765260195/Subway_Surfers_2024_-_Gameplay_4K_9x16_No_Copyright_n4ym8w.mp4";
 
-  const introDuration = 3 * fps; // 3 seconds for intro
+  const introDuration = (redditCard?.displayDuration || 3) * fps;
   const hasWords = words && words.length > 0;
   
   // Check if voiceover is valid (not empty, not undefined)
@@ -106,28 +120,36 @@ export const MyRedditVideo: React.FC<MyRedditVideoProps> = ({
 
       {/* Intro: Reddit Post Card */}
       <Sequence from={0} durationInFrames={introDuration}>
-  <RedditPost title={title} text={text} redditCard={redditCard} />
-</Sequence>
+        <RedditPost 
+          title={title} 
+          text={text} 
+          redditCard={redditCard} 
+          position={cardPosition}
+          size={cardSize}
+        />
+      </Sequence>
 
       {/* Story Section - after intro */}
       <Sequence from={voiceoverStartFrame ?? introDuration} durationInFrames={durationInFrames - (voiceoverStartFrame ?? introDuration)}>
-  {hasWords ? (
-    // Karaoke mode with word timing
-    <SentenceBuilder
-      words={words}
-      fps={fps}
+        {hasWords ? (
+          <SentenceBuilder
+            words={words}
+            fps={fps}
             fontSize={fontSize}
             fontFamily={fontFamily}
             fontColor={fontColor}
             sentenceBgColor={sentenceBgColor}
+            position={storyPosition}
+            size={storySize}
           />
         ) : (
-          // Static text display (no word timing)
           <StaticStoryText
             story={story}
             fontSize={fontSize}
             fontFamily={fontFamily}
             fontColor={fontColor}
+            position={storyPosition}
+            size={storySize}
           />
         )}
       </Sequence>
@@ -159,10 +181,14 @@ const RedditPost: React.FC<{
   title: string; 
   text: string; 
   redditCard?: RedditCardConfig;
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
 }> = ({
   title,
   text,
   redditCard,
+  position = { x: 50, y: 50 },
+  size = { width: 90, height: 45 },
 }) => {
   // Extract values with defaults
   const subredditName = redditCard?.subredditName || 'Advice';
@@ -172,6 +198,13 @@ const RedditPost: React.FC<{
   const commentCount = redditCard?.commentCount || '1.8K';
   const awardsCount = redditCard?.awardsCount || '1';
   const avatarUrl = redditCard?.avatarUrl;
+  const titleFontSize = redditCard?.titleFontSize || 38;
+  const textFontSize = redditCard?.textFontSize || 24;
+  const headerFontSize = redditCard?.headerFontSize || 20;
+  const metricsFontSize = redditCard?.metricsFontSize || 18;
+  const iconSize = metricsFontSize + 2;
+  const avatarSize = headerFontSize * 2;
+  const textMaxLength = redditCard?.textMaxLength || 280;
 
   return (
     <AbsoluteFill
@@ -182,6 +215,17 @@ const RedditPost: React.FC<{
         padding: 40,
       }}
     >
+      <div
+        style={{
+          position: 'absolute',
+          left: `${position.x - size.width / 2}%`,
+          top: `${position.y - size.height / 2}%`,
+          width: `${size.width}%`,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
       <div
         style={{
           backgroundColor: "white",
@@ -205,22 +249,22 @@ const RedditPost: React.FC<{
           <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
             {/* Avatar */}
             {avatarUrl ? (
-              <img 
+             <img 
                 src={avatarUrl} 
                 alt="avatar"
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: avatarSize,
+                  height: avatarSize,
                   borderRadius: "50%",
                   objectFit: "cover",
                   flexShrink: 0,
                 }}
               />
             ) : (
-              <div
+             <div
                 style={{
-                  width: 40,
-                  height: 40,
+                  width: avatarSize,
+                  height: avatarSize,
                   borderRadius: "50%",
                   background: "linear-gradient(135deg, #00D8D6 0%, #0079D3 100%)",
                   display: "flex",
@@ -239,14 +283,14 @@ const RedditPost: React.FC<{
             <div style={{ display: "flex", flexDirection: "column" }}>
               {/* Subreddit + Time */}
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 22, fontWeight: 700, color: "#1a1a1b" }}>
+                <span style={{ fontSize: headerFontSize + 2, fontWeight: 700, color: "#1a1a1b" }}>
                   r/{subredditName}
                 </span>
-                <span style={{ fontSize: 20, color: "#576f76" }}>•</span>
-                <span style={{ fontSize: 20, color: "#576f76" }}>{timePosted}</span>
+                <span style={{ fontSize: headerFontSize, color: "#576f76" }}>•</span>
+                <span style={{ fontSize: headerFontSize, color: "#576f76" }}>{timePosted}</span>
               </div>
               {/* Username */}
-              <span style={{ fontSize: 18, color: "#576f76", marginTop: 2 }}>
+              <span style={{ fontSize: headerFontSize - 2, color: "#576f76", marginTop: 2 }}>
                 {posterUsername}
               </span>
             </div>
@@ -271,7 +315,7 @@ const RedditPost: React.FC<{
         {/* Title */}
         <h1
           style={{
-            fontSize: 38,
+            fontSize: titleFontSize,
             fontWeight: 700,
             margin: "0 0 20px 0",
             lineHeight: 1.3,
@@ -284,14 +328,14 @@ const RedditPost: React.FC<{
         {/* Body Text */}
         <p
           style={{
-            fontSize: 24,
+            fontSize: textFontSize,
             lineHeight: 1.65,
             color: "#1a1a1b",
             margin: 0,
           }}
         >
-          {(text || "").slice(0, 280)}
-          {(text || "").length > 280 && "..."}
+          {(text || "").slice(0, textMaxLength)}
+          {(text || "").length > textMaxLength && "..."}
         </p>
 
         {/* Engagement Bar */}
@@ -313,11 +357,11 @@ const RedditPost: React.FC<{
             borderRadius: 24,
             padding: "10px 16px",
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 19V5M5 12l7-7 7 7"/>
             </svg>
-            <span style={{ fontSize: 18, fontWeight: 600, color: "#1a1a1b" }}>{upvotes}</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <span style={{ fontSize: metricsFontSize, fontWeight: 600, color: "#1a1a1b" }}>{upvotes}</span>
+           <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 5v14M5 12l7 7 7-7"/>
             </svg>
           </div>
@@ -331,10 +375,10 @@ const RedditPost: React.FC<{
             borderRadius: 24,
             padding: "10px 16px",
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+           <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
-            <span style={{ fontSize: 18, fontWeight: 500, color: "#576f76" }}>{commentCount}</span>
+            <span style={{ fontSize: metricsFontSize, fontWeight: 500, color: "#576f76" }}>{commentCount}</span>
           </div>
 
           {/* Awards Pill */}
@@ -346,11 +390,11 @@ const RedditPost: React.FC<{
             borderRadius: 24,
             padding: "10px 16px",
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="#FFD700">
+            <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="#FFD700">
               <circle cx="12" cy="9" r="6" fill="#FFD700"/>
               <path d="M8 15l-2 6 6-3 6 3-2-6" fill="#FFD700"/>
             </svg>
-            <span style={{ fontSize: 18, fontWeight: 500, color: "#576f76" }}>{awardsCount}</span>
+            <span style={{ fontSize: metricsFontSize, fontWeight: 500, color: "#576f76" }}>{awardsCount}</span>
           </div>
 
           {/* Share Pill */}
@@ -362,13 +406,14 @@ const RedditPost: React.FC<{
             borderRadius: 24,
             padding: "10px 16px",
           }}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+           <svg width={iconSize} height={iconSize} viewBox="0 0 24 24" fill="none" stroke="#576f76" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
               <polyline points="16 6 12 2 8 6"/>
               <line x1="12" y1="2" x2="12" y2="15"/>
             </svg>
-            <span style={{ fontSize: 18, fontWeight: 500, color: "#576f76" }}>Share</span>
+            <span style={{ fontSize: metricsFontSize, fontWeight: 500, color: "#576f76" }}>Share</span>
           </div>
+        </div>
         </div>
       </div>
     </AbsoluteFill>
@@ -381,7 +426,16 @@ const StaticStoryText: React.FC<{
   fontSize: number;
   fontFamily: string;
   fontColor: string;
-}> = ({ story, fontSize, fontFamily, fontColor }) => {
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
+}> = ({ 
+  story, 
+  fontSize, 
+  fontFamily, 
+  fontColor,
+  position = { x: 50, y: 50 },
+  size = { width: 90, height: 60 },
+}) => {
   const maxChars = 400;
   const displayText = story.slice(0, maxChars);
 
@@ -390,15 +444,17 @@ const StaticStoryText: React.FC<{
       style={{
         justifyContent: "center",
         alignItems: "center",
-        padding: 50,
       }}
     >
       <div
         style={{
+          position: 'absolute',
+          left: `${position.x - size.width / 2}%`,
+          top: `${position.y - size.height / 2}%`,
+          width: `${size.width}%`,
           backgroundColor: "rgba(0,0,0,0.6)",
           borderRadius: 20,
           padding: "40px 50px",
-          maxWidth: "95%",
         }}
       >
         <p
@@ -429,6 +485,8 @@ type SentenceBuilderProps = {
   fontFamily: string;
   fontColor: string;
   sentenceBgColor: string;
+  position?: { x: number; y: number };
+  size?: { width: number; height: number };
 };
 
 const SentenceBuilder: React.FC<SentenceBuilderProps> = ({
@@ -438,6 +496,8 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({
   fontFamily,
   fontColor,
   sentenceBgColor,
+  position = { x: 50, y: 50 },
+  size = { width: 90, height: 60 },
 }) => {
   const frame = useCurrentFrame();
 
@@ -470,16 +530,19 @@ const SentenceBuilder: React.FC<SentenceBuilderProps> = ({
   if (activeBlockIndex === -1) return null;
   const activeBlock = lineBlocks[activeBlockIndex];
 
-  return (
+ return (
     <AbsoluteFill
       style={{
         justifyContent: "center",
         alignItems: "center",
-        padding: 50,
       }}
     >
       <div
         style={{
+          position: 'absolute',
+          left: `${position.x - size.width / 2}%`,
+          top: `${position.y - size.height / 2}%`,
+          width: `${size.width}%`,
           backgroundColor: "rgba(0,0,0,0.6)",
           borderRadius: 20,
           padding: "40px 50px",

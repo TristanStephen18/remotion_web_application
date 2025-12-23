@@ -314,20 +314,23 @@ export const ChooseTemplateModal: React.FC<ChooseTemplateModalProps> = ({
                 description={template.description}
                 url={template.url}
                 onSelect={(label) => {
-  // Wizard templates - check first before templateId lookup
-  if (label === "Reddit Post Narration") {
-    window.location.assign("/reddit-wizard");
+  // Check TemplateNavigator first for wizard routes
+  const route = TemplateNavigator(label || "");
+  
+  // If TemplateNavigator returns a wizard route (not /template/...), use it
+  if (route && !route.startsWith("/template") && route !== "/") {
+    window.location.assign(route);
     onClose();
     return;
   }
   
+  // Otherwise use templateId for editor
   const templateId = TEMPLATE_NAME_TO_ID[label || ""];
   if (templateId) {
     const location = `/editor?template=${templateId}`;
     window.location.assign(location);
   } else {
-    const location = TemplateNavigator(label || "user");
-    window.location.assign(location);
+    window.location.assign(route);
   }
   onClose();
 }}

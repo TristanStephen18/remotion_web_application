@@ -113,12 +113,81 @@ export interface ChatBubbleLayer extends LayerBase {
   fontFamily?: string;
 }
 
-export type Layer =
-  | TextLayer
-  | ImageLayer
-  | AudioLayer
-  | VideoLayer
-  | ChatBubbleLayer;
+export interface RedditCardLayer {
+  id: string;
+  type: "reddit-card";
+  name: string;
+  startFrame: number;
+  endFrame: number;
+  visible: boolean;
+  locked: boolean;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation?: number;
+  opacity?: number;
+  animation?: {
+    entrance?: string;
+    entranceDuration?: number;
+    exit?: string;
+    exitDuration?: number;
+  };
+  // Reddit-specific
+  subredditName: string;
+  posterUsername: string;
+  timePosted: string;
+  upvotes: string;
+  commentCount: string;
+  awardsCount: string;
+  avatarUrl: string;
+  title: string;
+  text: string;
+  titleFontSize?: number;
+  textFontSize?: number;
+  displayDuration?: number;
+  headerFontSize?: number;
+  metricsFontSize?: number;
+  titleMaxLength?: number;
+  textMaxLength?: number;
+}
+
+export interface RedditStoryLayer {
+  id: string;
+  type: "reddit-story";
+  name: string;
+  startFrame: number;
+  endFrame: number;
+  visible: boolean;
+  locked: boolean;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  rotation?: number;
+  opacity?: number;
+  animation?: {
+    entrance?: string;
+    entranceDuration?: number;
+    exit?: string;
+    exitDuration?: number;
+  };
+  // Story-specific
+  fontSize: number;
+  fontFamily: string;
+  fontColor: string;
+  sentenceBgColor: string;
+  story: string;
+  words: { word: string; start: number; end: number }[];
+}
+
+
+export function isRedditCardLayer(layer: Layer): layer is RedditCardLayer {
+  return layer.type === "reddit-card";
+}
+
+export function isRedditStoryLayer(layer: Layer): layer is RedditStoryLayer {
+  return layer.type === "reddit-story";
+}
+
+
+export type Layer = TextLayer | ImageLayer | AudioLayer | VideoLayer | ChatBubbleLayer | RedditCardLayer | RedditStoryLayer;
 
 // Type Guards
 export const isChatBubbleLayer = (l: Layer): l is ChatBubbleLayer =>
@@ -2121,6 +2190,9 @@ export const DynamicLayerComposition: React.FC<DynamicCompositionProps> = ({
       {/* Normal Layer Rendering (All other templates OR editing mode) */}
       {(templateId !== 8 || editingLayerId) &&
         visibleLayers.map(({ layer }) => {
+          if (layer.type === 'reddit-card' || layer.type === 'reddit-story') {
+            return null;
+          }
           const relativeFrame = Math.max(0, frame - layer.startFrame);
 
           if (

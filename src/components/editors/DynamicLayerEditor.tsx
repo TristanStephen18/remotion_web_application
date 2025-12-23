@@ -53,6 +53,8 @@ import {
   isAudioLayer,
   isVideoLayer,
   isChatBubbleLayer,
+  isRedditCardLayer,
+  isRedditStoryLayer,
 } from "../remotion_compositions/DynamicLayerComposition";
 
 // Hooks
@@ -83,6 +85,8 @@ import { AudioEditor } from "../editor_components/AudioEditor";
 import { ImageEditor } from "../editor_components/ImageEditor";
 import { VideoEditor } from "../editor_components/VideoEditor";
 import { ChatEditor } from "../editor_components/ChatEditor";
+import { RedditCardEditor } from "../editor_components/RedditCardEditor";
+import { RedditStoryEditor } from "../editor_components/RedditStoryEditor";
 import {
   RemotionPreview,
   type RemotionPreviewHandle,
@@ -1154,12 +1158,24 @@ const DynamicLayerEditor: React.FC = () => {
       selectedLayer && isChatBubbleLayer(selectedLayer) ? selectedLayer : null,
     [selectedLayer]
   );
+  const selectedRedditCardLayer = useMemo(
+    () =>
+      selectedLayer && isRedditCardLayer(selectedLayer) ? selectedLayer : null,
+    [selectedLayer]
+  );
+  const selectedRedditStoryLayer = useMemo(
+    () =>
+      selectedLayer && isRedditStoryLayer(selectedLayer) ? selectedLayer : null,
+    [selectedLayer]
+  );
   const showEditPanel =
     selectedTextLayer !== null ||
     selectedImageLayer !== null ||
     selectedAudioLayer !== null ||
     selectedVideoLayer !== null ||
     selectedChatLayer !== null ||
+    selectedRedditCardLayer !== null ||
+    selectedRedditStoryLayer !== null ||
     selectedLayerId !== null;
 
   const getSelectedVideoElement = useCallback((): HTMLVideoElement | null => {
@@ -2525,39 +2541,52 @@ const DynamicLayerEditor: React.FC = () => {
   // TIMELINE TRACKS (Reversed Logic)
   // ==========================================
   const timelineTracks = useMemo((): TimelineTrack[] => {
-    if (!layers) return [];
+  if (!layers) return [];
 
-    // Detect active chat style to filter chat-bg appropriately
-    const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as
-      | ChatBubbleLayer
-      | undefined;
-    const activeChatStyle = firstChatBubble?.chatStyle;
+  // Detect active chat style to filter chat-bg appropriately
+  const firstChatBubble = layers.find((l) => l.type === "chat-bubble") as
+    | ChatBubbleLayer
+    | undefined;
+  const activeChatStyle = firstChatBubble?.chatStyle;
 
-    return [...layers]
-      .reverse()
-      .filter((layer) => {
-        // Hide chat-bg layer for non-fakechatconversation styles
-        if (
-          layer.id === "chat-bg" &&
-          activeChatStyle &&
-          activeChatStyle !== "fakechatconversation"
-        ) {
+  return [...layers]
+    .reverse()
+    .filter((layer) => {
+      // Hide chat-bg layer for non-fakechatconversation styles
+      if (
+        layer.id === "chat-bg" &&
+        activeChatStyle &&
+        activeChatStyle !== "fakechatconversation"
+      ) {
+        return false;
+      }
+      
+      // Hide background layers for Template 8 (Ken Burns Carousel)
+      if (template?.id === 8) {
+        // Hide layers marked as background
+        if ((layer as any).isBackground) {
           return false;
         }
-        return true;
-      })
-      .map((layer) => ({
-        id: layer.id,
-        name: layer.name,
-        type: layer.type as any,
-        label: layer.name,
-        startFrame: layer.startFrame,
-        endFrame: layer.endFrame,
-        color: LAYER_COLORS[layer.type] || "#888",
-        visible: layer.visible,
-        locked: layer.locked,
-      }));
-  }, [layers]);
+        // Hide dynamically created blur background layers
+        if (layer.id.startsWith("bg-")) {
+          return false;
+        }
+      }
+      
+      return true;
+    })
+    .map((layer) => ({
+      id: layer.id,
+      name: layer.name,
+      type: layer.type as any,
+      label: layer.name,
+      startFrame: layer.startFrame,
+      endFrame: layer.endFrame,
+      color: LAYER_COLORS[layer.type] || "#888",
+      visible: layer.visible,
+      locked: layer.locked,
+    }));
+}, [layers, template?.id]);
 
   const handleTrackSelect = useCallback(
     (trackId: string | null) => {
@@ -3004,6 +3033,10 @@ const DynamicLayerEditor: React.FC = () => {
                   ? "Edit Audio"
                   : selectedChatLayer
                   ? "Edit Chat"
+                  : selectedRedditCardLayer
+                  ? "Edit Reddit Post Card"
+                  : selectedRedditStoryLayer
+                  ? "Edit Reddit Story"
                   : "Edit Layer"
                 : activeTab === "chat"
                 ? "Chat Settings"
@@ -3668,6 +3701,8 @@ const DynamicLayerEditor: React.FC = () => {
                         {selectedVideoLayer && "Edit Video"}
                         {selectedImageLayer && "Edit Image"}
                         {selectedChatLayer && "Edit Chat"}
+                        {selectedRedditStoryLayer && "Edit Reddit Story"}
+                        {selectedRedditCardLayer && "Edit Reddit Post Card"}
                       </span>
                       <button
                         style={editorStyles.backButton}
@@ -3732,6 +3767,20 @@ const DynamicLayerEditor: React.FC = () => {
                   {selectedChatLayer && (
                     <ChatEditor
                       layer={selectedChatLayer}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                    />
+                  )}
+                  {selectedRedditCardLayer && (
+                    <RedditCardEditor
+                      layer={selectedRedditCardLayer}
+                      onUpdate={updateLayer}
+                      onDelete={deleteLayer}
+                    />
+                  )}
+                  {selectedRedditStoryLayer && (
+                    <RedditStoryEditor
+                      layer={selectedRedditStoryLayer}
                       onUpdate={updateLayer}
                       onDelete={deleteLayer}
                     />

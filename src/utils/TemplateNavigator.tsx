@@ -4,7 +4,7 @@ export const TemplateNavigator = (template: string) => {
       case "Typing Animation":
         return leading + "/newtexttyping";
       case "Quote Spotlight":
-        return leading + "/quotetemplate";
+        return "/quote-wizard";
       case "Fact Cards":
         return leading + "/factcards";
       case "Bar Graph Analytics":
@@ -14,9 +14,9 @@ export const TemplateNavigator = (template: string) => {
       case "Kpi Flip Cards":
         return leading + "/kpiflipcards";
       case "Ken Burns Carousel":
-        return leading + "/kenburnscarousel";
+        return "/kenburns-wizard";
       case "Fake Text Conversation":
-        return leading + "/fakechat";
+        return "/fakechat-wizard";
       case "Reddit Post Narration":
         return "/reddit-wizard"; 
       case "Ai Story Narration":
@@ -38,7 +38,7 @@ export const TemplateNavigator = (template: string) => {
       case "Retro Neon Text":
         return leading + "/retroneon";
       case "Photo Collage":
-        return leading + "/photocollage";
+        return "/collage-wizard";
       default:
         return "/";
     }
