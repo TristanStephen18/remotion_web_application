@@ -4,7 +4,7 @@
 export const getTemplateRoute = (templateId: number, projectId: number) => {
   switch (templateId) {
     case 1: // Quote Spotlight
-      return `/project/${projectId}/quotetemplate`;
+      return `/project/${projectId}/quote-wizard`;
     case 2: // Typing Animation
       return `/project/${projectId}/texttypingtemplate`;
     case 3: // Bar Graph

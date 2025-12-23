@@ -21,6 +21,10 @@ import Dashboard from "./pages/user/D2.tsx";
 import LandingPage from "./pages/LandingPage.tsx";
 import DynamicLayerEditor from "./components/editors/DynamicLayerEditor.tsx";
 import RedditVideoWizard from "./components/editors/RedditVideoWizard.tsx";
+import QuoteVideoWizard from './components/editors/QuoteVideoWizard.tsx';
+import KenBurnsWizard from './components/editors/KenBurnsWizard';
+import PhotoCollageWizard from "./components/editors/PhotoCollageWizard.tsx";
+import FakeChatWizard from "./components/editors/FakeChatWizard.tsx";
 import SubscriptionPage from "./pages/subscription/SubscriptionPage.tsx";
 
 // Editors
@@ -529,7 +533,7 @@ function AppContent() {
         }
       />
 
-
+       {/* =========== Wixards ========= */}
         <Route
         path="/reddit-wizard"
         element={
@@ -538,6 +542,45 @@ function AppContent() {
           </ProtectedRoute>
         }
       />
+
+
+      <Route
+        path="/quote-wizard"
+        element={
+          <ProtectedRoute>
+            <QuoteVideoWizard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+  path="/kenburns-wizard"
+  element={
+    <ProtectedRoute>
+      <KenBurnsWizard />
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/collage-wizard"
+  element={
+    <ProtectedRoute>
+      <PhotoCollageWizard />
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/fakechat-wizard"
+  element={
+    <ProtectedRoute>
+      <FakeChatWizard />
+    </ProtectedRoute>
+  }
+/>
       
       {/* ========== TOOLS ========== */}
       <Route

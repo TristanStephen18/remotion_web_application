@@ -55,6 +55,7 @@ interface WizardState {
   // UI State
   isGeneratingVoiceover: boolean;
   voiceoverGenerated: boolean;
+  isImportingPost: boolean;
 }
 
 type WizardStep = "script" | "style" | "video" | "audio";
@@ -186,6 +187,7 @@ const RedditVideoWizard: React.FC = () => {
   const { colors } = useTheme();
   const isDark = colors.bgPrimary !== "#ffffff";
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const videoInputRef = useRef<HTMLInputElement | null>(null);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>("script");
   const [state, setState] = useState<WizardState>({
@@ -216,6 +218,7 @@ const RedditVideoWizard: React.FC = () => {
     musicVolume: 0.15,
     isGeneratingVoiceover: false,
     voiceoverGenerated: false,
+    isImportingPost: false,
   });
 
   const updateState = useCallback((updates: Partial<WizardState>) => {
@@ -344,6 +347,20 @@ const RedditVideoWizard: React.FC = () => {
     }
   };
 
+
+const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) {
+    if (!file.type.startsWith('video/')) {
+      toast.error("Please upload a valid video file");
+      return;
+    }
+    const videoUrl = URL.createObjectURL(file);
+    updateState({ backgroundVideo: videoUrl });
+    toast.success("Custom video uploaded!");
+  }
+};
+
   // ============================================================================
   // NAVIGATION
   // ============================================================================
@@ -380,6 +397,56 @@ const RedditVideoWizard: React.FC = () => {
     toast.success("Sample loaded!");
   };
 
+
+  const handleImportFromUrl = async () => {
+  if (!state.postUrl.trim()) {
+    toast.error("Please enter a Reddit URL");
+    return;
+  }
+
+  updateState({ isImportingPost: true });
+
+  try {
+    // Extract post ID from Reddit URL
+    const urlMatch = state.postUrl.match(/comments\/([a-z0-9]+)/i);
+    if (!urlMatch) {
+      throw new Error("Invalid Reddit URL format");
+    }
+
+    const postId = urlMatch[1];
+    const jsonUrl = `https://www.reddit.com/comments/${postId}.json`;
+
+    const response = await fetch(`https://corsproxy.io/?${encodeURIComponent(jsonUrl)}`);
+    if (!response.ok) throw new Error("Failed to fetch post");
+
+    const data = await response.json();
+    const post = data[0]?.data?.children?.[0]?.data;
+
+    if (!post) throw new Error("Post not found");
+
+    const estimatedWords = estimateWordTimings(post.selftext || post.title, state.speed);
+    const duration = calculateDuration(estimatedWords);
+
+    updateState({
+      postTitle: post.title,
+      postText: post.selftext || post.title,
+      subredditName: post.subreddit,
+      posterUsername: post.author,
+      upvotes: post.score >= 1000 ? `${(post.score / 1000).toFixed(1)}k` : String(post.score),
+      commentCount: post.num_comments >= 1000 ? `${(post.num_comments / 1000).toFixed(1)}k` : String(post.num_comments),
+      words: estimatedWords,
+      estimatedDuration: duration,
+      isImportingPost: false,
+    });
+
+    toast.success("Reddit post imported!");
+  } catch (error) {
+    console.error("Import error:", error);
+    updateState({ isImportingPost: false });
+    toast.error("Failed to import post. Check the URL and try again.");
+  }
+};
+
   const proceedToEditor = () => {
     let words = state.words;
     let duration = state.estimatedDuration;
@@ -392,7 +459,7 @@ const RedditVideoWizard: React.FC = () => {
     const config = {
       script: {
         title: state.postTitle,
-        text: state.postText.slice(0, 150),
+        text: state.postText,
         story: state.postText,
         duration: duration,
         words: words,
@@ -1290,7 +1357,13 @@ navigate("/editor?template=10&fromWizard=true");
           onChange={(e) => updateState({ postUrl: e.target.value })}
           style={{ ...styles.input, flex: 1 }}
         />
-        <button style={styles.btnSecondary}>Import</button>
+        <button 
+          style={{ ...styles.btnSecondary, opacity: state.isImportingPost || !state.postUrl.trim() ? 0.5 : 1 }}
+          onClick={handleImportFromUrl}
+          disabled={state.isImportingPost || !state.postUrl.trim()}
+        >
+          {state.isImportingPost ? "Importing..." : "Import"}
+        </button>
       </div>
     </div>
   );
@@ -1401,7 +1474,19 @@ navigate("/editor?template=10&fromWizard=true");
         ))}
       </div>
       <div style={{ marginTop: 16 }}>
-        <button style={styles.quickAction}>📤 Upload Custom Video</button>
+        <input
+          type="file"
+          ref={videoInputRef}
+          accept="video/*"
+          style={{ display: 'none' }}
+          onChange={handleVideoUpload}
+        />
+        <button 
+          style={styles.quickAction} 
+          onClick={() => videoInputRef.current?.click()}
+        >
+          📤 Upload Custom Video
+        </button>
       </div>
     </div>
   );

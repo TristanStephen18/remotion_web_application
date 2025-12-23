@@ -177,14 +177,19 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
-  const timelineWidth = useMemo(() => {
-    const multiplier = isMobile ? 0.5 : 2;
-    const minWidth = isMobile ? 300 : 800;
-    return Math.max(totalFrames * zoom * multiplier, minWidth);
-  }, [totalFrames, zoom, isMobile]);
+  const effectiveTotalFrames = useMemo(() => {
+  const maxTrackEnd = Math.max(...tracks.map(t => t.endFrame), 0);
+  return Math.max(totalFrames, maxTrackEnd);
+}, [tracks, totalFrames]);
 
-  const frameToPixel = useCallback((frame: number) => (frame / totalFrames) * timelineWidth, [totalFrames, timelineWidth]);
-  const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timelineWidth) * totalFrames), [totalFrames, timelineWidth]);
+  const timelineWidth = useMemo(() => {
+  const multiplier = isMobile ? 0.5 : 2;
+  const minWidth = isMobile ? 300 : 800;
+  return Math.max(effectiveTotalFrames * zoom * multiplier, minWidth);
+}, [effectiveTotalFrames, zoom, isMobile]);
+
+  const frameToPixel = useCallback((frame: number) => (frame / effectiveTotalFrames) * timelineWidth, [effectiveTotalFrames, timelineWidth]);
+const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timelineWidth) * effectiveTotalFrames), [effectiveTotalFrames, timelineWidth]);
 
   // Scroll Sync
   useEffect(() => {
@@ -370,7 +375,7 @@ export const Timeline: React.FC<TimelineProps> = ({
         if (!rect) return;
         const x = coords.clientX - rect.left + (trackAreaRef.current?.scrollLeft || 0);
         const frame = pixelToFrame(x);
-        onFrameChange(Math.max(0, Math.min(totalFrames, frame)));
+        onFrameChange(Math.max(0, Math.min(effectiveTotalFrames, frame)));
         return;
       }
       
@@ -420,18 +425,20 @@ export const Timeline: React.FC<TimelineProps> = ({
             let newEnd = dragState.endFrame;
             
             if (dragState.type === "move") {
-              newStart = Math.max(0, Math.min(totalFrames, dragState.startFrame + deltaFrames));
-              newEnd = Math.max(0, Math.min(totalFrames, dragState.endFrame + deltaFrames));
-              if (newEnd > totalFrames) {
-                const overflow = newEnd - totalFrames;
-                newStart -= overflow;
-                newEnd -= overflow;
-              }
-            } else if (dragState.type === "resize-left") {
+  const duration = dragState.endFrame - dragState.startFrame;
+  newStart = dragState.startFrame + deltaFrames;
+  newEnd = dragState.endFrame + deltaFrames;
+  
+  // Only clamp to start (preserve duration), allow extending past end
+  if (newStart < 0) {
+    newStart = 0;
+    newEnd = duration;
+  }
+} else if (dragState.type === "resize-left") {
               newStart = Math.max(0, Math.min(dragState.endFrame - 1, dragState.startFrame + deltaFrames));
             } else if (dragState.type === "resize-right") {
-              newEnd = Math.max(dragState.startFrame + 1, Math.min(totalFrames, dragState.endFrame + deltaFrames));
-            }
+  newEnd = Math.max(dragState.startFrame + 1, dragState.endFrame + deltaFrames);
+}
             
             return { ...t, startFrame: newStart, endFrame: newEnd };
           });
@@ -498,19 +505,26 @@ export const Timeline: React.FC<TimelineProps> = ({
   }, [tracks, onTracksChange]);
 
   const timeMarkers = useMemo(() => {
-    const markers: { frame: number; label: string; isMajor: boolean }[] = [];
-    const pixelsPerSecond = (timelineWidth / totalFrames) * fps;
-    let majorInterval: number;
-    if (pixelsPerSecond > 100) majorInterval = fps;
-    else if (pixelsPerSecond > 40) majorInterval = fps * 2;
-    else if (pixelsPerSecond > 20) majorInterval = fps * 5;
-    else majorInterval = fps * 10;
-    
-    for (let f = 0; f <= totalFrames; f += majorInterval) {
-      markers.push({ frame: f, label: formatTime(f, fps), isMajor: true });
-    }
-    return markers;
-  }, [totalFrames, fps, timelineWidth]);
+  const markers: { frame: number; label: string; isMajor: boolean }[] = [];
+  const pixelsPerSecond = (timelineWidth / effectiveTotalFrames) * fps;
+  let majorInterval: number;
+  if (pixelsPerSecond > 100) majorInterval = fps;
+  else if (pixelsPerSecond > 40) majorInterval = fps * 2;
+  else if (pixelsPerSecond > 20) majorInterval = fps * 5;
+  else majorInterval = fps * 10;
+  
+  for (let f = 0; f <= effectiveTotalFrames; f += majorInterval) {
+    markers.push({ frame: f, label: formatTime(f, fps), isMajor: true });
+  }
+  
+  // Always include exact end marker
+  const lastMarkerFrame = markers[markers.length - 1]?.frame;
+  if (lastMarkerFrame !== effectiveTotalFrames) {
+    markers.push({ frame: effectiveTotalFrames, label: formatTime(effectiveTotalFrames, fps), isMajor: true });
+  }
+  
+  return markers;
+}, [effectiveTotalFrames, fps, timelineWidth]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -521,9 +535,9 @@ export const Timeline: React.FC<TimelineProps> = ({
         handleDeleteTrack();
       } else if (e.key === "Home") {
         onFrameChange(0);
-      } else if (e.key === "End") {
-        onFrameChange(totalFrames);
-      }
+     } else if (e.key === "End") {
+  onFrameChange(effectiveTotalFrames);
+}
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -545,7 +559,7 @@ export const Timeline: React.FC<TimelineProps> = ({
     rulerSpacer: { width: `${labelWidth}px`, flexShrink: 0, backgroundColor: colors.bgSecondary },
     rulerContent: { flex: 1, overflow: "hidden", position: "relative" },
    ruler: { position: "relative", height: isMobile ? "22px" : "25px", backgroundColor: colors.bgPrimary, borderBottom: `1px solid ${colors.borderLight}`, cursor: "pointer", touchAction: "none" },
-    rulerInner: { position: "relative", height: "100%", borderLeft: `1px solid ${colors.borderLight}` },
+    rulerInner: { position: "relative", height: "100%", borderLeft: `1px solid ${colors.borderLight}`, borderRight: `1px solid ${colors.borderLight}` },
     rulerMarker: { 
       position: "absolute", 
       top: "0px", 
@@ -611,7 +625,7 @@ export const Timeline: React.FC<TimelineProps> = ({
       overflowY: "auto", 
       backgroundColor: colors.bgPrimary 
     },
-    trackAreaInner: { position: "relative", minHeight: "100%" },
+    trackAreaInner: { position: "relative", height: "100%", minWidth: "100%", borderLeft: `1px solid ${colors.borderLight}`, borderRight: `1px solid ${colors.borderLight}` },
     trackRow: {
       height: `${TRACK_ROW_HEIGHT}px`,
       position: "relative",
@@ -716,9 +730,9 @@ export const Timeline: React.FC<TimelineProps> = ({
         <div style={styles.toolGroup}>
           <button style={styles.toolButton} onClick={() => onFrameChange(0)} title="Go to Start (Home)" onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><EditorIcons.SkipBack /></button>
           <button style={{ ...styles.toolButton, ...(isPlaying ? styles.toolButtonActive : {}) }} onClick={onPlayPause} title={isPlaying ? "Pause (Space)" : "Play (Space)"} onMouseOver={(e) => !isPlaying && (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => !isPlaying && (e.currentTarget.style.backgroundColor = "transparent")}>{isPlaying ? <EditorIcons.Pause /> : <EditorIcons.Play />}</button>
-          <button style={styles.toolButton} onClick={() => onFrameChange(totalFrames)} title="Go to End (End)" onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><EditorIcons.SkipForward /></button>
+          <button style={styles.toolButton} onClick={() => onFrameChange(effectiveTotalFrames)} title="Go to End (End)" onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.bgHover)} onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}><EditorIcons.SkipForward /></button>
         </div>
-        <div style={styles.timeDisplay}>{formatTime(currentFrame, fps)} / {formatTime(totalFrames, fps)}</div>
+        <div style={styles.timeDisplay}>{formatTime(currentFrame, fps)} / {formatTime(effectiveTotalFrames, fps)}</div>
         <div style={styles.zoomControl}><EditorIcons.ZoomOut /><input type="range" min="0.5" max="3" step="0.1" value={zoom} onChange={(e) => setZoom(Number(e.target.value))} style={styles.zoomSlider} /><EditorIcons.ZoomIn /></div>
       </div>
 
@@ -728,7 +742,7 @@ export const Timeline: React.FC<TimelineProps> = ({
           {/* Add wheel handler to ruler for horizontal scrolling */}
           <div style={styles.rulerContent} ref={rulerRef} onWheel={handleRulerWheel}>
             <div style={styles.ruler} onClick={handleRulerClick} onTouchStart={handleRulerClick}>
-              <div style={{ ...styles.rulerInner, width: `${timelineWidth}px` }}>
+              <div style={{ ...styles.rulerInner, width: `${Math.max(timelineWidth, 1500)}px` }}>
                 {timeMarkers.map(({ frame, label, isMajor }) => (
                   <React.Fragment key={frame}>
                     <div 
@@ -862,7 +876,7 @@ cursor: "ew-resize",
           </div>
 
           <div style={styles.trackArea} ref={trackAreaRef} onClick={handleTimelineClick} onScroll={handleScroll} onWheel={handleWheel}>
-            <div style={{ ...styles.trackAreaInner, width: `${timelineWidth}px` }}>
+            <div style={{ ...styles.trackAreaInner, width: `${Math.max(timelineWidth, 1500)}px` }}>
               {displayTracks.map((track) => {
                 const isBeingReordered = reorderState?.isDragging && reorderState?.trackId === track.id;
                 const isSelected = selectedTrackId === track.id;
