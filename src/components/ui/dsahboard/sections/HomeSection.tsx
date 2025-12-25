@@ -3,6 +3,7 @@ import { TemplatePreviewDialog } from "../TemplatePreviewDialog";
 import { ChooseTemplateModal } from "../../modals/ChooseTemplateModal";
 import { FiPlus, FiLayers, FiZap } from "react-icons/fi";
 import { templateCategories } from "../../../../data/DashboardCardsData";
+import { TEMPLATES, TEMPLATE_NAME_TO_ID } from '../../../../utils/simpleTemplateRegistry';
 
 // Get all templates for Discover Viralmotions section
 const allViralMotions = Object.values(templateCategories).flat();
@@ -15,6 +16,7 @@ const selectedTemplateNames = [
   "Fake Text Conversation",
   "Photo Collage",
   "Ken Burns Carousel",
+  "Reddit Post Narration"
 ];
 
 // Filter and order templates based on selectedTemplateNames
@@ -36,15 +38,23 @@ const templateViews: Record<string, string> = {
   "Quote Spotlight": "15.3k",
   "Fake Text Conversation": "6.1k",
   "Photo Collage": "9.7k",
+  "Reddit Post Narration": "13.7k"
 };
 
 // Template durations
-const templateDurations: Record<string, string> = {
-  "Split Screen": "30s",
-  "Dancing People": "60s",
-  "Quote Spotlight": "15s",
-  "Fake Text Conversation": "45s",
-  "Photo Collage": "20s",
+const getTemplateDuration = (templateName: string): string => {
+  const templateId = TEMPLATE_NAME_TO_ID[templateName];
+  if (!templateId) return "15s";
+  
+  const template = TEMPLATES[templateId];
+  if (!template) return "15s";
+  
+  // Get default layers and calculate duration
+  const layers = template.createDefaultLayers();
+  const durationFrames = template.calculateDuration?.(layers) || 300;
+  const durationSeconds = Math.round(durationFrames / 30); // 30fps
+  
+  return `${durationSeconds}s`;
 };
 
 // Pro Template Card for Explore Templates Grid
@@ -63,7 +73,7 @@ const ProTemplateCard: React.FC<ProTemplateCardProps> = ({
   className = "",
 }) => {
   const views = templateViews[name] || "1k";
-  const duration = templateDurations[name] || "15s";
+  const duration = getTemplateDuration(name);
 
   return (
     <div
@@ -159,7 +169,7 @@ const ExploreTemplatesGrid: React.FC<ExploreTemplatesGridProps> = ({
   items,
   onItemClick,
 }) => {
-  const gridItems = items.slice(0, 6);
+  const gridItems = items.slice(0, 7);
 
   return (
     <div className="space-y-4">

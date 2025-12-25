@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import ReactDOM from "react-dom";
 import type {
   Layer,
   ImageLayer,
@@ -41,6 +42,15 @@ export interface DynamicPreviewOverlayProps {
   onEditingLayerChange: (layerId: string | null) => void;
   isPlaying?: boolean;
   onPlayingChange?: (playing: boolean) => void;
+  // Context menu actions
+  onDeleteLayer?: (layerId: string) => void;
+  onDuplicateLayer?: (layerId: string) => void;
+  onCopyLayer?: (layerId: string) => void;
+  onBringToFront?: (layerId: string) => void;
+  onBringForward?: (layerId: string) => void;
+  onSendBackward?: (layerId: string) => void;
+  onSendToBack?: (layerId: string) => void;
+  onPasteLayer?: () => void;
 }
 
 function isTextLayer(layer: Layer): layer is TextLayer {
@@ -72,6 +82,14 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   onEditingLayerChange,
   isPlaying,
   onPlayingChange,
+  onDeleteLayer,
+  onDuplicateLayer,
+  onCopyLayer,
+  onBringToFront,
+  onBringForward,
+  onSendBackward,
+  onSendToBack,
+  onPasteLayer,
 }) => {
   const overlayRef = useRef<HTMLDivElement>(null);
   const textAreaRef = useRef<HTMLTextAreaElement>(null);
@@ -94,6 +112,58 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   const [elementCenter, setElementCenter] = useState({ x: 0, y: 0 });
   
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    layerId: string | null;
+    showLayerSubmenu: boolean;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    layerId: null,
+    showLayerSubmenu: false,
+  });
+
+  const [hasClipboard, setHasClipboard] = useState(false);
+  
+  useEffect(() => {
+    const checkClipboard = () => {
+      setHasClipboard(!!localStorage.getItem('copiedLayer'));
+    };
+    
+    checkClipboard();
+    
+    // Listen for custom clipboard update event
+    window.addEventListener('clipboardUpdate', checkClipboard);
+    window.addEventListener('storage', checkClipboard);
+    
+    return () => {
+      window.removeEventListener('clipboardUpdate', checkClipboard);
+      window.removeEventListener('storage', checkClipboard);
+    };
+  }, []);
+
+  // Also check when menu opens
+  useEffect(() => {
+    if (contextMenu.visible) {
+      setHasClipboard(!!localStorage.getItem('copiedLayer'));
+    }
+  }, [contextMenu.visible]);
+
+  // Close context menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (contextMenu.visible) {
+        setContextMenu(prev => ({ ...prev, visible: false, showLayerSubmenu: false }));
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [contextMenu.visible]);
 
   useEffect(() => {
     if (!overlayRef.current) return;
@@ -139,6 +209,30 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
       onSelectLayer(layer.id);
     },
     [onSelectLayer, editingLayerId]
+  );
+
+  // Right-click context menu handler
+  const handleContextMenu = useCallback(
+    (e: React.MouseEvent, layer: Layer) => {
+      if (layer.locked || (layer as ImageLayer).isBackground) return;
+      e.preventDefault();
+      e.stopPropagation();
+      
+      onSelectLayer(layer.id);
+      
+      // Use fixed screen coordinates
+      const x = e.clientX;
+      const y = e.clientY;
+      
+      setContextMenu({
+        visible: true,
+        x,
+        y,
+        layerId: layer.id,
+        showLayerSubmenu: false,
+      });
+    },
+    [onSelectLayer]
   );
 
   const handleDoubleClick = useCallback(
@@ -830,7 +924,306 @@ document.removeEventListener("touchend", handleMouseUp);
   };
 
   return (
-    <div ref={overlayRef} style={styles.overlay} onClick={handleOverlayClick}>
+    <div 
+      ref={overlayRef} 
+      style={styles.overlay} 
+      onClick={handleOverlayClick} 
+      onContextMenu={(e) => {
+        e.preventDefault();
+        const copiedData = localStorage.getItem('copiedLayer');
+        if (!copiedData) return;
+        
+        // Use fixed screen coordinates
+        const x = e.clientX;
+        const y = e.clientY;
+        setContextMenu({
+          visible: true,
+          x,
+          y,
+          layerId: null,
+          showLayerSubmenu: false,
+        });
+      }}
+    >
+
+      {contextMenu.visible && ReactDOM.createPortal(
+        <div
+          style={{
+            position: 'fixed',
+            left: contextMenu.x,
+            top: contextMenu.y,
+            backgroundColor: '#1f2937',
+            borderRadius: 8,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+            border: '1px solid #374151',
+            minWidth: 180,
+            zIndex: 99999,
+            overflow: 'visible',
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          {/* Delete */}
+          {onDeleteLayer && contextMenu.layerId && (
+            <button
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                color: '#f87171',
+                fontSize: 13,
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onClick={() => {
+                onDeleteLayer(contextMenu.layerId!);
+                setContextMenu(prev => ({ ...prev, visible: false }));
+              }}
+            >
+              🗑️ Delete
+            </button>
+          )}
+
+          {/* Duplicate */}
+          {onDuplicateLayer && contextMenu.layerId && (
+            <button
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                color: '#e5e7eb',
+                fontSize: 13,
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onClick={() => {
+                onDuplicateLayer(contextMenu.layerId!);
+                setContextMenu(prev => ({ ...prev, visible: false }));
+              }}
+            >
+              📋 Duplicate
+            </button>
+          )}
+
+          {/* Copy */}
+          {onCopyLayer && contextMenu.layerId && (
+            <button
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                color: '#e5e7eb',
+                fontSize: 13,
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onClick={() => {
+                onCopyLayer(contextMenu.layerId!);
+                setContextMenu(prev => ({ ...prev, visible: false }));
+              }}
+            >
+              📄 Copy
+            </button>
+          )}
+
+          {/* Paste */}
+          {onPasteLayer && hasClipboard && (
+            <button
+              style={{
+                width: '100%',
+                padding: '10px 16px',
+                background: 'none',
+                border: 'none',
+                color: '#e5e7eb',
+                fontSize: 13,
+                textAlign: 'left',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+              onClick={() => {
+                onPasteLayer();
+                setContextMenu(prev => ({ ...prev, visible: false }));
+              }}
+            >
+              📌 Paste
+            </button>
+          )}
+
+          {/* Divider */}
+          {contextMenu.layerId && (
+            <div style={{ height: 1, backgroundColor: '#374151', margin: '4px 0' }} />
+          )}
+
+          {/* Layer submenu */}
+          {contextMenu.layerId && (
+            <div
+              style={{ position: 'relative' }}
+              onMouseEnter={() => setContextMenu(prev => ({ ...prev, showLayerSubmenu: true }))}
+              onMouseLeave={() => setContextMenu(prev => ({ ...prev, showLayerSubmenu: false }))}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '10px 16px',
+                  background: contextMenu.showLayerSubmenu ? '#374151' : 'none',
+                  border: 'none',
+                  color: '#e5e7eb',
+                  fontSize: 13,
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+                onMouseLeave={(e) => {
+                  if (!contextMenu.showLayerSubmenu) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  📚 Layer
+                </span>
+                <span style={{ fontSize: 10 }}>▶</span>
+              </button>
+
+              {/* Layer submenu dropdown */}
+              {contextMenu.showLayerSubmenu && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    left: '100%',
+                    top: 0,
+                    backgroundColor: '#1f2937',
+                    borderRadius: 8,
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+                    border: '1px solid #374151',
+                    minWidth: 160,
+                    overflow: 'hidden',
+                    marginLeft: 4,
+                  }}
+                  onMouseEnter={() => setContextMenu(prev => ({ ...prev, showLayerSubmenu: true }))}
+                  onMouseLeave={() => setContextMenu(prev => ({ ...prev, showLayerSubmenu: false }))}
+                >
+                  {onBringToFront && (
+                    <button
+                      style={{
+                        width: '100%',
+                        padding: '10px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#e5e7eb',
+                        fontSize: 13,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onClick={() => {
+                        onBringToFront(contextMenu.layerId!);
+                        setContextMenu(prev => ({ ...prev, visible: false, showLayerSubmenu: false }));
+                      }}
+                    >
+                      ⬆️ Bring to Front
+                    </button>
+                  )}
+                  {onBringForward && (
+                    <button
+                      style={{
+                        width: '100%',
+                        padding: '10px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#e5e7eb',
+                        fontSize: 13,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onClick={() => {
+                        onBringForward(contextMenu.layerId!);
+                        setContextMenu(prev => ({ ...prev, visible: false, showLayerSubmenu: false }));
+                      }}
+                    >
+                      🔼 Bring Forward
+                    </button>
+                  )}
+                  {onSendBackward && (
+                    <button
+                      style={{
+                        width: '100%',
+                        padding: '10px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#e5e7eb',
+                        fontSize: 13,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onClick={() => {
+                        onSendBackward(contextMenu.layerId!);
+                        setContextMenu(prev => ({ ...prev, visible: false, showLayerSubmenu: false }));
+                      }}
+                    >
+                      🔽 Send Backward
+                    </button>
+                  )}
+                  {onSendToBack && (
+                    <button
+                      style={{
+                        width: '100%',
+                        padding: '10px 16px',
+                        background: 'none',
+                        border: 'none',
+                        color: '#e5e7eb',
+                        fontSize: 13,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#374151'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      onClick={() => {
+                        onSendToBack(contextMenu.layerId!);
+                        setContextMenu(prev => ({ ...prev, visible: false, showLayerSubmenu: false }));
+                      }}
+                    >
+                      ⬇️ Send to Back
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>,
+        document.body
+      )}
       {visibleLayers.map((layer, renderIndex) => {
         if (!layer.position) return null;
 
@@ -934,6 +1327,7 @@ document.removeEventListener("touchend", handleMouseUp);
               alignItems: "center",
             }}
             onClick={(e) => handleClick(e, layer)}
+            onContextMenu={(e) => handleContextMenu(e, layer)}
             onDoubleClick={(e) => handleDoubleClick(e, layer)}
             onMouseDown={(e) => !isEditing && handleMouseDown(e, layer)}
 onTouchStart={(e) => !isEditing && handleMouseDown(e, layer)}

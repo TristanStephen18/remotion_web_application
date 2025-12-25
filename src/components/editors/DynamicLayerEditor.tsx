@@ -498,6 +498,32 @@ const CloudinaryAssets = {
   ],
 };
 
+
+
+// Helper to convert external image URL to base64 to avoid CORS issues
+const convertImageToBase64 = async (url: string): Promise<string> => {
+  if (url.startsWith('data:') || url.startsWith('blob:') || !url.startsWith('http')) {
+    return url;
+  }
+
+  try {
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Proxy fetch failed');
+    
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch (error) {
+    console.warn('Failed to convert to base64:', error);
+    return url;
+  }
+};
+
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
@@ -1116,6 +1142,98 @@ const DynamicLayerEditor: React.FC = () => {
     pushState,
     setSelectedLayerId,
   });
+
+  
+   // Layer ordering functions
+  const duplicateLayer = useCallback((layerId: string) => {
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+    
+    const newLayer = {
+      ...JSON.parse(JSON.stringify(layer)),
+      id: generateId(),
+      position: {
+        x: (layer.position?.x || 50) + 2,
+        y: (layer.position?.y || 50) + 2,
+      },
+    };
+    
+    pushState([...layers, newLayer]);
+    setSelectedLayerId(newLayer.id);
+    toast.success('Layer duplicated');
+  }, [layers, pushState, setSelectedLayerId]);
+
+  const copyLayerToClipboard = useCallback((layerId: string) => {
+    const layer = layers.find(l => l.id === layerId);
+    if (!layer) return;
+    
+    localStorage.setItem('copiedLayer', JSON.stringify(layer));
+    window.dispatchEvent(new Event('clipboardUpdate'));
+    toast.success('Layer copied');
+  }, [layers]);
+
+  const pasteLayer = useCallback(() => {
+    const copiedData = localStorage.getItem('copiedLayer');
+    if (!copiedData) {
+      toast.error('Nothing to paste');
+      return;
+    }
+    
+    try {
+      const layer = JSON.parse(copiedData);
+      const newLayer = {
+        ...layer,
+        id: generateId(),
+        position: {
+          x: (layer.position?.x || 50) + 2,
+          y: (layer.position?.y || 50) + 2,
+        },
+      };
+      
+      pushState([...layers, newLayer]);
+      setSelectedLayerId(newLayer.id);
+      toast.success('Layer pasted');
+    } catch (_e) {
+      toast.error('Failed to paste layer');
+    }
+  }, [layers, pushState, setSelectedLayerId]);
+
+  const bringToFront = useCallback((layerId: string) => {
+    const index = layers.findIndex(l => l.id === layerId);
+    if (index === -1 || index === layers.length - 1) return;
+    
+    const layer = layers[index];
+    const newLayers = [...layers.slice(0, index), ...layers.slice(index + 1), layer];
+    pushState(newLayers);
+  }, [layers, pushState]);
+
+  const bringForward = useCallback((layerId: string) => {
+    const index = layers.findIndex(l => l.id === layerId);
+    if (index === -1 || index === layers.length - 1) return;
+    
+    const newLayers = [...layers];
+    [newLayers[index], newLayers[index + 1]] = [newLayers[index + 1], newLayers[index]];
+    pushState(newLayers);
+  }, [layers, pushState]);
+
+  const sendBackward = useCallback((layerId: string) => {
+    const index = layers.findIndex(l => l.id === layerId);
+    if (index <= 0) return;
+    
+    const newLayers = [...layers];
+    [newLayers[index], newLayers[index - 1]] = [newLayers[index - 1], newLayers[index]];
+    pushState(newLayers);
+  }, [layers, pushState]);
+
+  const sendToBack = useCallback((layerId: string) => {
+    const index = layers.findIndex(l => l.id === layerId);
+    if (index <= 0) return;
+    
+    const layer = layers[index];
+    const newLayers = [layer, ...layers.slice(0, index), ...layers.slice(index + 1)];
+    pushState(newLayers);
+  }, [layers, pushState]);
+
 
   const handleCropChange = useCallback(
     (crop: CropData) => {
@@ -2307,7 +2425,7 @@ const DynamicLayerEditor: React.FC = () => {
   // Replace your handleMediaConfirm function with this version:
 
   const handleMediaConfirm = useCallback(
-    (mediaOrArray: any) => {
+  async (mediaOrArray: any) => {
       console.log("📥 handleMediaConfirm called", {
         mediaOrArray,
         isArray: Array.isArray(mediaOrArray),
@@ -2321,10 +2439,17 @@ const DynamicLayerEditor: React.FC = () => {
 
         // Handle replace mode
         if (media.replaceMode && replacingLayerId) {
-          const mediaSource = media.url || media.data;
+          let mediaSource = media.url || media.data;
           if (!mediaSource) {
             toast.error("No source URL found");
             return;
+          }
+
+          // Convert external images to base64
+          if (media.type?.startsWith("image") && mediaSource.startsWith('http')) {
+            toast.loading('Processing image...', { id: 'img-process' });
+            mediaSource = await convertImageToBase64(mediaSource);
+            toast.dismiss('img-process');
           }
 
           updateLayer(replacingLayerId, { src: mediaSource } as Partial<Layer>);
@@ -2335,7 +2460,12 @@ const DynamicLayerEditor: React.FC = () => {
           return;
         }
 
-        // Single file add
+        // Single file add - convert external images to base64
+        if (media.type?.startsWith("image") && media.url?.startsWith('http')) {
+          toast.loading('Processing image...', { id: 'img-process' });
+          media.url = await convertImageToBase64(media.url);
+          toast.dismiss('img-process');
+        }
         addMediaToCanvas(media);
         setProjectAssets((prev) => {
           const exists = prev.find(
@@ -2356,8 +2486,12 @@ const DynamicLayerEditor: React.FC = () => {
       // Create all layers at once with offset positions
       const newLayers: Layer[] = [];
 
-      mediaArray.forEach((media, index) => {
-        const mediaSource =
+      // Show loading for batch
+      toast.loading(`Processing ${mediaArray.length} files...`, { id: 'batch-process' });
+
+      for (let index = 0; index < mediaArray.length; index++) {
+        const media = mediaArray[index];
+        let mediaSource =
           media.type === "image" ||
           media.type === "video" ||
           media.type === "audio"
@@ -2366,7 +2500,12 @@ const DynamicLayerEditor: React.FC = () => {
 
         if (!mediaSource) {
           console.warn("⚠️ Skipping file with no source:", media.name);
-          return;
+          continue;
+        }
+
+        // Convert external images to base64
+        if (media.type?.startsWith("image") && mediaSource.startsWith('http')) {
+          mediaSource = await convertImageToBase64(mediaSource);
         }
 
         const newId = generateId();
@@ -2448,7 +2587,9 @@ const DynamicLayerEditor: React.FC = () => {
           );
           newLayers.push(newLayer);
         }
-      });
+      }
+
+      toast.dismiss('batch-process');
 
       console.log("📊 Total new layers created:", newLayers.length);
       console.log(
@@ -2981,12 +3122,6 @@ const DynamicLayerEditor: React.FC = () => {
               setActiveTab(tab);
               setIsPanelOpen(tab !== null);
               setWatchCategory("main");
-
-              // ✅ ADD THIS: Close editors (deselect layer) when opening a tab
-              if (tab !== null) {
-                setSelectedLayerId(null);
-                setEditingLayerId(null);
-              }
             }}
             onPanelToggle={handlePanelToggle}
             templateId={template?.id}
@@ -2999,12 +3134,6 @@ const DynamicLayerEditor: React.FC = () => {
               setActiveTab(tab);
               setIsPanelOpen(tab !== null);
               setWatchCategory("main");
-
-              // ✅ ADD THIS: Close editors (deselect layer) when opening a tab
-              if (tab !== null) {
-                setSelectedLayerId(null);
-                setEditingLayerId(null);
-              }
             }}
             onPanelToggle={handlePanelToggle}
             templateId={template?.id}
@@ -3084,12 +3213,11 @@ const DynamicLayerEditor: React.FC = () => {
                 zIndex: 50,
                 pointerEvents: "auto",
 
-                // ✅ FIX 1: Force hide this panel if we are editing (showEditPanel),
-                // regardless of whether a tab is open.
+                // Show tab panel when activeTab is set, even if layer is selected
                 display: !isMobile
-                  ? !isPanelOpen || showEditPanel
-                    ? "none"
-                    : "flex"
+                  ? (isPanelOpen && activeTab)
+                    ? "flex"
+                    : "none"
                   : undefined,
 
                 ...(!isMobile && !isPanelOpen
@@ -3664,7 +3792,7 @@ const DynamicLayerEditor: React.FC = () => {
                     }
                   : {}),
                 zIndex: 50,
-                display: !isMobile && !showEditPanel ? "none" : undefined,
+                display: !isMobile && (!showEditPanel || (isPanelOpen && activeTab)) ? "none" : undefined,
                 pointerEvents: isMobile
                   ? showEditPanel
                     ? "auto"
@@ -4042,6 +4170,14 @@ const DynamicLayerEditor: React.FC = () => {
                   onEditingLayerChange={setEditingLayerId}
                   isPlaying={isPlaying}
                   onPlayingChange={setIsPlaying}
+                  onDeleteLayer={deleteLayer}
+                  onDuplicateLayer={duplicateLayer}
+                  onCopyLayer={copyLayerToClipboard}
+                  onBringToFront={bringToFront}
+                  onBringForward={bringForward}
+                  onSendBackward={sendBackward}
+                  onSendToBack={sendToBack}
+                  onPasteLayer={pasteLayer}
                 />
               </div>
             </div>

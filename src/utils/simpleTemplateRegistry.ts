@@ -333,57 +333,192 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
 
-  6: {
+ 6: {
     id: 6,
     name: 'splitscreen',
     displayName: 'Split Screen',
-    description: 'Upper/Lower split screen - Fully editable',
+    description: 'Split screen or Picture-in-Picture layout',
     category: 'Media',
     thumbnailUrl: '/template_previews/SplitScreen.mp4',
     composition: DynamicLayerComposition,
     compositionId: 'DynamicLayerComposition',
-    createDefaultLayers: () => [
-      {
-        id: 'upper-panel',
-        type: 'video',
-        name: 'Upper Panel',
-        startFrame: 0,
-        endFrame: 600,
-        visible: true,
-        locked: false,
-        src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        position: { x: 50, y: 25 },
-        size: { width: 100, height: 50 },
-        rotation: 0,
-        opacity: 1,
-        volume: 0.5,
-        loop: true,
-        playbackRate: 1,
-        objectFit: 'cover',
-        animation: { entrance: 'none', entranceDuration: 0 },
-      },
-      {
-        id: 'lower-panel',
-        type: 'video',
-        name: 'Lower Panel',
-        startFrame: 0,
-        endFrame: 600,
-        visible: true,
-        locked: false,
-        src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        position: { x: 50, y: 75 },
-        size: { width: 100, height: 50 },
-        rotation: 0,
-        opacity: 1,
-        volume: 0.5,
-        loop: true,
-        playbackRate: 1,
-        objectFit: 'cover',
-        animation: { entrance: 'none', entranceDuration: 0 },
-      },
-    
-    ] as Layer[],
-    layersToProps: (layers) => ({ layers }),
+    createDefaultLayers: () => {
+      // Check if coming from wizard
+      if (typeof window !== 'undefined') {
+        const urlParams = new URLSearchParams(window.location.search);
+        const fromWizard = urlParams.get('fromWizard') === 'true';
+        
+        if (fromWizard) {
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('template-6') || key.includes('template_6') || key.includes('editor-layers-6'))) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+          console.log("🧹 Cleared persisted layers for template 6 (fromWizard)");
+        }
+      }
+
+      // Get config from wizard
+      const storedConfig = typeof window !== 'undefined' 
+        ? sessionStorage.getItem('splitScreenConfig') 
+        : null;
+      
+      let config: any = null;
+      if (storedConfig) {
+        try {
+          config = JSON.parse(storedConfig);
+          console.log("📦 Template 6 loaded config:", config);
+        } catch (e) {
+          console.error('Failed to parse split screen config:', e);
+        }
+      }
+
+      const totalFrames = config?.totalFrames || 600;
+      const layoutType = config?.layoutType || 'split-screen';
+      
+      let layers: Layer[] = [];
+
+      if (layoutType === 'pic-in-pic') {
+        // ==========================================
+        // PIC-IN-PIC LAYOUT
+        // ==========================================
+        const pipPosition = config?.pip?.position || 'bottom-left';
+        const pipSize = config?.pip?.size || 30;
+
+        // Calculate PiP position (x, y are center points in percentage)
+        let pipX = 50;
+        let pipY = 50;
+        const margin = 5; // margin from edge in percentage
+
+        switch (pipPosition) {
+          case 'top-left':
+            pipX = margin + (pipSize / 2);
+            pipY = margin + (pipSize / 2);
+            break;
+          case 'top-right':
+            pipX = 100 - margin - (pipSize / 2);
+            pipY = margin + (pipSize / 2);
+            break;
+          case 'bottom-left':
+            pipX = margin + (pipSize / 2);
+            pipY = 100 - margin - (pipSize / 2);
+            break;
+          case 'bottom-right':
+            pipX = 100 - margin - (pipSize / 2);
+            pipY = 100 - margin - (pipSize / 2);
+            break;
+        }
+
+        // Main video (full screen, behind)
+        layers.push({
+          id: 'main-video',
+          type: 'video',
+          name: 'Main Video',
+          startFrame: 0,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          src: config?.mainVideo?.src || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          position: { x: 50, y: 50 },
+          size: { width: 100, height: 100 },
+          rotation: 0,
+          opacity: 1,
+          volume: config?.mainVideo?.volume ?? 0.5,
+          loop: true,
+          playbackRate: 1,
+          objectFit: 'cover',
+          animation: { entrance: 'none', entranceDuration: 0 },
+        } as VideoLayer);
+
+        // PiP video (smaller, on top)
+        layers.push({
+          id: 'pip-video',
+          type: 'video',
+          name: 'PiP Video',
+          startFrame: 0,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          src: config?.pipVideo?.src || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+          position: { x: pipX, y: pipY },
+          size: { width: pipSize, height: pipSize },
+          rotation: 0,
+          opacity: 1,
+          volume: config?.pipVideo?.volume ?? 0.5,
+          loop: true,
+          playbackRate: 1,
+          objectFit: 'cover',
+          animation: { entrance: 'none', entranceDuration: 0 },
+          borderRadius: 8,
+        } as VideoLayer);
+
+      } else {
+        // ==========================================
+        // SPLIT SCREEN LAYOUT (default)
+        // ==========================================
+        const upperPercent = config?.layout?.upperPercent || 50;
+        const lowerPercent = config?.layout?.lowerPercent || 50;
+
+        // Calculate positions based on layout
+        // Position Y is center of each panel
+        const upperY = upperPercent / 2;
+        const lowerY = upperPercent + (lowerPercent / 2);
+
+        layers.push({
+          id: 'upper-panel',
+          type: 'video',
+          name: 'Upper Panel',
+          startFrame: 0,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          src: config?.upperVideo?.src || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+          position: { x: 50, y: upperY },
+          size: { width: 100, height: upperPercent },
+          rotation: 0,
+          opacity: 1,
+          volume: config?.upperVideo?.volume ?? 0.5,
+          loop: true,
+          playbackRate: 1,
+          objectFit: 'cover',
+          animation: { entrance: 'none', entranceDuration: 0 },
+        } as VideoLayer);
+
+        layers.push({
+          id: 'lower-panel',
+          type: 'video',
+          name: 'Lower Panel',
+          startFrame: 0,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          src: config?.lowerVideo?.src || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+          position: { x: 50, y: lowerY },
+          size: { width: 100, height: lowerPercent },
+          rotation: 0,
+          opacity: 1,
+          volume: config?.lowerVideo?.volume ?? 0.5,
+          loop: true,
+          playbackRate: 1,
+          objectFit: 'cover',
+          animation: { entrance: 'none', entranceDuration: 0 },
+        } as VideoLayer);
+      }
+
+      // Clear config after use
+      if (typeof window !== 'undefined' && storedConfig) {
+        setTimeout(() => {
+          sessionStorage.removeItem('splitScreenConfig');
+        }, 1000);
+      }
+
+      console.log("✅ Template 6 layers created:", layers.map(l => l.name), "Layout:", layoutType);
+      return layers;
+    },
+    layersToProps: (layers) => ({ layers, templateId: 6 }),
     calculateDuration: (layers) => Math.max(...layers.map(l => l.endFrame)),
   },
 
@@ -600,7 +735,246 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
 },
 
 
+ 9: {
+  id: 9,
+  name: 'fakechat',
+  displayName: 'Fake Text Conversation',
+  description: 'Realistic messaging conversations (IG, iMessage, WhatsApp)',
+  category: 'Social',
+  thumbnailUrl: '', 
+  composition: DynamicLayerComposition,
+  compositionId: 'DynamicLayerComposition',
+  
+  createDefaultLayers: () => {
+    // Check if coming from wizard
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const fromWizard = urlParams.get('fromWizard') === 'true';
+      
+      if (fromWizard) {
+        console.log("🧹 Clearing persisted layers for template 9 (fromWizard)");
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (
+            key.includes('template-9') ||
+            key.includes('template9') ||
+            key.includes('fakechat') ||
+            key.includes('editor_state_') && key.includes('9')
+          )) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => {
+          console.log("  Removing:", key);
+          localStorage.removeItem(key);
+        });
+        
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.delete('fromWizard');
+        newUrl.searchParams.delete('t');
+        window.history.replaceState({}, '', newUrl.toString());
+      }
+    }
 
+    // Get wizard config
+    const storedConfig = typeof window !== 'undefined' 
+      ? sessionStorage.getItem('fakeChatConfig') 
+      : null;
+    
+    let config: any = null;
+    if (storedConfig) {
+      try {
+        config = JSON.parse(storedConfig);
+        console.log("📦 Template 9 loaded fake chat config:", config);
+      } catch (e) {
+        console.error('Failed to parse fake chat config:', e);
+      }
+    }
+
+    // Defaults
+    const chatStyle = config?.chatStyle || 'fakechatconversation';
+    const senderName = config?.senderName || 'Sarah_Smith';
+    const avatarUrl = config?.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100';
+    const backgroundVideoUrl = config?.backgroundVideoUrl || 'https://res.cloudinary.com/dcu9xuof0/video/upload/v1765260195/Subway_Surfers_2024_-_Gameplay_4K_9x16_No_Copyright_n4ym8w.mp4';
+    const backgroundOpacity = config?.backgroundOpacity || 0.4;
+    const typingDuration = config?.typingDuration || 30;
+    const totalFrames = config?.totalFrames || 300;
+
+    const layers: any[] = [];
+
+    // Background Video Layer
+    layers.push({
+      id: 'chat-bg',
+      type: 'video',
+      name: 'Background Video',
+      startFrame: 0,
+      endFrame: totalFrames,
+      visible: true,
+      locked: false,
+      src: backgroundVideoUrl,
+      position: { x: 50, y: 50 },
+      size: { width: 100, height: 100 },
+      rotation: 0,
+      opacity: backgroundOpacity,
+      volume: 0,
+      loop: true,
+      playbackRate: 1,
+      objectFit: 'cover',
+      filter: 'brightness(0.5)',
+    });
+
+    // Create message layers from config
+    if (config?.messages && config.messages.length > 0) {
+      let currentFrame = 0;
+      
+      config.messages.forEach((msg: any, index: number) => {
+        currentFrame += msg.delay || 30;
+        
+        if (msg.isTyping) {
+          // Typing indicator (shows for typingDuration then disappears)
+          layers.push({
+            id: `msg-typing-${index}`,
+            type: 'chat-bubble',
+            name: 'Typing...',
+            startFrame: currentFrame,
+            endFrame: currentFrame + typingDuration,
+            visible: true,
+            locked: false,
+            message: "",
+            isSender: msg.isSender,
+            isTyping: true,
+            chatStyle: chatStyle,
+            senderName: senderName,
+            avatarUrl: avatarUrl,
+            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
+            size: { width: 15, height: 8 },
+            rotation: 0,
+            opacity: 1,
+            animation: { entrance: 'slideUp', entranceDuration: 15 },
+          });
+          currentFrame += typingDuration;
+        } else {
+          // Regular message
+          layers.push({
+            id: `msg-${index}`,
+            type: 'chat-bubble',
+            name: msg.isSender ? `Me: ${msg.message.substring(0, 15)}...` : `Them: ${msg.message.substring(0, 15)}...`,
+            startFrame: currentFrame,
+            endFrame: totalFrames,
+            visible: true,
+            locked: false,
+            message: msg.message,
+            isSender: msg.isSender,
+            chatStyle: chatStyle,
+            senderName: senderName,
+            avatarUrl: avatarUrl,
+            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
+            size: { width: 45, height: 8 },
+            rotation: 0,
+            opacity: 1,
+            animation: { entrance: 'slideUp', entranceDuration: 20 },
+          });
+        }
+      });
+    } else {
+      // Default messages if no config
+      layers.push(
+        {
+          id: 'msg-1',
+          type: 'chat-bubble',
+          name: 'Them: Hello',
+          startFrame: 10,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          message: "Hey! Did you see the new update?",
+          isSender: false,
+          chatStyle: chatStyle,
+          senderName: senderName,
+          avatarUrl: avatarUrl,
+          position: { x: 35, y: 25 },
+          size: { width: 45, height: 8 },
+          rotation: 0,
+          opacity: 1,
+          animation: { entrance: 'slideUp', entranceDuration: 20 },
+        },
+        {
+          id: 'msg-2',
+          type: 'chat-bubble',
+          name: 'Typing...',
+          startFrame: 40,
+          endFrame: 70,
+          visible: true,
+          locked: false,
+          message: "",
+          isSender: true,
+          isTyping: true,
+          chatStyle: chatStyle,
+          senderName: senderName,
+          avatarUrl: avatarUrl,
+          position: { x: 85, y: 37 },
+          size: { width: 10, height: 8 },
+          rotation: 0,
+          opacity: 1,
+          animation: { entrance: 'slideUp', entranceDuration: 15 },
+        },
+        {
+          id: 'msg-3',
+          type: 'chat-bubble',
+          name: 'Me: Reply',
+          startFrame: 70,
+          endFrame: totalFrames,
+          visible: true,
+          locked: false,
+          message: "Yeah, it looks exactly like the real thing now! 🔥",
+          isSender: true,
+          chatStyle: chatStyle,
+          senderName: senderName,
+          avatarUrl: avatarUrl,
+          position: { x: 65, y: 37 },
+          size: { width: 48, height: 8 },
+          rotation: 0,
+          opacity: 1,
+          animation: { entrance: 'slideUp', entranceDuration: 20 },
+        }
+      );
+    }
+
+    // Background Music Layer (if configured)
+    if (config?.backgroundMusicPath && config.backgroundMusicPath !== '') {
+      layers.push({
+        id: 'chat-audio',
+        type: 'audio',
+        name: 'Background Music',
+        startFrame: 0,
+        endFrame: totalFrames,
+        visible: true,
+        locked: false,
+        src: config.backgroundMusicPath,
+        volume: config.musicVolume || 0.3,
+        loop: true,
+      });
+      console.log("🎵 Added audio layer:", config.backgroundMusicPath);
+    }
+
+    // Clear config after use
+    if (typeof window !== 'undefined') {
+      setTimeout(() => {
+        sessionStorage.removeItem('fakeChatConfig');
+      }, 1000);
+    }
+
+    console.log("✅ Template 9 layers created:", layers.map(l => l.name));
+    return layers;
+  },
+  
+  layersToProps: (layers) => ({ layers, templateId: 9 }),
+  calculateDuration: (layers) => {
+    if (!layers || layers.length === 0) return 300;
+    return Math.max(...layers.map(l => l.endFrame || 0));
+  },
+},
 
   10: {
     id: 10,
@@ -1075,7 +1449,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
   // ========================================================================
   const photoCount = config?.photoCount || Math.min(photos.length, layoutDef.slots.length);
   const collageDurationFrames = config?.collageDurationFrames || 180;
-  const showcaseDurationPerPhotoFrames = config?.showcaseDurationPerPhotoFrames || 30;
+  const showcaseDurationPerPhotoFrames = config?.photoDuration ? config.photoDuration * 30 : (config?.showcaseDurationPerPhotoFrames || 30);
   const showcaseTotalFrames = config?.showcaseTotalFrames || (photoCount * showcaseDurationPerPhotoFrames);
   const totalDuration = config?.totalDurationFrames || (collageDurationFrames + showcaseTotalFrames);
 
@@ -1202,7 +1576,7 @@ layers.push({
       visible: true,
       locked: false,
       startFrame: animConfig.textStartFrame + 5,
-      endFrame: collageDurationFrames, // Only show during collage phase
+      endFrame: collageDurationFrames, 
       position: { x: 50, y: 55.2 },
       size: { width: 46.3, height: 6.25 },
       rotation: 0,
@@ -1296,252 +1670,12 @@ layers.push({
     },
   },
 
-  
- 9: {
-  id: 9,
-  name: 'fakechat',
-  displayName: 'Fake Text Conversation',
-  description: 'Realistic messaging conversations (IG, iMessage, WhatsApp)',
-  category: 'Social',
-  thumbnailUrl: '', 
-  composition: DynamicLayerComposition,
-  compositionId: 'DynamicLayerComposition',
-  
-  createDefaultLayers: () => {
-    // Check if coming from wizard
-    if (typeof window !== 'undefined') {
-      const urlParams = new URLSearchParams(window.location.search);
-      const fromWizard = urlParams.get('fromWizard') === 'true';
-      
-      if (fromWizard) {
-        console.log("🧹 Clearing persisted layers for template 9 (fromWizard)");
-        const keysToRemove: string[] = [];
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key && (
-            key.includes('template-9') ||
-            key.includes('template9') ||
-            key.includes('fakechat') ||
-            key.includes('editor_state_') && key.includes('9')
-          )) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => {
-          console.log("  Removing:", key);
-          localStorage.removeItem(key);
-        });
-        
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('fromWizard');
-        newUrl.searchParams.delete('t');
-        window.history.replaceState({}, '', newUrl.toString());
-      }
-    }
 
-    // Get wizard config
-    const storedConfig = typeof window !== 'undefined' 
-      ? sessionStorage.getItem('fakeChatConfig') 
-      : null;
-    
-    let config: any = null;
-    if (storedConfig) {
-      try {
-        config = JSON.parse(storedConfig);
-        console.log("📦 Template 9 loaded fake chat config:", config);
-      } catch (e) {
-        console.error('Failed to parse fake chat config:', e);
-      }
-    }
-
-    // Defaults
-    const chatStyle = config?.chatStyle || 'fakechatconversation';
-    const senderName = config?.senderName || 'Sarah_Smith';
-    const avatarUrl = config?.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100';
-    const backgroundVideoUrl = config?.backgroundVideoUrl || 'https://res.cloudinary.com/dcu9xuof0/video/upload/v1765260195/Subway_Surfers_2024_-_Gameplay_4K_9x16_No_Copyright_n4ym8w.mp4';
-    const backgroundOpacity = config?.backgroundOpacity || 0.4;
-    const typingDuration = config?.typingDuration || 30;
-    const totalFrames = config?.totalFrames || 300;
-
-    const layers: any[] = [];
-
-    // Background Video Layer
-    layers.push({
-      id: 'chat-bg',
-      type: 'video',
-      name: 'Background Video',
-      startFrame: 0,
-      endFrame: totalFrames,
-      visible: true,
-      locked: false,
-      src: backgroundVideoUrl,
-      position: { x: 50, y: 50 },
-      size: { width: 100, height: 100 },
-      rotation: 0,
-      opacity: backgroundOpacity,
-      volume: 0,
-      loop: true,
-      playbackRate: 1,
-      objectFit: 'cover',
-      filter: 'brightness(0.5)',
-    });
-
-    // Create message layers from config
-    if (config?.messages && config.messages.length > 0) {
-      let currentFrame = 0;
-      
-      config.messages.forEach((msg: any, index: number) => {
-        currentFrame += msg.delay || 30;
-        
-        if (msg.isTyping) {
-          // Typing indicator (shows for typingDuration then disappears)
-          layers.push({
-            id: `msg-typing-${index}`,
-            type: 'chat-bubble',
-            name: 'Typing...',
-            startFrame: currentFrame,
-            endFrame: currentFrame + typingDuration,
-            visible: true,
-            locked: false,
-            message: "",
-            isSender: msg.isSender,
-            isTyping: true,
-            chatStyle: chatStyle,
-            senderName: senderName,
-            avatarUrl: avatarUrl,
-            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
-            size: { width: 15, height: 8 },
-            rotation: 0,
-            opacity: 1,
-            animation: { entrance: 'slideUp', entranceDuration: 15 },
-          });
-          currentFrame += typingDuration;
-        } else {
-          // Regular message
-          layers.push({
-            id: `msg-${index}`,
-            type: 'chat-bubble',
-            name: msg.isSender ? `Me: ${msg.message.substring(0, 15)}...` : `Them: ${msg.message.substring(0, 15)}...`,
-            startFrame: currentFrame,
-            endFrame: totalFrames,
-            visible: true,
-            locked: false,
-            message: msg.message,
-            isSender: msg.isSender,
-            chatStyle: chatStyle,
-            senderName: senderName,
-            avatarUrl: avatarUrl,
-            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
-            size: { width: 45, height: 8 },
-            rotation: 0,
-            opacity: 1,
-            animation: { entrance: 'slideUp', entranceDuration: 20 },
-          });
-        }
-      });
-    } else {
-      // Default messages if no config
-      layers.push(
-        {
-          id: 'msg-1',
-          type: 'chat-bubble',
-          name: 'Them: Hello',
-          startFrame: 10,
-          endFrame: totalFrames,
-          visible: true,
-          locked: false,
-          message: "Hey! Did you see the new update?",
-          isSender: false,
-          chatStyle: chatStyle,
-          senderName: senderName,
-          avatarUrl: avatarUrl,
-          position: { x: 35, y: 25 },
-          size: { width: 45, height: 8 },
-          rotation: 0,
-          opacity: 1,
-          animation: { entrance: 'slideUp', entranceDuration: 20 },
-        },
-        {
-          id: 'msg-2',
-          type: 'chat-bubble',
-          name: 'Typing...',
-          startFrame: 40,
-          endFrame: 70,
-          visible: true,
-          locked: false,
-          message: "",
-          isSender: true,
-          isTyping: true,
-          chatStyle: chatStyle,
-          senderName: senderName,
-          avatarUrl: avatarUrl,
-          position: { x: 85, y: 37 },
-          size: { width: 10, height: 8 },
-          rotation: 0,
-          opacity: 1,
-          animation: { entrance: 'slideUp', entranceDuration: 15 },
-        },
-        {
-          id: 'msg-3',
-          type: 'chat-bubble',
-          name: 'Me: Reply',
-          startFrame: 70,
-          endFrame: totalFrames,
-          visible: true,
-          locked: false,
-          message: "Yeah, it looks exactly like the real thing now! 🔥",
-          isSender: true,
-          chatStyle: chatStyle,
-          senderName: senderName,
-          avatarUrl: avatarUrl,
-          position: { x: 65, y: 37 },
-          size: { width: 48, height: 8 },
-          rotation: 0,
-          opacity: 1,
-          animation: { entrance: 'slideUp', entranceDuration: 20 },
-        }
-      );
-    }
-
-    // Background Music Layer (if configured)
-    if (config?.backgroundMusicPath && config.backgroundMusicPath !== '') {
-      layers.push({
-        id: 'chat-audio',
-        type: 'audio',
-        name: 'Background Music',
-        startFrame: 0,
-        endFrame: totalFrames,
-        visible: true,
-        locked: false,
-        src: config.backgroundMusicPath,
-        volume: config.musicVolume || 0.3,
-        loop: true,
-      });
-      console.log("🎵 Added audio layer:", config.backgroundMusicPath);
-    }
-
-    // Clear config after use
-    if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        sessionStorage.removeItem('fakeChatConfig');
-      }, 1000);
-    }
-
-    console.log("✅ Template 9 layers created:", layers.map(l => l.name));
-    return layers;
-  },
-  
-  layersToProps: (layers) => ({ layers, templateId: 9 }),
-  calculateDuration: (layers) => {
-    if (!layers || layers.length === 0) return 300;
-    return Math.max(...layers.map(l => l.endFrame || 0));
-  },
-},
 
   30: {
     id: 30,
     name: 'watchshowcase',
-    displayName: 'Viral POV Showcase',
+    displayName: 'Dancing People',
     description: 'POV text top, Product bottom - Viral Style',
     category: 'Showcase',
     thumbnailUrl: '',
