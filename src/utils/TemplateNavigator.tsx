@@ -10,7 +10,7 @@ export const TemplateNavigator = (template: string) => {
       case "Bar Graph Analytics":
         return leading + "/bargraph";
       case "Split Screen":
-        return leading + "/splitscreen";
+        return "/splitscreen-wizard";
       case "Kpi Flip Cards":
         return leading + "/kpiflipcards";
       case "Ken Burns Carousel":

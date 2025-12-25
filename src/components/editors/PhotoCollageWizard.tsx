@@ -862,7 +862,6 @@ useEffect(() => {
               height: 40,
               borderRadius: "50%",
               border: "none",
-              backgroundColor: accent,
               color: "#fff",
               cursor: "pointer",
               display: "flex",
@@ -928,7 +927,7 @@ useEffect(() => {
             backgroundColor: "#ffb800",
             color: "#000",
             borderRadius: 20,
-            fontSize: 11,
+            fontSize: 13,
             fontWeight: 700,
           }}>
             ⚡ ANIMATED LAYOUT
@@ -969,7 +968,7 @@ useEffect(() => {
 
   const panelStyle: React.CSSProperties = {
     flex: 1,
-    maxWidth: 500,
+    maxWidth: 800,
     backgroundColor: bg2,
     borderRadius: 14,
     border: `1px solid ${border}`,
@@ -981,11 +980,11 @@ useEffect(() => {
     maxHeight: "calc(100vh - 120px)",
   };
 
-  const sectionTitle: React.CSSProperties = { fontSize: 14, fontWeight: 600, color: text1, marginBottom: 2 };
-  const labelStyle: React.CSSProperties = { fontSize: 11, fontWeight: 500, color: text3, marginBottom: 5, display: "block" };
-  const inputStyle: React.CSSProperties = { width: "100%", padding: "9px 11px", fontSize: 13, border: `1px solid ${border}`, borderRadius: 8, backgroundColor: bg3, color: text1, outline: "none" };
+  const sectionTitle: React.CSSProperties = { fontSize: 16, fontWeight: 600, color: text1, marginBottom: 2 };
+  const labelStyle: React.CSSProperties = { fontSize: 14, fontWeight: 500, color: text3, marginBottom: 5, display: "block" };
+  const inputStyle: React.CSSProperties = { width: "100%", padding: "9px 11px", fontSize: 15, border: `1px solid ${border}`, borderRadius: 8, backgroundColor: bg3, color: text1, outline: "none" };
   const selectStyle: React.CSSProperties = { ...inputStyle, cursor: "pointer" };
-  const chipStyle = (active: boolean): React.CSSProperties => ({ padding: "7px 14px", fontSize: 11, fontWeight: 500, borderRadius: 18, border: `1px solid ${active ? accent : border}`, backgroundColor: active ? accent : "transparent", color: active ? "#fff" : text2, cursor: "pointer" });
+  const chipStyle = (active: boolean): React.CSSProperties => ({ padding: "7px 14px", fontSize: 13, fontWeight: 500, borderRadius: 18, border: `1px solid ${active ? accent : border}`, backgroundColor: active ? accent : "transparent", color: active ? "#fff" : text2, cursor: "pointer" });
 
   // ============================================================================
   // STEP RENDERS
@@ -996,7 +995,7 @@ useEffect(() => {
       <div style={sectionTitle}>Choose Your Layout</div>
       <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>
         {CATEGORIES.map((cat) => (
-          <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} style={{ padding: "5px 10px", fontSize: 10, fontWeight: 500, borderRadius: 5, border: `1px solid ${selectedCategory === cat.id ? accent : border}`, backgroundColor: selectedCategory === cat.id ? accent : bg3, color: selectedCategory === cat.id ? "#fff" : text2, cursor: "pointer" }}>
+          <button key={cat.id} onClick={() => setSelectedCategory(cat.id)} style={{ padding: "5px 10px", fontSize: 12, fontWeight: 500, borderRadius: 5, border: `1px solid ${selectedCategory === cat.id ? accent : border}`, backgroundColor: selectedCategory === cat.id ? accent : bg3, color: selectedCategory === cat.id ? "#fff" : text2, cursor: "pointer" }}>
             {cat.label}
           </button>
         ))}
@@ -1004,7 +1003,7 @@ useEffect(() => {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(80px, 1fr))", gap: 8 }}>
         {filteredLayouts.map((l) => (
           <div key={l.id} onClick={() => selectLayout(l.id)} style={{ aspectRatio: "9/16", backgroundColor: bg3, borderRadius: 8, cursor: "pointer", overflow: "hidden", border: `2px solid ${state.selectedLayoutId === l.id ? accent : "transparent"}`, boxShadow: state.selectedLayoutId === l.id ? `0 0 0 2px ${accent}40` : undefined, position: "relative" }}>
-            {l.animated && <div style={{ position: "absolute", top: 3, right: 3, backgroundColor: "#ffb800", color: "#000", padding: "1px 4px", borderRadius: 3, fontSize: 7, fontWeight: 700, zIndex: 10 }}>⚡</div>}
+            {l.animated && <div style={{ position: "absolute", top: 3, right: 3, backgroundColor: "#ffb800", color: "#000", padding: "1px 4px", borderRadius: 3, fontSize: 9, fontWeight: 700, zIndex: 10 }}>⚡</div>}
             <div style={{ position: "absolute", inset: 4, backgroundColor: "#1a1a1a", borderRadius: 5, overflow: "hidden" }}>
               {l.slots.map((slot) => (
                 <div key={slot.id} style={{ position: "absolute", left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, backgroundColor: "#444", border: "1px solid #555", transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined, borderRadius: slot.borderRadius || 0, zIndex: slot.zIndex || 1, boxShadow: slot.shadow ? "0 2px 4px rgba(0,0,0,0.3)" : undefined }} />
@@ -1043,7 +1042,7 @@ useEffect(() => {
         <div style={{ fontSize: 11, color: text3, marginBottom: 6 }}>Sample photos:</div>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {PRESETS.map((src, i) => (
-            <div key={i} onClick={() => addPreset(src)} style={{ width: 48, height: 48, borderRadius: 6, overflow: "hidden", cursor: "pointer", border: "2px solid transparent" }} onMouseOver={(e) => e.currentTarget.style.borderColor = accent} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
+            <div key={i} onClick={() => addPreset(src)} style={{ width: 58, height: 58, borderRadius: 6, overflow: "hidden", cursor: "pointer", border: "2px solid transparent" }} onMouseOver={(e) => e.currentTarget.style.borderColor = accent} onMouseOut={(e) => e.currentTarget.style.borderColor = "transparent"}>
               <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
             </div>
           ))}

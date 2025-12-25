@@ -625,7 +625,7 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
       overflowY: "auto", 
       backgroundColor: colors.bgPrimary 
     },
-    trackAreaInner: { position: "relative", height: "100%", minWidth: "100%", borderLeft: `1px solid ${colors.borderLight}`, borderRight: `1px solid ${colors.borderLight}` },
+    trackAreaInner: { position: "relative", minHeight: "100%", minWidth: "100%", borderLeft: `1px solid ${colors.borderLight}`, borderRight: `1px solid ${colors.borderLight}` },
     trackRow: {
       height: `${TRACK_ROW_HEIGHT}px`,
       position: "relative",
@@ -666,7 +666,7 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
     trackClipHandle: { position: "absolute", top: 0, bottom: 0, width: isMobile ? "16px" : "10px", cursor: "ew-resize", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10, touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     trackClipHandleBar: { width: isMobile ? "4px" : "3px", height: isMobile ? "20px" : "16px", backgroundColor: "rgba(255, 255, 255, 0.8)", borderRadius: "2px" },
     playhead: { position: "absolute", top: 0, bottom: 0, width: "2px", backgroundColor: "#ef4444", zIndex: 20, pointerEvents: "none" },
-    playheadHead: { position: "absolute", top: "-6px", left: "-7px", width: isMobile ? "20px" : "16px", height: isMobile ? "20px" : "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
+    playheadHead: { position: "sticky", top: "-14px", left: "50%", transform: "translateX(-50%)", width: isMobile ? "20px" : "16px", height: isMobile ? "20px" : "16px", backgroundColor: "#ef4444", borderRadius: "3px 3px 50% 50%", cursor: "grab", pointerEvents: "auto", display: "flex", alignItems: "center", justifyContent: "center", touchAction: "none", WebkitTouchCallout: 'none', WebkitUserSelect: 'none' },
     playheadLine: { position: "absolute", top: "10px", left: "0", width: "2px", bottom: "0", backgroundColor: "#ef4444" },
   };
 

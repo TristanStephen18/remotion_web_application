@@ -28,6 +28,7 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   const { colors } = useTheme();
   // const [showFilters, setShowFilters] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdjustPanel, setShowAdjustPanel] = useState(false);
   const [activeSection, setActiveSection] = useState<"video" | "display" | "effects">("video");
 
   const duration = Math.round((layer.endFrame - layer.startFrame) / FPS);
@@ -442,9 +443,192 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
   const styles = getThemedEditorStyles(colors);
 
   // ========================================
+  // ADJUST PANEL (Canva-like full panel)
+  // ========================================
+  const renderAdjustPanel = () => {
+    const adjustments = layer.adjustments || {};
+
+    const updateAdjustment = (key: string, value: number) => {
+      onUpdate(layer.id, {
+        adjustments: { ...adjustments, [key]: value },
+      });
+    };
+
+    const resetAllAdjustments = () => {
+      onUpdate(layer.id, {
+        adjustments: {
+          brightness: 100,
+          contrast: 100,
+          saturation: 100,
+          temperature: 0,
+          tint: 0,
+          fade: 0,
+          highlights: 0,
+          shadows: 0,
+          vignette: 0,
+          blur: 0,
+        },
+      });
+    };
+
+    const getFilterPreview = () => {
+      const a = adjustments;
+      const f: string[] = [];
+      let bright = (a.brightness ?? 100) / 100;
+      bright *= (1 + (a.highlights ?? 0) / 400);
+      if ((a.fade ?? 0) > 0) bright *= (1 + (a.fade ?? 0) / 400);
+      f.push(`brightness(${bright.toFixed(3)})`);
+      let cont = (a.contrast ?? 100) / 100;
+      cont *= (1 + (a.shadows ?? 0) / 200);
+      if ((a.fade ?? 0) > 0) cont *= (1 - (a.fade ?? 0) / 200);
+      f.push(`contrast(${cont.toFixed(3)})`);
+      f.push(`saturate(${(a.saturation ?? 100) / 100})`);
+      const temp = a.temperature ?? 0;
+      if (temp > 0) f.push(`sepia(${temp * 0.5}%)`);
+      else if (temp < 0) f.push(`hue-rotate(${temp * 2}deg)`);
+      if ((a.tint ?? 0) !== 0) f.push(`hue-rotate(${(a.tint ?? 0) * 1.2}deg)`);
+      if ((a.blur ?? 0) > 0) f.push(`blur(${a.blur}px)`);
+      return f.join(' ');
+    };
+
+    const renderSlider = (
+      label: string,
+      key: string,
+      min: number,
+      max: number,
+      defaultVal: number,
+      formatValue?: (v: number) => string
+    ) => {
+      const value = (adjustments as any)[key] ?? defaultVal;
+      const displayValue = formatValue ? formatValue(value) : value;
+      const isDefault = value === defaultVal;
+
+      return (
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: colors.textPrimary, fontWeight: 500 }}>{label}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 13, color: isDefault ? colors.textMuted : colors.accent, minWidth: 36, textAlign: "right" }}>{displayValue}</span>
+              {!isDefault && (
+                <button
+                  onClick={() => updateAdjustment(key, defaultVal)}
+                  style={{ background: "none", border: "none", color: colors.textMuted, cursor: "pointer", fontSize: 14, padding: 2 }}
+                  title="Reset"
+                >↺</button>
+              )}
+            </div>
+          </div>
+          <input
+            type="range"
+            min={min}
+            max={max}
+            value={value}
+            onChange={(e) => updateAdjustment(key, parseInt(e.target.value))}
+            style={{
+              width: "100%",
+              height: 6,
+              borderRadius: 3,
+              appearance: "none",
+              WebkitAppearance: "none",
+              background: `linear-gradient(to right, ${colors.accent} 0%, ${colors.accent} ${((value - min) / (max - min)) * 100}%, ${colors.bgSecondary} ${((value - min) / (max - min)) * 100}%, ${colors.bgSecondary} 100%)`,
+              cursor: "pointer",
+              outline: "none",
+            }}
+          />
+        </div>
+      );
+    };
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", height: "100%", backgroundColor: colors.bgPrimary }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", padding: "12px 16px", borderBottom: `1px solid ${colors.border}`, gap: 12, flexShrink: 0 }}>
+          <button
+            onClick={() => setShowAdjustPanel(false)}
+            style={{ background: "none", border: "none", color: colors.textPrimary, fontSize: 20, cursor: "pointer", padding: 4, display: "flex", alignItems: "center" }}
+          >←</button>
+          <span style={{ fontSize: 16, fontWeight: 600, color: colors.textPrimary }}>Adjust</span>
+          <div style={{ flex: 1 }} />
+          <button onClick={resetAllAdjustments} style={{ background: "none", border: "none", color: colors.accent, fontSize: 13, fontWeight: 500, cursor: "pointer" }}>Reset all</button>
+        </div>
+
+        {/* Preview */}
+        <div style={{ padding: 16, display: "flex", justifyContent: "center", borderBottom: `1px solid ${colors.border}`, backgroundColor: colors.bgSecondary, flexShrink: 0 }}>
+          <div style={{
+            width: 120,
+            height: 120,
+            borderRadius: 8,
+            overflow: "hidden",
+            boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+            background: "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            filter: getFilterPreview(),
+          }}>
+            <span style={{ fontSize: 48 }}>🎬</span>
+          </div>
+        </div>
+
+        {/* Sliders */}
+        <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: "16px", minHeight: 0 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, marginBottom: 12, textTransform: "uppercase", letterSpacing: 1 }}>Light</div>
+          {renderSlider("Brightness", "brightness", 0, 200, 100, (v) => `${v - 100}`)}
+          {renderSlider("Contrast", "contrast", 0, 200, 100, (v) => `${v - 100}`)}
+          {renderSlider("Highlights", "highlights", -100, 100, 0)}
+          {renderSlider("Shadows", "shadows", -100, 100, 0)}
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, marginBottom: 12, marginTop: 20, textTransform: "uppercase", letterSpacing: 1 }}>Color</div>
+          {renderSlider("Saturation", "saturation", 0, 200, 100, (v) => `${v - 100}`)}
+          {renderSlider("Temperature", "temperature", -100, 100, 0)}
+          {renderSlider("Tint", "tint", -100, 100, 0)}
+
+          <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, marginBottom: 12, marginTop: 20, textTransform: "uppercase", letterSpacing: 1 }}>Effects</div>
+          {renderSlider("Fade", "fade", 0, 100, 0)}
+          {renderSlider("Vignette", "vignette", 0, 100, 0)}
+          {renderSlider("Blur", "blur", 0, 20, 0, (v) => `${v}px`)}
+
+          <div style={{ height: 100 }} />
+        </div>
+
+        <style>{`
+          input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            border: 2px solid ${colors.accent};
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+          }
+        `}</style>
+      </div>
+    );
+  };<button
+                style={styles.iconButton}
+                onClick={() => onUpdate(layer.id, { rotation: layer.rotation === 0 ? 180 : 0 })}
+                title="Flip"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#3b82f6";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = colors.bgSecondary;
+                  e.currentTarget.style.color = colors.textMuted;
+                }}
+              >
+                ⇄
+              </button>
+
+  // ========================================
   // DESKTOP LAYOUT
   // ========================================
   if (!isMobile) {
+    if (showAdjustPanel) {
+      return renderAdjustPanel();
+    }
+
     return (
       <div style={styles.container}>
         <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", paddingBottom: "20px" }}>
@@ -687,22 +871,123 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 ↻
               </button>
               <button
-                style={styles.iconButton}
-                onClick={() => onUpdate(layer.id, { rotation: layer.rotation === 0 ? 180 : 0 })}
-                title="Flip"
+                style={{
+                  ...styles.iconButton,
+                  backgroundColor: layer.flipX ? '#3b82f6' : colors.bgSecondary,
+                  color: layer.flipX ? 'white' : colors.textMuted,
+                }}
+                onClick={() => onUpdate(layer.id, { flipX: !layer.flipX })}
+                title="Flip Horizontal"
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = "#3b82f6";
                   e.currentTarget.style.color = "white";
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = colors.bgSecondary;
-                  e.currentTarget.style.color = colors.textMuted;
+                  e.currentTarget.style.backgroundColor = layer.flipX ? '#3b82f6' : colors.bgSecondary;
+                  e.currentTarget.style.color = layer.flipX ? 'white' : colors.textMuted;
                 }}
               >
                 ⇄
               </button>
+              <button
+                style={{
+                  ...styles.iconButton,
+                  backgroundColor: layer.flipY ? '#3b82f6' : colors.bgSecondary,
+                  color: layer.flipY ? 'white' : colors.textMuted,
+                }}
+                onClick={() => onUpdate(layer.id, { flipY: !layer.flipY })}
+                title="Flip Vertical"
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#3b82f6";
+                  e.currentTarget.style.color = "white";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = layer.flipY ? '#3b82f6' : colors.bgSecondary;
+                  e.currentTarget.style.color = layer.flipY ? 'white' : colors.textMuted;
+                }}
+              >
+                ⇅
+              </button>
             </div>
           </div>
+        </div>
+
+
+
+        {/* BORDER */}
+        <div style={styles.section}>
+          <div style={styles.sectionTitle}>BORDER</div>
+          <div style={styles.formGroupCompact}>
+            <label style={styles.label}>Border Width</label>
+            <div style={styles.sliderWrapper}>
+              <input
+                type="range"
+                style={styles.slider}
+                min="0"
+                max="20"
+                value={layer.borderWidth || 0}
+                onChange={(e) => onUpdate(layer.id, { borderWidth: parseInt(e.target.value) })}
+              />
+              <span style={styles.sliderValue}>{layer.borderWidth || 0}px</span>
+            </div>
+          </div>
+          <div style={styles.formGroupCompact}>
+            <label style={styles.label}>Border Radius</label>
+            <div style={styles.sliderWrapper}>
+              <input
+                type="range"
+                style={styles.slider}
+                min="0"
+                max="100"
+                value={layer.borderRadius || 0}
+                onChange={(e) => onUpdate(layer.id, { borderRadius: parseInt(e.target.value) })}
+              />
+              <span style={styles.sliderValue}>{layer.borderRadius || 0}px</span>
+            </div>
+          </div>
+          <div style={styles.formGroupCompact}>
+            <label style={styles.label}>Border Color</label>
+            <input
+              type="color"
+              value={layer.borderColor || "#ffffff"}
+              onChange={(e) => onUpdate(layer.id, { borderColor: e.target.value })}
+              style={{ width: "100%", height: 32, border: "none", borderRadius: 6, cursor: "pointer" }}
+            />
+          </div>
+        </div>
+
+        {/* ADJUST - Clickable to open panel */}
+        <div
+          style={{
+            margin: "0 0 12px 0",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "14px 16px",
+            backgroundColor: colors.bgSecondary,
+            borderRadius: 8,
+            border: `1px solid ${colors.border}`,
+            transition: "all 0.15s ease",
+          }}
+          onClick={() => setShowAdjustPanel(true)}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = colors.bgHover;
+            e.currentTarget.style.borderColor = colors.accent;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = colors.bgSecondary;
+            e.currentTarget.style.borderColor = colors.border;
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 20 }}>🎨</span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.textPrimary }}>Adjust</div>
+              <div style={{ fontSize: 11, color: colors.textMuted }}>Brightness, contrast, saturation...</div>
+            </div>
+          </div>
+          <span style={{ color: colors.textMuted, fontSize: 20, fontWeight: 300 }}>›</span>
         </div>
 
         {/* FILTERS - Visual Grid (like mobile) */}
@@ -1037,11 +1322,68 @@ export const VideoEditor: React.FC<VideoEditorProps> = ({
                 ↻
               </button>
               <button
-                style={mobileStyles.iconButton}
-                onClick={() => onUpdate(layer.id, { rotation: layer.rotation === 0 ? 180 : 0 })}
+                style={{
+                  ...mobileStyles.iconButton,
+                  backgroundColor: layer.flipX ? '#3b82f6' : undefined,
+                  color: layer.flipX ? 'white' : undefined,
+                }}
+                onClick={() => onUpdate(layer.id, { flipX: !layer.flipX })}
               >
                 ⇄
               </button>
+              <button
+                style={{
+                  ...mobileStyles.iconButton,
+                  backgroundColor: layer.flipY ? '#3b82f6' : undefined,
+                  color: layer.flipY ? 'white' : undefined,
+                }}
+                onClick={() => onUpdate(layer.id, { flipY: !layer.flipY })}
+              >
+                ⇅
+              </button>
+            </div>
+
+
+            {/* BORDER */}
+            <div style={mobileStyles.sectionHeader}>BORDER</div>
+            <div style={mobileStyles.sliderRow}>
+              <div style={mobileStyles.sliderTopRow}>
+                <span style={mobileStyles.sliderLabel}>Border Width</span>
+                <span style={mobileStyles.sliderValue}>{layer.borderWidth || 0}px</span>
+              </div>
+              <input
+                type="range"
+                style={mobileStyles.sliderInput}
+                min="0"
+                max="20"
+                value={layer.borderWidth || 0}
+                onChange={(e) => onUpdate(layer.id, { borderWidth: parseInt(e.target.value) })}
+              />
+            </div>
+            <div style={mobileStyles.sliderRow}>
+              <div style={mobileStyles.sliderTopRow}>
+                <span style={mobileStyles.sliderLabel}>Border Radius</span>
+                <span style={mobileStyles.sliderValue}>{layer.borderRadius || 0}px</span>
+              </div>
+              <input
+                type="range"
+                style={mobileStyles.sliderInput}
+                min="0"
+                max="100"
+                value={layer.borderRadius || 0}
+                onChange={(e) => onUpdate(layer.id, { borderRadius: parseInt(e.target.value) })}
+              />
+            </div>
+            <div style={mobileStyles.sliderRow}>
+              <div style={mobileStyles.sliderTopRow}>
+                <span style={mobileStyles.sliderLabel}>Border Color</span>
+              </div>
+              <input
+                type="color"
+                value={layer.borderColor || "#ffffff"}
+                onChange={(e) => onUpdate(layer.id, { borderColor: e.target.value })}
+                style={{ width: "100%", height: 36, border: "none", borderRadius: 6, cursor: "pointer" }}
+              />
             </div>
 
             {/* FILTERS */}

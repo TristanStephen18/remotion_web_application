@@ -5,7 +5,7 @@ import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
 
 //lipat mo to sa ennv
 const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
-
+const PEXELS_API_KEY = 'crciZF0CfmUY5TD8TfGOwgLm0MGzcNUqJhDlSSqNBNdXQ15NYKLmDTnx';
 
 interface MediaGalleryModalProps {
   isOpen: boolean;
@@ -18,7 +18,7 @@ interface MediaGalleryModalProps {
   onUploadComplete?: () => void;
 }
 
-type SidebarTab = 'home' | 'giphy' | 'viewFiles' | 'addMedia';
+type SidebarTab = 'home' | 'giphy' | 'pexels' | 'viewFiles' | 'addMedia';
 
 interface FilePreview {
   file: File;
@@ -52,6 +52,13 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   const [giphyResults, setGiphyResults] = useState<any[]>([]);
   const [giphyLoading, setGiphyLoading] = useState(false);
   const [selectedGiphyIds, setSelectedGiphyIds] = useState<string[]>([]);
+  
+  // Pexels states
+  const [pexelsSearchQuery, setPexelsSearchQuery] = useState('');
+  const [pexelsResults, setPexelsResults] = useState<any[]>([]);
+  const [pexelsLoading, setPexelsLoading] = useState(false);
+  const [selectedPexelsIds, setSelectedPexelsIds] = useState<number[]>([]);
+  
   const [isMobile, setIsMobile] = useState(false);
 
   // Upload hooks
@@ -104,6 +111,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       setSelectedFiles([]);
       setSelectedUploadIds([]);
       setSelectedGiphyIds([]);
+      setSelectedPexelsIds([]);
       fetchUploads();
     }
   }, [isOpen]);
@@ -190,6 +198,102 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     }
     onClose();
   }, [giphyResults, selectedGiphyIds, onConfirm, onClose, replaceMode, replaceLayerId]);
+
+  // ============================================================================
+  // PEXELS FUNCTIONS
+  // ============================================================================
+
+  const searchPexels = useCallback(async (query: string = '') => {
+    if (!query.trim()) {
+      // Load curated photos if no query
+      setPexelsLoading(true);
+      try {
+        const response = await fetch(
+          'https://api.pexels.com/v1/curated?per_page=30',
+          { headers: { Authorization: PEXELS_API_KEY } }
+        );
+        const data = await response.json();
+        if (data.photos) {
+          setPexelsResults(data.photos);
+          console.log('✅ Pexels: Loaded', data.photos.length, 'curated photos');
+        }
+      } catch (error) {
+        console.error('❌ Pexels curated failed:', error);
+      } finally {
+        setPexelsLoading(false);
+      }
+      return;
+    }
+
+    setPexelsLoading(true);
+    try {
+      const response = await fetch(
+        `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30`,
+        { headers: { Authorization: PEXELS_API_KEY } }
+      );
+      const data = await response.json();
+      if (data.photos) {
+        setPexelsResults(data.photos);
+        console.log('✅ Pexels: Found', data.photos.length, 'photos');
+      }
+    } catch (error) {
+      console.error('❌ Pexels search failed:', error);
+    } finally {
+      setPexelsLoading(false);
+    }
+  }, []);
+
+  // Load curated photos when Pexels tab opens
+  useEffect(() => {
+    if (sidebarTab === 'pexels' && pexelsResults.length === 0) {
+      searchPexels();
+    }
+  }, [sidebarTab, searchPexels]);
+
+  const handlePexelsSelect = useCallback((photoId: number) => {
+    setSelectedPexelsIds(prev => {
+      if (prev.includes(photoId)) {
+        return prev.filter(id => id !== photoId);
+      } else {
+        if (replaceMode) {
+          return [photoId];
+        }
+        return [...prev, photoId];
+      }
+    });
+  }, [replaceMode]);
+
+  const handleAddSelectedPexels = useCallback(() => {
+    const selectedPhotos = pexelsResults.filter(photo => 
+      selectedPexelsIds.includes(photo.id)
+    );
+
+    if (selectedPhotos.length === 0) return;
+
+    const mediaData = selectedPhotos.map(photo => ({
+      id: photo.id.toString(),
+      name: photo.alt || `Pexels Photo ${photo.id}`,
+      type: 'image',
+      source: photo.src.large2x || photo.src.large,
+      url: photo.src.large2x || photo.src.large,
+      preview: photo.src.medium,
+      thumbnail: photo.src.small,
+      width: photo.width,
+      height: photo.height,
+      photographer: photo.photographer,
+      photographerUrl: photo.photographer_url,
+      replaceMode,
+      replaceLayerId,
+    }));
+
+    console.log('✅ Adding selected Pexels photos:', mediaData.length);
+    if (replaceMode) {
+      onConfirm(mediaData[0]);
+    } else {
+      onConfirm(mediaData);
+    }
+    onClose();
+  }, [pexelsResults, selectedPexelsIds, onConfirm, onClose, replaceMode, replaceLayerId]);
 
   // ============================================================================
   // FILE UPLOAD HANDLING
@@ -820,10 +924,9 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       outline: 'none',
       transition: 'all 0.2s',
     },
-    giphyGrid: {
-      display: 'grid',
-      gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(150px, 1fr))',
-      gap: isMobile ? '12px' : '16px',
+   giphyGrid: {
+      columnCount: isMobile ? 2 : 4,
+      columnGap: isMobile ? '12px' : '16px',
       padding: isMobile ? '16px' : '20px',
       overflowY: 'auto' as const,
       flex: 1,
@@ -836,7 +939,8 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       border: `2px solid ${c.border}`,
       transition: 'all 0.2s',
       backgroundColor: c.cardBg,
-      minHeight: isMobile ? '150px' : '200px',
+      marginBottom: isMobile ? '12px' : '16px',
+      breakInside: 'avoid' as const,
     },
     giphyItemSelected: {
       borderColor: '#3b82f6',
@@ -908,6 +1012,15 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               onClick={() => setSidebarTab('giphy')}
             >
               🎬 Giphy
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
+                ...(sidebarTab === 'pexels' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('pexels')}
+            >
+              📷 Pexels
             </button>
             <button
               style={{
@@ -1170,6 +1283,111 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   </>
                 )}
               </div>
+            ) : sidebarTab === 'pexels' ? (
+              <div style={styles.giphyContainer}>
+                <div style={styles.giphySearch}>
+                  <input
+                    type="text"
+                    placeholder="Search free photos..."
+                    value={pexelsSearchQuery}
+                    onChange={(e) => setPexelsSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        searchPexels(pexelsSearchQuery);
+                      }
+                    }}
+                    style={styles.searchInput}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = '#3b82f6';
+                      e.currentTarget.style.backgroundColor = theme === 'light' ? 'rgba(0, 0, 0, 0.08)' : 'rgba(255, 255, 255, 0.08)';
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = c.inputBorder;
+                      e.currentTarget.style.backgroundColor = c.inputBg;
+                    }}
+                  />
+                  <div style={{ 
+                    fontSize: '11px', 
+                    color: c.textTertiary, 
+                    marginTop: '8px',
+                    textAlign: 'center'
+                  }}>
+                    {pexelsSearchQuery ? 'Press Enter to search' : 'Showing curated photos'}
+                  </div>
+                </div>
+
+                {pexelsLoading ? (
+                  <div style={styles.loadingSpinner}>
+                    <div style={{ fontSize: '32px', marginBottom: '16px' }}>⏳</div>
+                    <div>Loading photos...</div>
+                  </div>
+                ) : !PEXELS_API_KEY ? (
+                  <div style={{ textAlign: 'center', color: c.textSecondary, padding: '40px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔑</div>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: c.text }}>
+                      Pexels API Key Required
+                    </div>
+                    <div style={{ fontSize: '12px', marginBottom: '16px' }}>
+                      Get your free key from pexels.com/api
+                    </div>
+                    <div style={{ fontSize: '11px', color: c.textTertiary, maxWidth: '300px', margin: '0 auto' }}>
+                      Add it to line 8 of this file:<br/>
+                      <code style={{ color: '#3b82f6' }}>const PEXELS_API_KEY = 'your_key';</code>
+                    </div>
+                  </div>
+                ) : pexelsResults.length === 0 ? (
+                  <div style={{ textAlign: 'center', color: c.textSecondary, padding: '40px' }}>
+                    <div style={{ fontSize: '48px', marginBottom: '16px' }}>📷</div>
+                    <div style={{ fontSize: '14px', marginBottom: '8px', color: c.text }}>
+                      No photos found
+                    </div>
+                    <div style={{ fontSize: '12px' }}>
+                      Try a different search term
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={styles.giphyGrid}>
+                      {pexelsResults.map((photo) => (
+                        <div
+                          key={photo.id}
+                          style={{
+                            ...styles.giphyItem,
+                            ...(selectedPexelsIds.includes(photo.id) 
+                              ? styles.giphyItemSelected 
+                              : {}),
+                          }}
+                          onClick={() => handlePexelsSelect(photo.id)}
+                          onMouseOver={(e) => {
+                            if (!selectedPexelsIds.includes(photo.id)) {
+                              e.currentTarget.style.borderColor = 'rgba(59, 130, 246, 0.5)';
+                              e.currentTarget.style.transform = 'scale(1.02)';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!selectedPexelsIds.includes(photo.id)) {
+                              e.currentTarget.style.borderColor = c.border;
+                              e.currentTarget.style.transform = 'scale(1)';
+                            }
+                          }}
+                        >
+                          <img
+                            src={photo.src.medium}
+                            alt={photo.alt || 'Pexels photo'}
+                            style={styles.giphyImage}
+                          />
+                          {selectedPexelsIds.includes(photo.id) && (
+                            <div style={styles.selectedBadge}>✓</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={styles.giphyAttribution}>
+                      Photos by <a href="https://pexels.com" target="_blank" rel="noopener noreferrer" style={{ color: '#3b82f6', textDecoration: 'none' }}>Pexels</a>
+                    </div>
+                  </>
+                )}
+              </div>
             ) : (
               <div style={styles.uploadArea}>
                 {sidebarTab === 'viewFiles' ? (
@@ -1308,14 +1526,16 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               </div>
             )}
 
-            {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && (
+            {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && (
               <div style={styles.footer}>
                 <div style={styles.fileCount}>
                   {selectedFiles.length > 0 
                     ? `${selectedFiles.length} ${selectedFiles.length === 1 ? 'file' : 'files'} selected`
                     : selectedUploadIds.length > 0
                       ? `${selectedUploadIds.length} ${selectedUploadIds.length === 1 ? 'upload' : 'uploads'} selected`
-                      : `${selectedGiphyIds.length} ${selectedGiphyIds.length === 1 ? 'GIF' : 'GIFs'} selected`
+                      : selectedGiphyIds.length > 0
+                        ? `${selectedGiphyIds.length} ${selectedGiphyIds.length === 1 ? 'GIF' : 'GIFs'} selected`
+                        : `${selectedPexelsIds.length} ${selectedPexelsIds.length === 1 ? 'photo' : 'photos'} selected`
                   }
                 </div>
                 <div style={styles.buttonGroup}>
@@ -1335,7 +1555,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   <button
                     style={{
                       ...styles.addButton,
-                      ...((selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0) || isUploading 
+                      ...((selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0) || isUploading 
                         ? styles.addButtonDisabled 
                         : {}),
                     }}
@@ -1344,17 +1564,19 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                         ? handleAddToProject 
                         : selectedUploadIds.length > 0
                           ? handleAddSelectedUploads
-                          : handleAddSelectedGiphys
+                          : selectedGiphyIds.length > 0
+                            ? handleAddSelectedGiphys
+                            : handleAddSelectedPexels
                     }
-                    disabled={(selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0) || isUploading}
+                    disabled={(selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0) || isUploading}
                     onMouseOver={(e) => {
-                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && !isUploading) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#5558e3';
                         e.currentTarget.style.transform = 'translateY(-1px)';
                       }
                     }}
                     onMouseOut={(e) => {
-                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0) && !isUploading) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#6366f1';
                         e.currentTarget.style.transform = 'translateY(0)';
                       }
@@ -1368,7 +1590,9 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                           ? `Add ${selectedFiles.length} to project`
                           : selectedUploadIds.length > 0
                             ? `Add ${selectedUploadIds.length} to project`
-                            : `Add ${selectedGiphyIds.length} to project`
+                            : selectedGiphyIds.length > 0
+                              ? `Add ${selectedGiphyIds.length} to project`
+                              : `Add ${selectedPexelsIds.length} to project`
                     }
                   </button>
                 </div>

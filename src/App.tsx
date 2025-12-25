@@ -25,6 +25,7 @@ import QuoteVideoWizard from "./components/editors/QuoteVideoWizard.tsx";
 import KenBurnsWizard from "./components/editors/KenBurnsWizard";
 import PhotoCollageWizard from "./components/editors/PhotoCollageWizard.tsx";
 import FakeChatWizard from "./components/editors/FakeChatWizard.tsx";
+import SplitScreenWizard from "./components/editors/SplitScreenWizard.tsx";
 import SubscriptionPage from "./pages/subscription/SubscriptionPage.tsx";
 
 // Editors
@@ -456,6 +457,26 @@ function AppContent() {
         }
       />
 
+
+<Route
+  path="/fakechat-wizard"
+  element={
+    <ProtectedRoute>
+      <FakeChatWizard />
+    </ProtectedRoute>
+  }
+/>
+
+
+<Route
+  path="/splitscreen-wizard"
+  element={
+    <ProtectedRoute>
+      <SplitScreenWizard />
+    </ProtectedRoute>
+  }
+/>
+      
       {/* ========== TOOLS ========== */}
       <Route
         path="/tools/ai-image"
