@@ -11,6 +11,8 @@ import {
 import { SUBSCRIPTION_PRICE } from "../../data/subscriptionData.ts";
 import { backendPrefix } from "../../config.ts";
 import toast from "react-hot-toast";
+import PaymentLoader from "../../components/ui/loading_screens/PaymentFormLoader.tsx";
+// import {paymentLoader} from "../../components/ui/loading_screens/PaymentFormLoader.tsx";
 
 let stripePromise: Promise<any> | null = null;
 
@@ -981,14 +983,8 @@ export default function SubscriptionPage() {
 }, []);
 
   if (loading || !publishableKey || !stripePromise) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading payment form...</p>
-        </div>
-      </div>
-    );
+    // paymentLoader();
+    return <PaymentLoader/>;
   }
 
   return (
