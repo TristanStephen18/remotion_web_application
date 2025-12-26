@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAdmin } from "../../contexts/AdminContext";
+import { useReAuth } from "../../contexts/ReAuthContext";
 import { AdminSidebar } from "../../components/admin/AdminSidebar";
 import type { AdminSection } from "../../components/admin/AdminSidebar";
 import { backendPrefix } from "../../config";
+import { useAdminSessionTimeout } from "../../hooks/useAdminSessionTimeout"; // ✅ NEW
+import { SessionTimeoutWarning } from "../../components/admin/SessionTimeoutWarning"; // ✅ NEW
+import { SessionExpiredModal } from "../../components/admin/SessionExpiredModal"; // ✅ NEW
 import {
   FiUsers,
   FiDollarSign,
@@ -14,6 +18,8 @@ import {
   FiPackage,
   FiVideo,
   FiAlertCircle,
+  FiClock,
+  FiMousePointer,
 } from "react-icons/fi";
 
 interface Stats {
@@ -43,15 +49,69 @@ interface Stats {
   timestamp: string;
 }
 
+interface EngagementData {
+  page: string;
+  avgTimeOnPage: number;
+  avgScrollDepth: number;
+  totalSessions: number;
+}
+
 export const AdminDashboard: React.FC = () => {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [engagementData, setEngagementData] = useState<EngagementData[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState<AdminSection>("dashboard");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const { admin, token, logout, isLoading } = useAdmin();
+  const { requestReAuth } = useReAuth();
   const navigate = useNavigate();
+
+  // ✅ NEW: Session timeout detection
+  const { showWarning, timeLeft, isExpired, extendSession, dismissWarning } =
+    useAdminSessionTimeout(token);
+
+  // ✅ NEW: Handle session extension
+  const handleExtendSession = async () => {
+    try {
+      // Request re-auth to get new token
+      const reAuthToken = await requestReAuth("Extend Admin Session");
+      
+      if (!reAuthToken) {
+        // User canceled re-auth
+        extendSession();
+        return;
+      }
+
+      // Call backend to generate new token
+      const response = await fetch(`${backendPrefix}/admin/auth/extend-session`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-Reauth-Token": reAuthToken,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.token) {
+        // Update token in localStorage
+        localStorage.setItem("admin_token", data.token);
+        
+        // Reload to apply new token
+        window.location.reload();
+      } else {
+        throw new Error(data.error || "Failed to extend session");
+      }
+      
+      extendSession();
+    } catch (error) {
+      console.error("Failed to extend session:", error);
+      alert("Failed to extend session. Please try again.");
+    }
+  };
 
   const fetchStats = async () => {
     setLoading(true);
@@ -93,14 +153,36 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  const fetchEngagement = async () => {
+    try {
+      if (!token) return;
+
+      const response = await fetch(
+        `${backendPrefix}/admin/analytics/engagement?days=7`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setEngagementData(data.engagement);
+      }
+    } catch (error) {
+      console.error("Failed to fetch engagement:", error);
+    }
+  };
+
   useEffect(() => {
-    // ✅ CRITICAL: Wait for AdminContext to finish loading
     if (isLoading) {
       console.log("⏳ Waiting for admin session check...");
       return;
     }
 
-    // ✅ Now we can safely check if token exists
     if (!token) {
       console.log("🚫 No token found - redirecting to login");
       navigate("/admin/login");
@@ -109,19 +191,19 @@ export const AdminDashboard: React.FC = () => {
 
     console.log("✅ Token found - fetching stats");
     fetchStats();
+    fetchEngagement();
 
-    // ✅ Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       console.log("🔄 Auto-refreshing stats...");
       fetchStats();
+      fetchEngagement();
     }, 15000);
 
-    // ✅ Cleanup interval on unmount
     return () => {
       console.log("🧹 Cleaning up interval");
       clearInterval(interval);
     };
-  }, [token, navigate, isLoading]); // ✅ Dependencies
+  }, [token, navigate, isLoading]);
 
   const handleSectionChange = (section: AdminSection) => {
     setActiveSection(section);
@@ -132,7 +214,6 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
-  // ✅ Show loading while checking session
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -144,7 +225,6 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
-  // Loading state (fetching data)
   if (loading && !stats) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -157,7 +237,6 @@ export const AdminDashboard: React.FC = () => {
     );
   }
 
-  // Error state
   if (error && !stats) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -244,7 +323,18 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sidebar */}
+      {/* ✅ NEW: Session timeout warning */}
+      {showWarning && (
+        <SessionTimeoutWarning
+          timeLeft={timeLeft}
+          onExtend={handleExtendSession}
+          onDismiss={dismissWarning}
+        />
+      )}
+
+      {/* ✅ NEW: Session expired modal */}
+      {isExpired && <SessionExpiredModal />}
+
       <AdminSidebar
         active={activeSection}
         onChange={handleSectionChange}
@@ -252,7 +342,6 @@ export const AdminDashboard: React.FC = () => {
         setIsCollapsed={setIsCollapsed}
       />
 
-      {/* Main Content */}
       <main
         className={`
           px-3 sm:px-4 md:px-8
@@ -271,7 +360,10 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
           <button
-            onClick={fetchStats}
+            onClick={() => {
+              fetchStats();
+              fetchEngagement();
+            }}
             disabled={loading}
             className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -305,8 +397,8 @@ export const AdminDashboard: React.FC = () => {
           ))}
         </div>
 
-        {/* Breakdown Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Grid for Breakdown Cards + Engagement */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Subscription Breakdown */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h3 className="text-lg font-bold text-gray-800 mb-4">
@@ -367,6 +459,56 @@ export const AdminDashboard: React.FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Page Engagement Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <FiMousePointer className="w-5 h-5 text-indigo-600" />
+              Page Engagement (7d)
+            </h3>
+            {engagementData && engagementData.length > 0 ? (
+              <div className="space-y-3">
+                {engagementData.slice(0, 3).map((page, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100"
+                  >
+                    <p className="text-sm font-semibold text-gray-800 mb-2 truncate">
+                      {page.page}
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                        <FiClock className="w-3 h-3 text-indigo-600 mb-1" />
+                        <span className="font-bold text-indigo-600">
+                          {page.avgTimeOnPage}s
+                        </span>
+                        <span className="text-gray-500 text-[10px]">Avg Time</span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                        <FiMousePointer className="w-3 h-3 text-purple-600 mb-1" />
+                        <span className="font-bold text-purple-600">
+                          {page.avgScrollDepth}%
+                        </span>
+                        <span className="text-gray-500 text-[10px]">Scroll</span>
+                      </div>
+                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                        <FiEye className="w-3 h-3 text-cyan-600 mb-1" />
+                        <span className="font-bold text-cyan-600">
+                          {page.totalSessions}
+                        </span>
+                        <span className="text-gray-500 text-[10px]">Sessions</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FiMousePointer className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-sm text-gray-500">No engagement data yet</p>
+              </div>
+            )}
           </div>
         </div>
 

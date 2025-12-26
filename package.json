@@ -32,6 +32,7 @@
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "jszip": "^3.10.1",
+    "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "nodemon": "^3.1.11",
     "react": "^19.1.1",
