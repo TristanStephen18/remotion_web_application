@@ -17,7 +17,7 @@ export const GoogleButton = () => (
     <span className="absolute inset-0 bg-gradient-to-r from-blue-50 to-blue-100 opacity-0 hover:opacity-100 transition-opacity duration-300"></span>
     <span className="relative flex items-center gap-3">
       <img
-        src="https://res.cloudinary.com/dnxc1lw18/image/upload/v1766228671/2048px-Google__22G_22_logo.svg_ij6xoq.png"
+        src="https://res.cloudinary.com/dptlyosrg/image/upload/v1766760518/2048px-Google__22G_22_logo.svg_yfuuvf.png"
         alt="Google"
         className="w-6 h-6"
       />
