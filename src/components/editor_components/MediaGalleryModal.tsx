@@ -4,8 +4,8 @@ import { useVideoUpload } from '../../hooks/uploads/HandleVideoUploads';
 import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
 
 //lipat mo to sa ennv
-const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
-const PEXELS_API_KEY = 'crciZF0CfmUY5TD8TfGOwgLm0MGzcNUqJhDlSSqNBNdXQ15NYKLmDTnx';
+const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
+const PEXELS_API_KEY = import.meta.env.VITE_PIXELS_API_KEY;
 
 interface MediaGalleryModalProps {
   isOpen: boolean;
@@ -210,7 +210,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       try {
         const response = await fetch(
           'https://api.pexels.com/v1/curated?per_page=30',
-          { headers: { Authorization: PEXELS_API_KEY } }
+          { headers: { Authorization: PEXELS_API_KEY  as string} }
         );
         const data = await response.json();
         if (data.photos) {
@@ -229,7 +229,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     try {
       const response = await fetch(
         `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&per_page=30`,
-        { headers: { Authorization: PEXELS_API_KEY } }
+        { headers: { Authorization: PEXELS_API_KEY as string} }
       );
       const data = await response.json();
       if (data.photos) {
