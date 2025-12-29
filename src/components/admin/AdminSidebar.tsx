@@ -12,7 +12,7 @@ import {
   FiSettings,
 } from "react-icons/fi";
 
-export type AdminSection = "dashboard" | "users" | "analytics" | "security";
+export type AdminSection = "dashboard" | "users" | "analytics" | "security" | "settings"; // ✅ Added settings
 
 interface AdminSidebarProps {
   active: AdminSection;
@@ -30,7 +30,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   const navigate = useNavigate();
   const { admin, logout } = useAdmin();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false); // ✅ NEW: Menu state
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -146,7 +146,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           })}
         </nav>
 
-        {/* ✅ Admin profile section with dropdown */}
+        {/* Admin profile section with dropdown */}
         <div className="px-4 mt-4 border-t border-gray-100 pt-4">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
@@ -169,7 +169,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             )}
           </button>
 
-          {/* ✅ Dropdown Menu */}
+          {/* Dropdown Menu */}
           {menuOpen && (
             <div
               className={`absolute bottom-20 bg-white shadow-lg rounded-lg border border-gray-100 w-48 text-left z-50 ${
@@ -182,16 +182,17 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 </p>
                 <p className="text-xs text-gray-500">{admin?.email || ""}</p>
               </div>
-              {/* <button
+              {/* ✅ ENABLED: Settings button */}
+              <button
                 onClick={() => {
                   setMenuOpen(false);
-                  // Future: Navigate to admin settings
+                  navigate("/admin/settings");
                 }}
                 className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors"
               >
                 <FiSettings className="w-4 h-4" />
                 Settings
-              </button> */}
+              </button>
               <button
                 onClick={() => {
                   setMenuOpen(false);
@@ -263,7 +264,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
             );
           })}
 
-          {/* ✅ Mobile Admin Profile with Dropdown */}
+          {/* Mobile Admin Profile with Dropdown */}
           <div className="pt-4 mt-4 border-t border-gray-100">
             <div className="flex items-center gap-3 px-3 py-2 mb-2">
               <div className="w-10 h-10 rounded-full bg-indigo-500 text-white flex items-center justify-center font-semibold">
@@ -278,10 +279,11 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 </span>
               </div>
             </div>
+            {/* ✅ ENABLED: Mobile Settings */}
             <button
               onClick={() => {
                 setMobileOpen(false);
-                // Future: Navigate to settings
+                navigate("/admin/settings");
               }}
               className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >

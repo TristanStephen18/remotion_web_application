@@ -79,18 +79,17 @@ export const AdminUserDetail: React.FC = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [showGrantModal, setShowGrantModal] = useState(false);
-  const [showRevokeModal, setShowRevokeModal] = useState(false); // ✅ NEW
+  const [showRevokeModal, setShowRevokeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [grantingLifetime, setGrantingLifetime] = useState(false);
-
-  const [revokingLifetime, setRevokingLifetime] = useState(false); // ✅ NEW
+  const [revokingLifetime, setRevokingLifetime] = useState(false);
   const [deletingUser, setDeletingUser] = useState(false);
   const [companyName, setCompanyName] = useState("");
   const [specialNotes, setSpecialNotes] = useState("");
 
   const { token, logout, isLoading } = useAdmin();
   const navigate = useNavigate();
-  const { requestReAuth } = useReAuth(); 
+  const { requestReAuth } = useReAuth();
 
   const fetchUserDetails = async () => {
     setLoading(true);
@@ -141,175 +140,164 @@ export const AdminUserDetail: React.FC = () => {
     } else if (section === "users") {
       navigate("/admin/users");
     } else if (section === "security") {
-      // ✅ Add this
       navigate("/admin/security");
     }
   };
 
-  // ✅ Check if user has lifetime access
   const hasLifetimeAccess =
     user?.subscriptions.some(
       (sub) => sub.isLifetime && sub.status !== "canceled"
     ) || false;
 
-  // ✅ Get active lifetime subscription
   const lifetimeSubscription = user?.subscriptions.find(
     (sub) => sub.isLifetime && sub.status !== "canceled"
   );
 
   const handleGrantLifetime = async () => {
-  setGrantingLifetime(true);
-  
-  try {
-    // ✅ REQUEST RE-AUTH FIRST
-    const reAuthToken = await requestReAuth("Grant Lifetime Access");
-    
-    if (!reAuthToken) {
-      // User canceled the re-auth modal
+    setGrantingLifetime(true);
+
+    try {
+      const reAuthToken = await requestReAuth("Grant Lifetime Access");
+
+      if (!reAuthToken) {
+        setGrantingLifetime(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${backendPrefix}/admin/subscriptions/grant-lifetime`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-Reauth-Token": reAuthToken,
+          },
+          body: JSON.stringify({
+            userId: userId,
+            companyName: companyName.trim() || null,
+            notes: specialNotes.trim() || null,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("✅ Lifetime access granted successfully!", {
+          duration: 4000,
+          position: "top-right",
+        });
+        setShowGrantModal(false);
+        setCompanyName("");
+        setSpecialNotes("");
+        fetchUserDetails();
+      } else {
+        throw new Error(data.error || "Failed to grant lifetime access");
+      }
+    } catch (error: any) {
+      console.error("Grant lifetime error:", error);
+      toast.error(`❌ ${error.message}`, {
+        duration: 4000,
+        position: "top-right",
+      });
+    } finally {
       setGrantingLifetime(false);
-      return;
     }
+  };
 
-    const response = await fetch(
-      `${backendPrefix}/admin/subscriptions/grant-lifetime`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
-        },
-        body: JSON.stringify({
-          userId: userId,
-          companyName: companyName.trim() || null,
-          notes: specialNotes.trim() || null,
-        }),
+  const handleRevokeLifetime = async () => {
+    setRevokingLifetime(true);
+
+    try {
+      const reAuthToken = await requestReAuth("Revoke Lifetime Access");
+
+      if (!reAuthToken) {
+        setRevokingLifetime(false);
+        return;
       }
-    );
 
-    const data = await response.json();
+      const response = await fetch(
+        `${backendPrefix}/admin/subscriptions/revoke-lifetime`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-Reauth-Token": reAuthToken,
+          },
+          body: JSON.stringify({ userId: userId }),
+        }
+      );
 
-    if (data.success) {
-      toast.success("✅ Lifetime access granted successfully!", {
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("✅ Lifetime access revoked successfully!", {
+          duration: 4000,
+          position: "top-right",
+        });
+        setShowRevokeModal(false);
+        fetchUserDetails();
+      } else {
+        throw new Error(data.error || "Failed to revoke lifetime access");
+      }
+    } catch (error: any) {
+      console.error("Revoke lifetime error:", error);
+      toast.error(`❌ ${error.message}`, {
         duration: 4000,
         position: "top-right",
       });
-      setShowGrantModal(false);
-      setCompanyName("");
-      setSpecialNotes("");
-      fetchUserDetails();
-    } else {
-      throw new Error(data.error || "Failed to grant lifetime access");
-    }
-  } catch (error: any) {
-    console.error("Grant lifetime error:", error);
-    toast.error(`❌ ${error.message}`, {
-      duration: 4000,
-      position: "top-right",
-    });
-  } finally {
-    setGrantingLifetime(false);
-  }
-};
-
- const handleRevokeLifetime = async () => {
-  setRevokingLifetime(true);
-  
-  try {
-    // ✅ REQUEST RE-AUTH FIRST
-    const reAuthToken = await requestReAuth("Revoke Lifetime Access");
-    
-    if (!reAuthToken) {
+    } finally {
       setRevokingLifetime(false);
-      return;
     }
+  };
 
-    const response = await fetch(
-      `${backendPrefix}/admin/subscriptions/revoke-lifetime`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
-        },
-        body: JSON.stringify({ userId: userId }),
-      }
-    );
-
-    const data = await response.json();
-
-    if (data.success) {
-      toast.success("✅ Lifetime access revoked successfully!", {
-        duration: 4000,
-        position: "top-right",
-      });
-      setShowRevokeModal(false);
-      fetchUserDetails();
-    } else {
-      throw new Error(data.error || "Failed to revoke lifetime access");
-    }
-  } catch (error: any) {
-    console.error("Revoke lifetime error:", error);
-    toast.error(`❌ ${error.message}`, {
-      duration: 4000,
-      position: "top-right",
-    });
-  } finally {
-    setRevokingLifetime(false);
-  }
-};
-
-  // ✅ NEW: Handle delete user
   const handleDeleteUser = async () => {
-  setDeletingUser(true);
-  
-  try {
-    // ✅ REQUEST RE-AUTH FIRST
-    const reAuthToken = await requestReAuth("Delete User Account");
-    
-    if (!reAuthToken) {
-      setDeletingUser(false);
-      return;
-    }
+    setDeletingUser(true);
 
-    const response = await fetch(
-      `${backendPrefix}/admin/users/${userId}`,
-      {
+    try {
+      const reAuthToken = await requestReAuth("Delete User Account");
+
+      if (!reAuthToken) {
+        setDeletingUser(false);
+        return;
+      }
+
+      const response = await fetch(`${backendPrefix}/admin/users/${userId}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
-          "X-Reauth-Token": reAuthToken, // ✅ Include re-auth token
+          "X-Reauth-Token": reAuthToken,
         },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success("✅ User deleted successfully! Redirecting...", {
+          duration: 4000,
+          position: "top-right",
+        });
+        setShowDeleteModal(false);
+
+        setTimeout(() => {
+          navigate("/admin/users");
+        }, 1000);
+      } else {
+        throw new Error(data.error || "Failed to delete user");
       }
-    );
-
-    const data = await response.json();
-
-    if (data.success) {
-      toast.success("✅ User deleted successfully! Redirecting...", {
+    } catch (error: any) {
+      console.error("Delete user error:", error);
+      toast.error(`❌ ${error.message}`, {
         duration: 4000,
         position: "top-right",
       });
-      setShowDeleteModal(false);
-      
-      setTimeout(() => {
-        navigate("/admin/users");
-      }, 1000);
-    } else {
-      throw new Error(data.error || "Failed to delete user");
+    } finally {
+      setDeletingUser(false);
     }
-  } catch (error: any) {
-    console.error("Delete user error:", error);
-    toast.error(`❌ ${error.message}`, {
-      duration: 4000,
-      position: "top-right",
-    });
-  } finally {
-    setDeletingUser(false);
-  }
-};
+  };
 
   const getSubscriptionBadge = (status: string) => {
     const badges: Record<string, { color: string; label: string }> = {
@@ -337,7 +325,7 @@ export const AdminUserDetail: React.FC = () => {
 
     return (
       <span
-        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badge.color}`}
+        className={`inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${badge.color}`}
       >
         {badge.label}
       </span>
@@ -348,8 +336,10 @@ export const AdminUserDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading user details...</p>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600 font-medium">
+            Loading user details...
+          </p>
         </div>
       </div>
     );
@@ -357,16 +347,18 @@ export const AdminUserDetail: React.FC = () => {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <FiAlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
             Failed to Load User
           </h2>
-          <p className="text-gray-600 mb-6">{error || "User not found"}</p>
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+            {error || "User not found"}
+          </p>
           <button
             onClick={() => navigate("/admin/users")}
-            className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+            className="px-4 sm:px-6 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm sm:text-base"
           >
             Back to Users
           </button>
@@ -386,44 +378,43 @@ export const AdminUserDetail: React.FC = () => {
 
       <main
         className={`
-          px-3 sm:px-4 md:px-8
-          py-4 pt-16 md:pt-4
+          px-3 sm:px-4 md:px-6 lg:px-8
+          py-3 sm:py-4 pt-16 md:pt-4
           min-h-screen
           transition-all duration-300
           ${isCollapsed ? "md:ml-20" : "md:ml-64"}
         `}
       >
-        {/* Back Button */}
+        {/* ✅ RESPONSIVE Back Button */}
         <button
           onClick={() => navigate("/admin/users")}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
+          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4 sm:mb-6 transition-colors text-sm sm:text-base"
         >
-          <FiArrowLeft className="w-5 h-5" />
+          <FiArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
           Back to Users
         </button>
 
-        {/* ✅ Lifetime Access Banner (if user has it) */}
+        {/* ✅ RESPONSIVE Lifetime Access Banner */}
         {hasLifetimeAccess && lifetimeSubscription && (
-          <div className="mb-6 p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-2xl shadow-md">
-            <div className="flex items-start gap-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 flex items-center justify-center flex-shrink-0">
-                <FiStar className="text-white text-2xl" />
+          <div className="mb-4 sm:mb-6 p-4 sm:p-5 bg-gradient-to-r from-yellow-50 to-orange-50 border-2 border-yellow-400 rounded-xl sm:rounded-2xl shadow-md">
+            <div className="flex items-start gap-2 sm:gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-r from-yellow-400 to-orange-400 flex items-center justify-center flex-shrink-0">
+                <FiStar className="text-white text-lg sm:text-2xl" />
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-yellow-900 mb-2">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm font-bold text-yellow-900 mb-1 sm:mb-2">
                   🌟 This user has Lifetime Access
                 </p>
-                <div className="text-xs text-yellow-800 space-y-1">
+                <div className="text-[10px] sm:text-xs text-yellow-800 space-y-0.5 sm:space-y-1">
                   {lifetimeSubscription.isCompanyAccount && (
-                    <p>
+                    <p className="truncate">
                       <strong>Company:</strong>{" "}
                       {lifetimeSubscription.companyName || "N/A"}
                     </p>
                   )}
                   {lifetimeSubscription.specialNotes && (
-                    <p>
-                      <strong>Notes:</strong>{" "}
-                      {lifetimeSubscription.specialNotes}
+                    <p className="line-clamp-2">
+                      <strong>Notes:</strong> {lifetimeSubscription.specialNotes}
                     </p>
                   )}
                   <p>
@@ -438,210 +429,215 @@ export const AdminUserDetail: React.FC = () => {
           </div>
         )}
 
-        {/* User Header Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-2xl">
+        {/* ✅ RESPONSIVE User Header Card */}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-4 sm:mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 sm:gap-6">
+            {/* User Info */}
+            <div className="flex items-start gap-3 sm:gap-4 min-w-0 flex-1">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold text-xl sm:text-2xl flex-shrink-0">
                 {user.name
                   ? user.name.charAt(0).toUpperCase()
                   : user.email.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800 mb-1">
+              <div className="min-w-0 flex-1">
+                <h1 className="text-lg sm:text-2xl font-bold text-gray-800 mb-1 truncate">
                   {user.name || "No Name"}
                 </h1>
-                <div className="flex items-center gap-2 text-gray-600 mb-2">
-                  <FiMail className="w-4 h-4" />
-                  <span>{user.email}</span>
+                <div className="flex items-center gap-1 sm:gap-2 text-gray-600 mb-2 text-xs sm:text-base">
+                  <FiMail className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
+                  <span className="truncate">{user.email}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                   {user.verified ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-green-100 text-green-800">
                       <FiCheck className="w-3 h-3" />
                       Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-yellow-100 text-yellow-800">
                       <FiX className="w-3 h-3" />
                       Unverified
                     </span>
                   )}
-                  <span className="text-sm text-gray-500">
+                  <span className="text-xs sm:text-sm text-gray-500 truncate">
                     Provider: {user.provider || "Email"}
                   </span>
                   {user.twoFactorEnabled && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    <span className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-blue-100 text-blue-800">
                       <FiShield className="w-3 h-3" />
-                      2FA Enabled
+                      2FA
                     </span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex flex-col items-end gap-3">
-              <div className="text-right">
-                <p className="text-sm text-gray-500 mb-1">Member Since</p>
-                <div className="flex items-center gap-1 text-gray-700">
-                  <FiCalendar className="w-4 h-4" />
+
+            {/* Date & Actions */}
+            <div className="flex flex-col gap-3">
+              <div className="text-left lg:text-right">
+                <p className="text-xs sm:text-sm text-gray-500 mb-1">Member Since</p>
+                <div className="flex items-center gap-1 text-gray-700 text-sm sm:text-base">
+                  <FiCalendar className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span className="font-medium">
                     {new Date(user.createdAt).toLocaleDateString()}
                   </span>
                 </div>
                 {user.lastLogin && (
-                  <p className="text-xs text-gray-400 mt-1">
-                    Last login: {new Date(user.lastLogin).toLocaleString()}
+                  <p className="text-[10px] sm:text-xs text-gray-400 mt-1">
+                    Last login: {new Date(user.lastLogin).toLocaleDateString()}
                   </p>
                 )}
               </div>
 
-              {/* Button group */}
-              <div className="flex gap-2">
-                {/* Grant/Revoke Lifetime Button */}
+              {/* ✅ RESPONSIVE Button group */}
+              <div className="flex flex-col sm:flex-row gap-2">
                 {!hasLifetimeAccess ? (
                   <button
                     onClick={() => setShowGrantModal(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 min-h-[44px] bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
                   >
                     <FiStar className="w-4 h-4" />
-                    Grant Lifetime Access
+                    <span className="hidden sm:inline">Grant Lifetime Access</span>
+                    <span className="sm:hidden">Grant Lifetime</span>
                   </button>
                 ) : (
                   <button
                     onClick={() => setShowRevokeModal(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+                    className="px-3 sm:px-4 py-2 min-h-[44px] bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
                   >
                     <FiTrash2 className="w-4 h-4" />
-                    Revoke Lifetime Access
+                    <span className="hidden sm:inline">Revoke Lifetime</span>
+                    <span className="sm:hidden">Revoke</span>
                   </button>
                 )}
 
-                {/* ✅ NEW: Delete User Button */}
                 <button
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:shadow-lg hover:from-red-600 hover:to-red-700 transition-all flex items-center gap-2"
+                  className="px-3 sm:px-4 py-2 min-h-[44px] bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg font-semibold hover:shadow-lg hover:from-red-600 hover:to-red-700 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
                   <FiTrash2 className="w-4 h-4" />
-                  Delete User
+                  <span className="hidden sm:inline">Delete User</span>
+                  <span className="sm:hidden">Delete</span>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiPackage className="w-5 h-5 text-blue-500" />
-              <span className="text-sm text-gray-600">Projects</span>
+        {/* ✅ RESPONSIVE Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <FiPackage className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />
+              <span className="text-xs sm:text-sm text-gray-600">Projects</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl sm:text-2xl font-bold text-gray-800">
               {user.stats.totalProjects}
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiVideo className="w-5 h-5 text-green-500" />
-              <span className="text-sm text-gray-600">Renders</span>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <FiVideo className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+              <span className="text-xs sm:text-sm text-gray-600">Renders</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl sm:text-2xl font-bold text-gray-800">
               {user.stats.totalRenders}
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiEye className="w-5 h-5 text-purple-500" />
-              <span className="text-sm text-gray-600">Visits (30d)</span>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <FiEye className="w-4 h-4 sm:w-5 sm:h-5 text-purple-500" />
+              <span className="text-xs sm:text-sm text-gray-600 truncate">Visits</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl sm:text-2xl font-bold text-gray-800">
               {user.stats.totalVisits}
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiVideo className="w-5 h-5 text-orange-500" />
-              <span className="text-sm text-gray-600">AI Videos</span>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <FiVideo className="w-4 h-4 sm:w-5 sm:h-5 text-orange-500" />
+              <span className="text-xs sm:text-sm text-gray-600 truncate">AI Videos</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl sm:text-2xl font-bold text-gray-800">
               {user.stats.totalVeoGenerations}
             </p>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FiImage className="w-5 h-5 text-pink-500" />
-              <span className="text-sm text-gray-600">AI Images</span>
+          <div className="bg-white rounded-lg sm:rounded-xl shadow-sm border border-gray-100 p-3 sm:p-4">
+            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-2">
+              <FiImage className="w-4 h-4 sm:w-5 sm:h-5 text-pink-500" />
+              <span className="text-xs sm:text-sm text-gray-600 truncate">AI Images</span>
             </div>
-            <p className="text-2xl font-bold text-gray-800">
+            <p className="text-xl sm:text-2xl font-bold text-gray-800">
               {user.stats.totalImageGenerations}
             </p>
           </div>
         </div>
 
-        {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* ✅ RESPONSIVE Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Subscription History */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FiCreditCard className="w-5 h-5 text-indigo-600" />
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <FiCreditCard className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600" />
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">
                 Subscription History
               </h3>
             </div>
 
             {user.subscriptions.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No subscriptions</p>
+              <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8">
+                No subscriptions
+              </p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {user.subscriptions.map((sub: any) => (
                   <div
                     key={sub.id}
-                    className="border border-gray-200 rounded-lg p-4"
+                    className="border border-gray-200 rounded-lg p-3 sm:p-4"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-800">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="font-medium text-gray-800 text-sm sm:text-base truncate">
                           {sub.plan}
                         </span>
                         {sub.companyName && (
-                          <span className="text-xs text-gray-500">
+                          <span className="text-[10px] sm:text-xs text-gray-500 truncate">
                             ({sub.companyName})
                           </span>
                         )}
                       </div>
                       {getSubscriptionBadge(sub.status)}
                     </div>
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <div className="text-xs sm:text-sm text-gray-600 space-y-0.5 sm:space-y-1">
                       <p>
                         Started: {new Date(sub.createdAt).toLocaleDateString()}
                       </p>
                       {!sub.isLifetime && (
-                        <p>
-                          Current Period:{" "}
+                        <p className="truncate">
+                          Period:{" "}
                           {new Date(
                             sub.currentPeriodStart
                           ).toLocaleDateString()}{" "}
-                          -{" "}
-                          {new Date(sub.currentPeriodEnd).toLocaleDateString()}
+                          - {new Date(sub.currentPeriodEnd).toLocaleDateString()}
                         </p>
                       )}
                       {sub.isLifetime && (
-                        <p className="text-yellow-700 font-medium">
+                        <p className="text-yellow-700 font-medium text-xs sm:text-sm">
                           🌟 Never expires
                         </p>
                       )}
                       {sub.canceledAt && (
-                        <p className="text-red-600">
+                        <p className="text-red-600 text-xs sm:text-sm">
                           Canceled:{" "}
                           {new Date(sub.canceledAt).toLocaleDateString()}
                         </p>
                       )}
                       {sub.specialNotes && (
-                        <p className="text-xs text-gray-500 italic mt-2">
+                        <p className="text-[10px] sm:text-xs text-gray-500 italic mt-1 sm:mt-2 line-clamp-2">
                           Note: {sub.specialNotes}
                         </p>
                       )}
@@ -653,27 +649,29 @@ export const AdminUserDetail: React.FC = () => {
           </div>
 
           {/* Recent Projects */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FiPackage className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <FiPackage className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">
                 Recent Projects
               </h3>
             </div>
 
             {user.recentProjects.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No projects yet</p>
+              <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8">
+                No projects yet
+              </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {user.recentProjects.map((project) => (
                   <div
                     key={project.id}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-3 hover:bg-gray-50 rounded-lg transition-colors gap-2"
                   >
-                    <span className="text-sm text-gray-800 font-medium truncate">
+                    <span className="text-xs sm:text-sm text-gray-800 font-medium truncate flex-1">
                       {project.title}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
                       {new Date(project.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -683,27 +681,29 @@ export const AdminUserDetail: React.FC = () => {
           </div>
 
           {/* Recent Renders */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FiVideo className="w-5 h-5 text-green-600" />
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <FiVideo className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">
                 Recent Renders
               </h3>
             </div>
 
             {user.recentRenders.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">No renders yet</p>
+              <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8">
+                No renders yet
+              </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {user.recentRenders.map((render) => (
                   <div
                     key={render.id}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-3 hover:bg-gray-50 rounded-lg transition-colors gap-2"
                   >
-                    <span className="text-sm text-gray-800 font-medium">
+                    <span className="text-xs sm:text-sm text-gray-800 font-medium">
                       {render.type.toUpperCase()}
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
                       {new Date(render.renderedAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -713,30 +713,30 @@ export const AdminUserDetail: React.FC = () => {
           </div>
 
           {/* Recent Page Visits */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <FiEye className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-bold text-gray-800">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <div className="flex items-center gap-2 mb-3 sm:mb-4">
+              <FiEye className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+              <h3 className="text-base sm:text-lg font-bold text-gray-800">
                 Recent Activity
               </h3>
             </div>
 
             {user.recentVisits.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
+              <p className="text-xs sm:text-sm text-gray-500 text-center py-6 sm:py-8">
                 No recent activity
               </p>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 {user.recentVisits.map((visit, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    className="flex items-center justify-between p-2 sm:p-3 hover:bg-gray-50 rounded-lg transition-colors gap-2"
                   >
-                    <span className="text-sm text-gray-800 font-medium truncate">
+                    <span className="text-xs sm:text-sm text-gray-800 font-medium truncate flex-1">
                       {visit.page}
                     </span>
-                    <span className="text-xs text-gray-500">
-                      {new Date(visit.visitedAt).toLocaleString()}
+                    <span className="text-[10px] sm:text-xs text-gray-500 whitespace-nowrap">
+                      {new Date(visit.visitedAt).toLocaleDateString()}
                     </span>
                   </div>
                 ))}
@@ -745,38 +745,40 @@ export const AdminUserDetail: React.FC = () => {
           </div>
         </div>
 
-        {/* ✅ Grant Lifetime Access Modal */}
+        {/* ✅ RESPONSIVE Grant Lifetime Modal */}
         {showGrantModal && (
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setShowGrantModal(false)}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowGrantModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1"
               >
                 <FiX size={20} />
               </button>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-xl flex items-center justify-center">
-                  <FiStar className="text-white text-2xl" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pr-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FiStar className="text-white text-lg sm:text-2xl" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
                     Grant Lifetime Access
                   </h2>
-                  <p className="text-sm text-gray-500">User ID: {userId}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
+                    User ID: {userId}
+                  </p>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-6">
+              <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Company Name (Optional)
                   </label>
                   <input
@@ -784,15 +786,15 @@ export const AdminUserDetail: React.FC = () => {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="e.g., ViralMotion HQ"
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border-2 border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-[10px] sm:text-xs text-gray-500 mt-1">
                     Leave empty for personal lifetime access
                   </p>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                     Notes (Optional)
                   </label>
                   <textarea
@@ -800,29 +802,29 @@ export const AdminUserDetail: React.FC = () => {
                     onChange={(e) => setSpecialNotes(e.target.value)}
                     placeholder="Internal notes about this grant..."
                     rows={3}
-                    className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 resize-none"
+                    className="w-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base border-2 border-gray-200 rounded-lg focus:outline-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-200 resize-none"
                   />
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-4 mb-6">
-                <p className="text-xs text-yellow-800 leading-relaxed">
+              <div className="bg-yellow-50 border-2 border-yellow-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-yellow-800 leading-relaxed">
                   ⚠️ This will grant unlimited access to all features. The
                   subscription will never expire and won't be charged.
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowGrantModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm sm:text-base font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGrantLifetime}
                   disabled={grantingLifetime}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                   {grantingLifetime ? "Granting..." : "Confirm Grant"}
                 </button>
@@ -831,66 +833,66 @@ export const AdminUserDetail: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ NEW: Revoke Lifetime Access Modal */}
+        {/* ✅ RESPONSIVE Revoke Lifetime Modal */}
         {showRevokeModal && (
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setShowRevokeModal(false)}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowRevokeModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1"
               >
                 <FiX size={20} />
               </button>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                  <FiTrash2 className="text-white text-2xl" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pr-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FiTrash2 className="text-white text-lg sm:text-2xl" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
                     Revoke Lifetime Access
                   </h2>
-                  <p className="text-sm text-gray-500">User: {user.email}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
+                    User: {user.email}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800 leading-relaxed mb-2">
+              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                <p className="text-xs sm:text-sm text-red-800 leading-relaxed mb-2">
                   ⚠️ <strong>Are you sure?</strong>
                 </p>
-                <ul className="text-xs text-red-700 space-y-1 ml-4">
+                <ul className="text-[10px] sm:text-xs text-red-700 space-y-1 ml-4">
                   <li>• User will lose lifetime access</li>
-                  <li>• Their subscription will be marked as canceled</li>
-                  <li>
-                    • They will need to subscribe again to access features
-                  </li>
-                  <li>• This action cannot be easily undone</li>
+                  <li>• Subscription marked as canceled</li>
+                  <li>• Must subscribe again for features</li>
+                  <li>• Cannot be easily undone</li>
                 </ul>
               </div>
 
               {lifetimeSubscription && (
-                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
-                  <p className="text-xs text-gray-600">
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 mb-4 sm:mb-6">
+                  <p className="text-[10px] sm:text-xs text-gray-600 mb-1">
                     <strong>Current lifetime details:</strong>
                   </p>
-                  <p className="text-xs text-gray-600 mt-1">
+                  <p className="text-[10px] sm:text-xs text-gray-600">
                     Type:{" "}
                     {lifetimeSubscription.isCompanyAccount
                       ? "Company"
                       : "Personal"}
                   </p>
                   {lifetimeSubscription.companyName && (
-                    <p className="text-xs text-gray-600">
+                    <p className="text-[10px] sm:text-xs text-gray-600 truncate">
                       Company: {lifetimeSubscription.companyName}
                     </p>
                   )}
-                  <p className="text-xs text-gray-600">
+                  <p className="text-[10px] sm:text-xs text-gray-600">
                     Granted:{" "}
                     {new Date(
                       lifetimeSubscription.createdAt
@@ -899,17 +901,17 @@ export const AdminUserDetail: React.FC = () => {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowRevokeModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm sm:text-base font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleRevokeLifetime}
                   disabled={revokingLifetime}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                   {revokingLifetime ? "Revoking..." : "Confirm Revoke"}
                 </button>
@@ -918,55 +920,57 @@ export const AdminUserDetail: React.FC = () => {
           </div>
         )}
 
-        {/* ✅ NEW: Delete User Modal */}
+        {/* ✅ RESPONSIVE Delete User Modal */}
         {showDeleteModal && (
           <div
             className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setShowDeleteModal(false)}
           >
             <div
-              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative"
+              className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => setShowDeleteModal(false)}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 text-gray-400 hover:text-gray-600 p-1"
               >
                 <FiX size={20} />
               </button>
 
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center">
-                  <FiAlertTriangle className="text-white text-2xl" />
+              <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-6 pr-8">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <FiAlertTriangle className="text-white text-lg sm:text-2xl" />
                 </div>
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-lg sm:text-xl font-bold text-gray-800 truncate">
                     Delete User Account
                   </h2>
-                  <p className="text-sm text-gray-500">User: {user.email}</p>
+                  <p className="text-xs sm:text-sm text-gray-500 truncate">
+                    User: {user.email}
+                  </p>
                 </div>
               </div>
 
-              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4 mb-6">
-                <p className="text-sm text-red-800 leading-relaxed mb-3">
+              <div className="bg-red-50 border-2 border-red-200 rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+                <p className="text-xs sm:text-sm text-red-800 leading-relaxed mb-2 sm:mb-3">
                   <strong>⚠️ WARNING: This action cannot be undone!</strong>
                 </p>
-                <ul className="text-xs text-red-700 space-y-1.5 ml-4">
-                  <li>• User account will be permanently deleted</li>
-                  <li>• All projects and renders will be deleted</li>
-                  <li>• All AI generations will be deleted</li>
-                  <li>• All uploads and datasets will be deleted</li>
-                  <li>• Stripe subscription will be canceled</li>
-                  <li>• User will be immediately logged out</li>
+                <ul className="text-[10px] sm:text-xs text-red-700 space-y-1 sm:space-y-1.5 ml-4">
+                  <li>• Account permanently deleted</li>
+                  <li>• All projects & renders deleted</li>
+                  <li>• All AI generations deleted</li>
+                  <li>• All uploads & datasets deleted</li>
+                  <li>• Stripe subscription canceled</li>
+                  <li>• User immediately logged out</li>
                   <li>• This action is IRREVERSIBLE</li>
                 </ul>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-6">
-                <p className="text-xs text-gray-700 mb-2">
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 sm:p-3 mb-4 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-gray-700 mb-2">
                   <strong>User Statistics:</strong>
                 </p>
-                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-2 text-[10px] sm:text-xs text-gray-600">
                   <div>Projects: {user.stats.totalProjects}</div>
                   <div>Renders: {user.stats.totalRenders}</div>
                   <div>AI Videos: {user.stats.totalVeoGenerations}</div>
@@ -974,24 +978,24 @@ export const AdminUserDetail: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
-                <p className="text-xs text-yellow-800">
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-2.5 sm:p-3 mb-4 sm:mb-6">
+                <p className="text-[10px] sm:text-xs text-yellow-800">
                   <strong>💡 Tip:</strong> Consider revoking access instead of
                   deleting if you want to preserve data.
                 </p>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <button
                   onClick={() => setShowDeleteModal(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition text-sm sm:text-base font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteUser}
                   disabled={deletingUser}
-                  className="flex-1 px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 px-4 py-2.5 min-h-[44px] bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
                 >
                   {deletingUser ? "Deleting..." : "Delete Permanently"}
                 </button>

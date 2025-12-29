@@ -6,6 +6,7 @@ interface AdminUser {
   email: string;
   name: string;
   role: string;
+  lastLogin?: string;
 }
 
 interface AdminContextType {

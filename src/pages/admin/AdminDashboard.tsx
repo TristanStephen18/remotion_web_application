@@ -5,9 +5,9 @@ import { useReAuth } from "../../contexts/ReAuthContext";
 import { AdminSidebar } from "../../components/admin/AdminSidebar";
 import type { AdminSection } from "../../components/admin/AdminSidebar";
 import { backendPrefix } from "../../config";
-import { useAdminSessionTimeout } from "../../hooks/useAdminSessionTimeout"; // ✅ NEW
-import { SessionTimeoutWarning } from "../../components/admin/SessionTimeoutWarning"; // ✅ NEW
-import { SessionExpiredModal } from "../../components/admin/SessionExpiredModal"; // ✅ NEW
+import { useAdminSessionTimeout } from "../../hooks/useAdminSessionTimeout";
+import { SessionTimeoutWarning } from "../../components/admin/SessionTimeoutWarning";
+import { SessionExpiredModal } from "../../components/admin/SessionExpiredModal";
 import {
   FiUsers,
   FiDollarSign,
@@ -68,23 +68,18 @@ export const AdminDashboard: React.FC = () => {
   const { requestReAuth } = useReAuth();
   const navigate = useNavigate();
 
-  // ✅ NEW: Session timeout detection
   const { showWarning, timeLeft, isExpired, extendSession, dismissWarning } =
     useAdminSessionTimeout(token);
 
-  // ✅ NEW: Handle session extension
   const handleExtendSession = async () => {
     try {
-      // Request re-auth to get new token
       const reAuthToken = await requestReAuth("Extend Admin Session");
       
       if (!reAuthToken) {
-        // User canceled re-auth
         extendSession();
         return;
       }
 
-      // Call backend to generate new token
       const response = await fetch(`${backendPrefix}/admin/auth/extend-session`, {
         method: "POST",
         headers: {
@@ -97,10 +92,7 @@ export const AdminDashboard: React.FC = () => {
       const data = await response.json();
 
       if (data.success && data.token) {
-        // Update token in localStorage
         localStorage.setItem("admin_token", data.token);
-        
-        // Reload to apply new token
         window.location.reload();
       } else {
         throw new Error(data.error || "Failed to extend session");
@@ -218,8 +210,8 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Checking session...</p>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600 font-medium">Checking session...</p>
         </div>
       </div>
     );
@@ -229,9 +221,9 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading dashboard...</p>
-          <p className="text-sm text-gray-400 mt-2">Fetching analytics data</p>
+          <div className="w-12 h-12 sm:w-16 sm:h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin mx-auto mb-3 sm:mb-4"></div>
+          <p className="text-sm sm:text-base text-gray-600 font-medium">Loading dashboard...</p>
+          <p className="text-xs sm:text-sm text-gray-400 mt-2">Fetching analytics data</p>
         </div>
       </div>
     );
@@ -241,21 +233,21 @@ export const AdminDashboard: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center max-w-md">
-          <FiAlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800 mb-2">
+          <FiAlertCircle className="w-12 h-12 sm:w-16 sm:h-16 text-red-500 mx-auto mb-3 sm:mb-4" />
+          <h2 className="text-lg sm:text-xl font-bold text-gray-800 mb-2">
             Failed to Load Dashboard
           </h2>
-          <p className="text-gray-600 mb-6">{error}</p>
-          <div className="flex gap-3 justify-center">
+          <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">{error}</p>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center">
             <button
               onClick={fetchStats}
-              className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              className="px-4 sm:px-6 py-2 min-h-[44px] bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm sm:text-base"
             >
               Retry
             </button>
             <button
               onClick={() => navigate("/admin/login")}
-              className="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="px-4 sm:px-6 py-2 min-h-[44px] bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm sm:text-base"
             >
               Back to Login
             </button>
@@ -323,7 +315,6 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* ✅ NEW: Session timeout warning */}
       {showWarning && (
         <SessionTimeoutWarning
           timeLeft={timeLeft}
@@ -332,7 +323,6 @@ export const AdminDashboard: React.FC = () => {
         />
       )}
 
-      {/* ✅ NEW: Session expired modal */}
       {isExpired && <SessionExpiredModal />}
 
       <AdminSidebar
@@ -344,18 +334,18 @@ export const AdminDashboard: React.FC = () => {
 
       <main
         className={`
-          px-3 sm:px-4 md:px-8
-          py-4 pt-16 md:pt-4
+          px-3 sm:px-4 md:px-6 lg:px-8
+          py-3 sm:py-4 pt-16 md:pt-4
           min-h-screen
           transition-all duration-300
           ${isCollapsed ? "md:ml-20" : "md:ml-64"}
         `}
       >
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-            <p className="text-sm text-gray-500 mt-1">
+        {/* ✅ RESPONSIVE Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 gap-3 sm:gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800 truncate">Dashboard</h1>
+            <p className="text-xs sm:text-sm text-gray-500 mt-1">
               Welcome back, {admin?.name || "Admin"}
             </p>
           </div>
@@ -365,65 +355,65 @@ export const AdminDashboard: React.FC = () => {
               fetchEngagement();
             }}
             disabled={loading}
-            className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 sm:px-4 py-2 min-h-[44px] bg-indigo-50 text-indigo-600 rounded-lg hover:bg-indigo-100 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
           >
             <FiRefreshCw
               className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
             />
-            <span className="hidden sm:inline">Refresh</span>
+            <span>Refresh</span>
           </button>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        {/* ✅ RESPONSIVE Stats Grid */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
           {statCards.map((stat, idx) => (
             <div
               key={idx}
-              className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow"
+              className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6 hover:shadow-md transition-shadow"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
                 <div
-                  className={`w-12 h-12 ${stat.color} rounded-xl flex items-center justify-center text-white text-xl`}
+                  className={`w-10 h-10 sm:w-12 sm:h-12 ${stat.color} rounded-lg sm:rounded-xl flex items-center justify-center text-white text-lg sm:text-xl`}
                 >
                   {stat.icon}
                 </div>
               </div>
-              <p className="text-gray-500 text-sm mb-1">{stat.label}</p>
-              <p className="text-3xl font-bold text-gray-800 mb-1">
+              <p className="text-gray-500 text-xs sm:text-sm mb-1">{stat.label}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-800 mb-1 truncate">
                 {stat.value}
               </p>
-              <p className="text-xs text-gray-400">{stat.subtext}</p>
+              <p className="text-[10px] sm:text-xs text-gray-400 truncate">{stat.subtext}</p>
             </div>
           ))}
         </div>
 
-        {/* Grid for Breakdown Cards + Engagement */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* ✅ RESPONSIVE Grid for Breakdown Cards + Engagement */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {/* Subscription Breakdown */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">
               Subscription Breakdown
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-green-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">
                   Paid Subscribers
                 </span>
-                <span className="font-bold text-green-600 text-lg">
+                <span className="font-bold text-green-600 text-base sm:text-lg">
                   {stats.subscriptions.paid}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-blue-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">
                   Free Trial Users
                 </span>
-                <span className="font-bold text-blue-600 text-lg">
+                <span className="font-bold text-blue-600 text-base sm:text-lg">
                   {stats.subscriptions.freeTrial}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Total Active</span>
-                <span className="font-bold text-gray-600 text-lg">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-gray-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">Total Active</span>
+                <span className="font-bold text-gray-600 text-base sm:text-lg">
                   {stats.subscriptions.total}
                 </span>
               </div>
@@ -431,91 +421,91 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Growth Metrics */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4">
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4">
               Growth Metrics
             </h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-indigo-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
+            <div className="space-y-2 sm:space-y-3">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-indigo-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">
                   New Users (7d)
                 </span>
-                <span className="font-bold text-indigo-600 text-lg">
+                <span className="font-bold text-indigo-600 text-base sm:text-lg">
                   {stats.users.newLast7Days}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                <span className="text-gray-700 font-medium">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-purple-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">
                   New Users (30d)
                 </span>
-                <span className="font-bold text-purple-600 text-lg">
+                <span className="font-bold text-purple-600 text-base sm:text-lg">
                   {stats.users.newLast30Days}
                 </span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-cyan-50 rounded-lg">
-                <span className="text-gray-700 font-medium">Visits (30d)</span>
-                <span className="font-bold text-cyan-600 text-lg">
+              <div className="flex items-center justify-between p-2.5 sm:p-3 bg-cyan-50 rounded-lg">
+                <span className="text-xs sm:text-sm text-gray-700 font-medium">Visits (30d)</span>
+                <span className="font-bold text-cyan-600 text-base sm:text-lg">
                   {stats.visits.last30Days.toLocaleString()}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Page Engagement Card */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <FiMousePointer className="w-5 h-5 text-indigo-600" />
-              Page Engagement (7d)
+          {/* ✅ RESPONSIVE Page Engagement Card */}
+          <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-gray-100 p-4 sm:p-6">
+            <h3 className="text-base sm:text-lg font-bold text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+              <FiMousePointer className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-600 flex-shrink-0" />
+              <span className="truncate">Page Engagement (7d)</span>
             </h3>
             {engagementData && engagementData.length > 0 ? (
-              <div className="space-y-3">
+              <div className="space-y-2 sm:space-y-3">
                 {engagementData.slice(0, 3).map((page, idx) => (
                   <div
                     key={idx}
-                    className="p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100"
+                    className="p-2.5 sm:p-3 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg border border-indigo-100"
                   >
-                    <p className="text-sm font-semibold text-gray-800 mb-2 truncate">
+                    <p className="text-xs sm:text-sm font-semibold text-gray-800 mb-2 truncate">
                       {page.page}
                     </p>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
-                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-xs">
+                      <div className="flex flex-col items-center p-1.5 sm:p-2 bg-white rounded">
                         <FiClock className="w-3 h-3 text-indigo-600 mb-1" />
-                        <span className="font-bold text-indigo-600">
+                        <span className="font-bold text-indigo-600 text-[10px] sm:text-xs">
                           {page.avgTimeOnPage}s
                         </span>
-                        <span className="text-gray-500 text-[10px]">Avg Time</span>
+                        <span className="text-gray-500 text-[9px] sm:text-[10px]">Avg Time</span>
                       </div>
-                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                      <div className="flex flex-col items-center p-1.5 sm:p-2 bg-white rounded">
                         <FiMousePointer className="w-3 h-3 text-purple-600 mb-1" />
-                        <span className="font-bold text-purple-600">
+                        <span className="font-bold text-purple-600 text-[10px] sm:text-xs">
                           {page.avgScrollDepth}%
                         </span>
-                        <span className="text-gray-500 text-[10px]">Scroll</span>
+                        <span className="text-gray-500 text-[9px] sm:text-[10px]">Scroll</span>
                       </div>
-                      <div className="flex flex-col items-center p-2 bg-white rounded">
+                      <div className="flex flex-col items-center p-1.5 sm:p-2 bg-white rounded">
                         <FiEye className="w-3 h-3 text-cyan-600 mb-1" />
-                        <span className="font-bold text-cyan-600">
+                        <span className="font-bold text-cyan-600 text-[10px] sm:text-xs">
                           {page.totalSessions}
                         </span>
-                        <span className="text-gray-500 text-[10px]">Sessions</span>
+                        <span className="text-gray-500 text-[9px] sm:text-[10px]">Sessions</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-8">
-                <FiMousePointer className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">No engagement data yet</p>
+              <div className="text-center py-6 sm:py-8">
+                <FiMousePointer className="w-10 h-10 sm:w-12 sm:h-12 text-gray-300 mx-auto mb-2" />
+                <p className="text-xs sm:text-sm text-gray-500">No engagement data yet</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Footer with timestamp */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-sm text-gray-500">
+        {/* ✅ RESPONSIVE Footer with timestamp */}
+        <div className="mt-6 sm:mt-8 flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-500">
           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          <span>
+          <span className="text-center">
             Live • Last updated: {new Date(stats.timestamp).toLocaleString()}
           </span>
         </div>

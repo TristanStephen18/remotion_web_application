@@ -73,6 +73,7 @@ const IGNORED_PAGES = [
   '/admin/security',
   '/admin/manage',
   '/admin/setup',
+  '/admin/settings'
 ];
 
 const shouldTrackPage = (page: string): boolean => {

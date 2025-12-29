@@ -79,6 +79,7 @@ import { AdminSecurity } from "./pages/admin/AdminSecurity";
 import { AdminManagement } from "./pages/admin/AdminManagement";
 import CheckingAccessLoader from "./components/ui/loading_screens/CheckingAccessLoader.tsx";
 import RedirectingLoader from "./components/ui/loading_screens/RedirectingLoader.tsx";
+import { AdminSettings } from "./pages/admin/AdminSettings";
 
 // ✅ UPDATED: Auth Provider with subscription check
 function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -513,6 +514,7 @@ function AppContent() {
       <Route path="/admin/users/:userId" element={<AdminUserDetail />} />
       <Route path="/admin/security" element={<AdminSecurity />} />
       <Route path="/admin/manage" element={<AdminManagement />} />
+      <Route path="/admin/settings" element={<AdminSettings />} />
 
       {/* ========== 404 FALLBACK ========== */}
       <Route path="*" element={<Navigate to="/" replace />} />
