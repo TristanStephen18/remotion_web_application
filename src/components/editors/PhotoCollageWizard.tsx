@@ -313,6 +313,15 @@ const PhotoCollageWizard: React.FC = () => {
   const fileRef = useRef<HTMLInputElement>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   const [step, setStep] = useState<WizardStep>("layout");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [state, setState] = useState<WizardState>({
@@ -338,6 +347,10 @@ const PhotoCollageWizard: React.FC = () => {
   const animationRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number>(0);
 
+  // Drag reorder state
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   const set = useCallback((u: Partial<WizardState>) => setState((p) => ({ ...p, ...u })), []);
   const stepIdx = STEPS.findIndex((s) => s.id === step);
   const layout = COLLAGE_LAYOUTS.find((l) => l.id === state.selectedLayoutId) || COLLAGE_LAYOUTS[0];
@@ -346,10 +359,10 @@ const PhotoCollageWizard: React.FC = () => {
   const animConfig = layout.animationConfig || { photoDelay: 8, photoDuration: 25, textStartFrame: 65 };
   const fps = 30;
   const collageDuration = 180; // Collage duration (6 seconds)
-const showcaseDurationPerPhoto = 30; // ~1s per photo fullscreen
-const showcaseStartFrame = collageDuration; // Showcase starts AFTER collage
-const showcaseTotalFrames = Math.max(state.photos.length, 1) * showcaseDurationPerPhoto;
-const totalFrames = collageDuration + showcaseTotalFrames;
+  const showcaseDurationPerPhoto = 30; // ~1s per photo fullscreen
+  const showcaseStartFrame = collageDuration; // Showcase starts AFTER collage
+  const showcaseTotalFrames = Math.max(state.photos.length, 1) * showcaseDurationPerPhoto;
+  const totalFrames = collageDuration + showcaseTotalFrames;
 
   // Animation loop
   useEffect(() => {
@@ -374,24 +387,24 @@ const totalFrames = collageDuration + showcaseTotalFrames;
 
 
   // Audio playback control
-useEffect(() => {
-  if (!audioRef.current) return;
-  
-  if (isPlaying && state.backgroundMusicPath) {
-    audioRef.current.volume = state.musicVolume;
-    audioRef.current.play().catch(e => console.log("Audio play failed:", e));
-  } else {
-    audioRef.current.pause();
-    audioRef.current.currentTime = 0;
-  }
-}, [isPlaying, state.backgroundMusicPath, state.musicVolume]);
+  useEffect(() => {
+    if (!audioRef.current) return;
+    
+    if (isPlaying && state.backgroundMusicPath) {
+      audioRef.current.volume = state.musicVolume;
+      audioRef.current.play().catch(e => console.log("Audio play failed:", e));
+    } else {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+  }, [isPlaying, state.backgroundMusicPath, state.musicVolume]);
 
-// Update volume when changed
-useEffect(() => {
-  if (audioRef.current) {
-    audioRef.current.volume = state.musicVolume;
-  }
-}, [state.musicVolume]);
+  // Update volume when changed
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.volume = state.musicVolume;
+    }
+  }, [state.musicVolume]);
 
   // Reset animation when layout changes
   useEffect(() => {
@@ -434,6 +447,17 @@ useEffect(() => {
   const addPreset = (src: string) => set({ photos: [...state.photos, { id: genId(), src }] });
   const removePhoto = (id: string) => set({ photos: state.photos.filter((p) => p.id !== id) });
 
+  const reorderPhotos = (fromId: string, toId: string) => {
+    const fromIndex = state.photos.findIndex(p => p.id === fromId);
+    const toIndex = state.photos.findIndex(p => p.id === toId);
+    if (fromIndex === -1 || toIndex === -1) return;
+    
+    const newPhotos = [...state.photos];
+    const [moved] = newPhotos.splice(fromIndex, 1);
+    newPhotos.splice(toIndex, 0, moved);
+    set({ photos: newPhotos });
+  };
+
   const canNext = () => {
     if (step === "layout") return !!state.selectedLayoutId;
     if (step === "photos") return state.photos.length >= 1;
@@ -444,64 +468,64 @@ useEffect(() => {
   const back = () => stepIdx > 0 && setStep(STEPS[stepIdx - 1].id);
 
   const finish = () => {
-  const selectedLayout = COLLAGE_LAYOUTS.find((l) => l.id === state.selectedLayoutId);
-  
-  // Calculate duration matching preview
-  const photoCount = Math.min(state.photos.length, selectedLayout?.slots.length || 6);
-  const collageDurationFrames = 180; // 6 seconds for collage
-  const showcaseDurationPerPhotoFrames = 30; // 1 second per photo
-  const showcaseTotalFrames = photoCount * showcaseDurationPerPhotoFrames;
-  const totalDurationFrames = collageDurationFrames + showcaseTotalFrames;
-  
-  const cfg = {
-    templateId: 19,
-    layoutId: state.selectedLayoutId,
-    layoutData: selectedLayout,
-    photos: state.photos.map((p) => p.src),
-    mainText: state.mainText,
-    subText: state.subText,
-    mainFont: state.mainFont,
-    subFont: state.subFont,
-    textColor: state.textColor,
-    showTextOverlay: state.showTextOverlay,
-    backgroundMusicPath: state.backgroundMusicPath,
-    musicVolume: state.musicVolume,
-    animationStyle: state.animationStyle,
-    transitionEffect: state.transitionEffect,
-    photoDuration: state.photoDuration,
-    backgroundColor: state.backgroundColor,
-    mainSize: selectedLayout?.textOverlay?.mainSize || 7,
-    subSize: selectedLayout?.textOverlay?.subSize || 4,
-    // Duration config
-    totalDurationFrames: totalDurationFrames,
-    collageDurationFrames: collageDurationFrames,
-    showcaseDurationPerPhotoFrames: showcaseDurationPerPhotoFrames,
-    showcaseTotalFrames: showcaseTotalFrames,
-    photoCount: photoCount,
-    skipPersistedLayers: true,
-    timestamp: Date.now(),
-  };
-  
-  // Clear any existing persisted layers for template 19 BEFORE navigating
-  const keysToRemove: string[] = [];
-  for (let i = 0; i < localStorage.length; i++) {
-    const key = localStorage.key(i);
-    if (key && (
-      key.includes('template-19') ||
-      key.includes('template19') ||
-      key.includes('editor-layers-19') ||
-      key.includes('layers-19') ||
-      key.includes('photocollage') ||
-      key.includes('editor_state_') && key.includes('19')
-    )) {
-      keysToRemove.push(key);
+    const selectedLayout = COLLAGE_LAYOUTS.find((l) => l.id === state.selectedLayoutId);
+    
+    // Calculate duration matching preview
+    const photoCount = Math.min(state.photos.length, selectedLayout?.slots.length || 6);
+    const collageDurationFrames = 180; // 6 seconds for collage
+    const showcaseDurationPerPhotoFrames = 30; // 1 second per photo
+    const showcaseTotalFrames = photoCount * showcaseDurationPerPhotoFrames;
+    const totalDurationFrames = collageDurationFrames + showcaseTotalFrames;
+    
+    const cfg = {
+      templateId: 19,
+      layoutId: state.selectedLayoutId,
+      layoutData: selectedLayout,
+      photos: state.photos.map((p) => p.src),
+      mainText: state.mainText,
+      subText: state.subText,
+      mainFont: state.mainFont,
+      subFont: state.subFont,
+      textColor: state.textColor,
+      showTextOverlay: state.showTextOverlay,
+      backgroundMusicPath: state.backgroundMusicPath,
+      musicVolume: state.musicVolume,
+      animationStyle: state.animationStyle,
+      transitionEffect: state.transitionEffect,
+      photoDuration: state.photoDuration,
+      backgroundColor: state.backgroundColor,
+      mainSize: selectedLayout?.textOverlay?.mainSize || 7,
+      subSize: selectedLayout?.textOverlay?.subSize || 4,
+      // Duration config
+      totalDurationFrames: totalDurationFrames,
+      collageDurationFrames: collageDurationFrames,
+      showcaseDurationPerPhotoFrames: showcaseDurationPerPhotoFrames,
+      showcaseTotalFrames: showcaseTotalFrames,
+      photoCount: photoCount,
+      skipPersistedLayers: true,
+      timestamp: Date.now(),
+    };
+    
+    // Clear any existing persisted layers for template 19 BEFORE navigating
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (
+        key.includes('template-19') ||
+        key.includes('template19') ||
+        key.includes('editor-layers-19') ||
+        key.includes('layers-19') ||
+        key.includes('photocollage') ||
+        key.includes('editor_state_') && key.includes('19')
+      )) {
+        keysToRemove.push(key);
+      }
     }
-  }
-  keysToRemove.forEach(key => localStorage.removeItem(key));
-  
-  sessionStorage.setItem("collageWizardConfig", JSON.stringify(cfg));
-  navigate(`/editor?template=19&fromWizard=true&t=${Date.now()}`, { state: { wizardConfig: cfg } });
-};
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    sessionStorage.setItem("collageWizardConfig", JSON.stringify(cfg));
+    navigate(`/editor?template=19&fromWizard=true&t=${Date.now()}`, { state: { wizardConfig: cfg } });
+  };
 
   // Colors
   const accent = "#10B981";
@@ -521,93 +545,93 @@ useEffect(() => {
     const photoSrcs = state.photos.map((p) => p.src);
     const textOverlay = layout.textOverlay;
 
-  const getSlotAnimation = (_slot: CollageSlot, index: number) => {
-  // During showcase phase (after collage), keep collage visible but static
-  if (currentFrame >= showcaseStartFrame) {
-    return { opacity: 1, transform: "none" };
-  }
-  
-  const startFrame = index * animConfig.photoDelay;
-  const endFrame = startFrame + animConfig.photoDuration;
-  const duration = animConfig.photoDuration;
-  
-  // Use the selected transition effect from state
-  const effect = state.transitionEffect;
-  
-  if (currentFrame < startFrame) {
-    // Not started yet - set initial state based on effect
-    switch (effect) {
-      case "slideLeft":
-        return { opacity: 0, transform: "translateX(100%)" };
-      case "slideRight":
-        return { opacity: 0, transform: "translateX(-100%)" };
-      case "slideUp":
-        return { opacity: 0, transform: "translateY(100%)" };
-      case "slideDown":
-        return { opacity: 0, transform: "translateY(-100%)" };
-      case "scale":
-        return { opacity: 0, transform: "scale(0.5)" };
-      case "none":
+    const getSlotAnimation = (_slot: CollageSlot, index: number) => {
+      // During showcase phase (after collage), keep collage visible but static
+      if (currentFrame >= showcaseStartFrame) {
         return { opacity: 1, transform: "none" };
-      case "fade":
-      default:
-        return { opacity: 0, transform: "none" };
-    }
-  } else if (currentFrame < endFrame) {
-    // Animating in
-    const t = (currentFrame - startFrame) / duration;
-    // Spring approximation matching Remotion
-    const springProgress = 1 - Math.pow(1 - t, 2) * Math.cos(t * Math.PI * 0.5);
-    const eased = Math.min(1, Math.max(0, springProgress));
-    const opacity = Math.min(1, t * 2); // Fade in over first half
-    
-    switch (effect) {
-      case "slideLeft": {
-        const offset = (1 - eased) * 100;
-        return { opacity, transform: `translateX(${offset}%)` };
       }
-      case "slideRight": {
-        const offset = (1 - eased) * 100;
-        return { opacity, transform: `translateX(-${offset}%)` };
+      
+      const startFrame = index * animConfig.photoDelay;
+      const endFrame = startFrame + animConfig.photoDuration;
+      const duration = animConfig.photoDuration;
+      
+      // Use the selected transition effect from state
+      const effect = state.transitionEffect;
+      
+      if (currentFrame < startFrame) {
+        // Not started yet - set initial state based on effect
+        switch (effect) {
+          case "slideLeft":
+            return { opacity: 0, transform: "translateX(100%)" };
+          case "slideRight":
+            return { opacity: 0, transform: "translateX(-100%)" };
+          case "slideUp":
+            return { opacity: 0, transform: "translateY(100%)" };
+          case "slideDown":
+            return { opacity: 0, transform: "translateY(-100%)" };
+          case "scale":
+            return { opacity: 0, transform: "scale(0.5)" };
+          case "none":
+            return { opacity: 1, transform: "none" };
+          case "fade":
+          default:
+            return { opacity: 0, transform: "none" };
+        }
+      } else if (currentFrame < endFrame) {
+        // Animating in
+        const t = (currentFrame - startFrame) / duration;
+        // Spring approximation matching Remotion
+        const springProgress = 1 - Math.pow(1 - t, 2) * Math.cos(t * Math.PI * 0.5);
+        const eased = Math.min(1, Math.max(0, springProgress));
+        const opacity = Math.min(1, t * 2); // Fade in over first half
+        
+        switch (effect) {
+          case "slideLeft": {
+            const offset = (1 - eased) * 100;
+            return { opacity, transform: `translateX(${offset}%)` };
+          }
+          case "slideRight": {
+            const offset = (1 - eased) * 100;
+            return { opacity, transform: `translateX(-${offset}%)` };
+          }
+          case "slideUp": {
+            const offset = (1 - eased) * 100;
+            return { opacity, transform: `translateY(${offset}%)` };
+          }
+          case "slideDown": {
+            const offset = (1 - eased) * 100;
+            return { opacity, transform: `translateY(-${offset}%)` };
+          }
+          case "scale": {
+            const scale = 0.5 + (0.5 * eased);
+            return { opacity, transform: `scale(${scale})` };
+          }
+          case "none":
+            return { opacity: 1, transform: "none" };
+          case "fade":
+          default:
+            return { opacity, transform: "none" };
+        }
       }
-      case "slideUp": {
-        const offset = (1 - eased) * 100;
-        return { opacity, transform: `translateY(${offset}%)` };
-      }
-      case "slideDown": {
-        const offset = (1 - eased) * 100;
-        return { opacity, transform: `translateY(-${offset}%)` };
-      }
-      case "scale": {
-        const scale = 0.5 + (0.5 * eased);
-        return { opacity, transform: `scale(${scale})` };
-      }
-      case "none":
-        return { opacity: 1, transform: "none" };
-      case "fade":
-      default:
-        return { opacity, transform: "none" };
-    }
-  }
-  return { opacity: 1, transform: "none" };
-};
+      return { opacity: 1, transform: "none" };
+    };
 
- const getTextAnimation = (isMain: boolean) => {
-  const textStart = animConfig.textStartFrame;
-  const duration = isMain ? 20 : 15;
-  const delay = isMain ? 0 : 5;
-  const startFrame = textStart + delay;
-  const progress = Math.min(1, Math.max(0, (currentFrame - startFrame) / duration));
+    const getTextAnimation = (isMain: boolean) => {
+      const textStart = animConfig.textStartFrame;
+      const duration = isMain ? 20 : 15;
+      const delay = isMain ? 0 : 5;
+      const startFrame = textStart + delay;
+      const progress = Math.min(1, Math.max(0, (currentFrame - startFrame) / duration));
 
-  if (currentFrame < startFrame) {
-    return { opacity: 0, transform: isMain ? "scale(0.5)" : "translateY(20px)" };
-  }
-  const eased = 1 - Math.pow(1 - progress, 3);
-  if (isMain) {
-    return { opacity: eased, transform: `scale(${0.5 + 0.5 * eased})` };
-  }
-  return { opacity: eased, transform: `translateY(${20 * (1 - eased)}px)` };
-};
+      if (currentFrame < startFrame) {
+        return { opacity: 0, transform: isMain ? "scale(0.5)" : "translateY(20px)" };
+      }
+      const eased = 1 - Math.pow(1 - progress, 3);
+      if (isMain) {
+        return { opacity: eased, transform: `scale(${0.5 + 0.5 * eased})` };
+      }
+      return { opacity: eased, transform: `translateY(${20 * (1 - eased)}px)` };
+    };
 
     // Screen dimensions (preview is 260px wide, 9:16 ratio)
     const screenHeight = 260 * (16 / 9);
@@ -647,90 +671,90 @@ useEffect(() => {
             backgroundColor: state.backgroundColor,
           }}>
 
-{/* Individual Photo Showcase - Fullscreen AFTER collage */}
-{currentFrame >= showcaseStartFrame && state.photos.length > 0 && (() => {
-  const showcaseFrame = currentFrame - showcaseStartFrame;
-  const photoIndex = Math.min(
-    Math.floor(showcaseFrame / showcaseDurationPerPhoto),
-    state.photos.length - 1
-  );
-  const photoFrame = showcaseFrame % showcaseDurationPerPhoto;
-  const src = state.photos[photoIndex]?.src;
-  
-  if (!src || photoIndex >= state.photos.length) return null;
-  
-  // Ken Burns zoom effect
-  const zoomProgress = photoFrame / showcaseDurationPerPhoto;
-  const scale = 1 + (zoomProgress * 0.08);
-  
-  // Fade in/out
-  const fadeInFrames = 6;
-  const fadeOutFrames = 6;
-  let opacity = 1;
-  if (photoFrame < fadeInFrames) {
-    opacity = photoFrame / fadeInFrames;
-  } else if (photoFrame > showcaseDurationPerPhoto - fadeOutFrames) {
-    opacity = (showcaseDurationPerPhoto - photoFrame) / fadeOutFrames;
-  }
-  
-  return (
-    <div style={{
-      position: "absolute",
-      inset: 0,
-      zIndex: 100,
-      backgroundColor: state.backgroundColor,
-      overflow: "hidden",
-    }}>
-      <img 
-        src={src} 
-        alt="" 
-        style={{ 
-          width: "100%", 
-          height: "100%", 
-          objectFit: "cover",
-          transform: `scale(${scale})`,
-          opacity: opacity,
-          transition: "none",
-        }} 
-      />
-      {/* Photo counter dots */}
-      <div style={{
-        position: "absolute",
-        bottom: 20,
-        left: "50%",
-        transform: "translateX(-50%)",
-        display: "flex",
-        gap: 6,
-        zIndex: 101,
-      }}>
-        {state.photos.slice(0, layout.slots.length).map((_, i) => (
-          <div key={i} style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            backgroundColor: i === photoIndex ? "#fff" : "rgba(255,255,255,0.4)",
-            boxShadow: "0 1px 3px rgba(0,0,0,0.5)",
-          }} />
-        ))}
-      </div>
-      {/* Photo number */}
-      <div style={{
-        position: "absolute",
-        top: 12,
-        right: 12,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        color: "#fff",
-        padding: "4px 10px",
-        borderRadius: 12,
-        fontSize: 11,
-        fontWeight: 600,
-        zIndex: 101,
-      }}>
-        {photoIndex + 1} / {Math.min(state.photos.length, layout.slots.length)}
-      </div>
-    </div>
-  );
-})()}
+            {/* Individual Photo Showcase - Fullscreen AFTER collage */}
+            {currentFrame >= showcaseStartFrame && state.photos.length > 0 && (() => {
+              const showcaseFrame = currentFrame - showcaseStartFrame;
+              const photoIndex = Math.min(
+                Math.floor(showcaseFrame / showcaseDurationPerPhoto),
+                state.photos.length - 1
+              );
+              const photoFrame = showcaseFrame % showcaseDurationPerPhoto;
+              const src = state.photos[photoIndex]?.src;
+              
+              if (!src || photoIndex >= state.photos.length) return null;
+              
+              // Ken Burns zoom effect
+              const zoomProgress = photoFrame / showcaseDurationPerPhoto;
+              const scale = 1 + (zoomProgress * 0.08);
+              
+              // Fade in/out
+              const fadeInFrames = 6;
+              const fadeOutFrames = 6;
+              let opacity = 1;
+              if (photoFrame < fadeInFrames) {
+                opacity = photoFrame / fadeInFrames;
+              } else if (photoFrame > showcaseDurationPerPhoto - fadeOutFrames) {
+                opacity = (showcaseDurationPerPhoto - photoFrame) / fadeOutFrames;
+              }
+              
+              return (
+                <div style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 100,
+                  backgroundColor: state.backgroundColor,
+                  overflow: "hidden",
+                }}>
+                  <img 
+                    src={src} 
+                    alt="" 
+                    style={{ 
+                      width: "100%", 
+                      height: "100%", 
+                      objectFit: "cover",
+                      transform: `scale(${scale})`,
+                      opacity: opacity,
+                      transition: "none",
+                    }} 
+                  />
+                  {/* Photo counter dots */}
+                  <div style={{
+                    position: "absolute",
+                    bottom: 20,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    display: "flex",
+                    gap: 6,
+                    zIndex: 101,
+                  }}>
+                    {state.photos.slice(0, layout.slots.length).map((_, i) => (
+                      <div key={i} style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        backgroundColor: i === photoIndex ? "#fff" : "rgba(255,255,255,0.4)",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                      }} />
+                    ))}
+                  </div>
+                  {/* Photo number */}
+                  <div style={{
+                    position: "absolute",
+                    top: 12,
+                    right: 12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    color: "#fff",
+                    padding: "4px 10px",
+                    borderRadius: 12,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    zIndex: 101,
+                  }}>
+                    {photoIndex + 1} / {Math.min(state.photos.length, layout.slots.length)}
+                  </div>
+                </div>
+              );
+            })()}
             {/* Render slots with photos and animations */}
             {/* CollagePanel uses TOP-LEFT positioning: x/y are percentages from top-left */}
             {layout.slots.map((slot, i) => {
@@ -862,6 +886,7 @@ useEffect(() => {
               height: 40,
               borderRadius: "50%",
               border: "none",
+              backgroundColor: accent,
               color: "#fff",
               cursor: "pointer",
               display: "flex",
@@ -908,14 +933,14 @@ useEffect(() => {
 
 
         {/* Hidden Audio Element for Preview */}
-{state.backgroundMusicPath && (
-  <audio
-    ref={audioRef}
-    src={state.backgroundMusicPath}
-    loop
-    preload="auto"
-  />
-)}
+        {state.backgroundMusicPath && (
+          <audio
+            ref={audioRef}
+            src={state.backgroundMusicPath}
+            loop
+            preload="auto"
+          />
+        )}
 
         {/* Animated Badge */}
         {layout.animated && (
@@ -1030,10 +1055,30 @@ useEffect(() => {
       {state.photos.length > 0 && (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(64px, 1fr))", gap: 6 }}>
           {state.photos.map((p, idx) => (
-            <div key={p.id} style={{ aspectRatio: "1", borderRadius: 6, overflow: "hidden", position: "relative", border: `2px solid ${idx < layout.slots.length ? accent : border}` }}>
-              <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            <div 
+              key={p.id} 
+              draggable
+              onDragStart={() => setDraggedId(p.id)}
+              onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+              onDragOver={(e) => { e.preventDefault(); setDragOverId(p.id); }}
+              onDragLeave={() => setDragOverId(null)}
+              onDrop={() => { if (draggedId && draggedId !== p.id) reorderPhotos(draggedId, p.id); setDragOverId(null); }}
+              style={{ 
+                aspectRatio: "1", 
+                borderRadius: 6, 
+                overflow: "hidden", 
+                position: "relative", 
+                border: `2px solid ${idx < layout.slots.length ? accent : border}`,
+                opacity: draggedId === p.id ? 0.5 : 1,
+                transform: dragOverId === p.id && draggedId !== p.id ? "scale(1.05)" : "scale(1)",
+                boxShadow: dragOverId === p.id && draggedId !== p.id ? `0 0 12px ${accent}` : "none",
+                cursor: "grab",
+                transition: "transform 0.15s ease, box-shadow 0.15s ease",
+              }}
+            >
+              <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
               <div style={{ position: "absolute", top: 3, left: 3, width: 18, height: 18, borderRadius: "50%", backgroundColor: idx < layout.slots.length ? accent : bg3, color: idx < layout.slots.length ? "#fff" : text3, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{idx + 1}</div>
-              <button onClick={() => removePhoto(p.id)} style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: "50%", backgroundColor: "rgba(239,68,68,0.9)", color: "#fff", border: "none", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+              <button onClick={(e) => { e.stopPropagation(); removePhoto(p.id); }} style={{ position: "absolute", top: 3, right: 3, width: 18, height: 18, borderRadius: "50%", backgroundColor: "rgba(239,68,68,0.9)", color: "#fff", border: "none", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
             </div>
           ))}
         </div>
@@ -1077,20 +1122,20 @@ useEffect(() => {
         </>
       )}
       <div style={{ height: 1, backgroundColor: border }} />
-<div style={sectionTitle}>Photo Transition Effect</div>
-<div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-  {[
-    { value: "fade", label: "Fade" },
-    { value: "slideLeft", label: "Slide Left" },
-    { value: "slideRight", label: "Slide Right" },
-    { value: "slideUp", label: "Slide Up" },
-    { value: "slideDown", label: "Slide Down" },
-    { value: "scale", label: "Scale" },
-    { value: "none", label: "None" },
-  ].map((a) => (
-    <button key={a.value} onClick={() => set({ transitionEffect: a.value as any })} style={chipStyle(state.transitionEffect === a.value)}>{a.label}</button>
-  ))}
-</div>
+      <div style={sectionTitle}>Photo Transition Effect</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {[
+          { value: "fade", label: "Fade" },
+          { value: "slideLeft", label: "Slide Left" },
+          { value: "slideRight", label: "Slide Right" },
+          { value: "slideUp", label: "Slide Up" },
+          { value: "slideDown", label: "Slide Down" },
+          { value: "scale", label: "Scale" },
+          { value: "none", label: "None" },
+        ].map((a) => (
+          <button key={a.value} onClick={() => set({ transitionEffect: a.value as any })} style={chipStyle(state.transitionEffect === a.value)}>{a.label}</button>
+        ))}
+      </div>
       <div><label style={labelStyle}>Duration: {state.photoDuration}s</label><input type="range" min="2" max="10" value={state.photoDuration} onChange={(e) => set({ photoDuration: +e.target.value })} style={{ width: "100%", accentColor: accent }} /></div>
       <div style={{ height: 1, backgroundColor: border }} />
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -1118,9 +1163,184 @@ useEffect(() => {
   );
 
   // ============================================================================
+  // MOBILE RENDER (completely separate)
+  // ============================================================================
+
+  const renderMobileLayout = () => {
+    const photoSrcs = state.photos.map((p) => p.src);
+
+    return (
+      <div style={{ height: "100vh", maxHeight: "100vh", backgroundColor: bg1, background: dark ? "linear-gradient(180deg, #09090b 0%, #0d0d10 50%, #09090b 100%)" : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        
+        {/* Mobile Header */}
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderBottom: `1px solid ${border}`, background: dark ? "linear-gradient(180deg, rgba(24, 24, 27, 0.98), rgba(9, 9, 11, 0.95))" : "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 250, 252, 0.95))", backdropFilter: "blur(20px)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, color: text1, cursor: "pointer" }} onClick={() => navigate(-1)}>
+            <span style={{ fontSize: 14, opacity: 0.6 }}>←</span>
+            <span style={{ background: "linear-gradient(135deg, #10B981, #34d399)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800 }}>Collage</span>
+          </div>
+          <button style={{ padding: "8px 16px", background: canNext() ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" : (dark ? "#27272a" : "#e2e8f0"), border: "none", borderRadius: 20, fontSize: 12, fontWeight: 600, color: canNext() ? "#fff" : text3, cursor: canNext() ? "pointer" : "default", boxShadow: canNext() ? "0 4px 16px rgba(16, 185, 129, 0.4)" : "none" }} onClick={finish} disabled={!canNext()}>Create →</button>
+        </header>
+
+        {/* Mobile Main Content */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "16px 12px 12px", gap: 12, overflow: "auto", minHeight: 0 }}>
+          
+          {/* Preview + Settings Row */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 12, alignItems: "stretch", justifyContent: "center" }}>
+            
+            {/* Phone Preview - Larger */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div style={{ width: 180, aspectRatio: "9/16", backgroundColor: "#000", borderRadius: 22, padding: 5, boxShadow: dark ? "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 40px rgba(16, 185, 129, 0.1)" : "0 12px 40px rgba(0,0,0,0.2), 0 0 0 1px rgba(16, 185, 129, 0.2)", position: "relative", overflow: "hidden" }}>
+                {/* Notch */}
+                <div style={{ position: "absolute", top: 5, left: "50%", transform: "translateX(-50%)", width: 40, height: 12, backgroundColor: "#000", borderRadius: "0 0 8px 8px", zIndex: 20 }} />
+                <div style={{ width: "100%", height: "100%", borderRadius: 17, overflow: "hidden", position: "relative", backgroundColor: state.backgroundColor }}>
+                  {/* Render slots */}
+                  {layout.slots.map((slot, i) => {
+                    const src = photoSrcs[i];
+                    return (
+                      <div key={slot.id} style={{ position: "absolute", left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, transform: slot.rotation ? `rotate(${slot.rotation}deg)` : undefined, borderRadius: slot.borderRadius || 0, zIndex: slot.zIndex || 1, boxShadow: slot.shadow ? "0 3px 10px rgba(0,0,0,0.5)" : undefined, overflow: "hidden", backgroundColor: dark ? "#27272a" : "#e2e8f0" }}>
+                        {src ? <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: dark ? "#52525b" : "#94a3b8", fontSize: 12, fontWeight: 700 }}>{i + 1}</div>}
+                      </div>
+                    );
+                  })}
+                  {/* Text overlay preview */}
+                  {state.showTextOverlay && (
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 10 }}>
+                      <div style={{ fontFamily: state.mainFont, fontSize: 14, fontWeight: "bold", color: state.textColor, textShadow: "1px 1px 5px rgba(0,0,0,0.9)" }}>{state.mainText}</div>
+                      <div style={{ fontFamily: state.subFont, fontSize: 9, fontStyle: "italic", color: state.textColor, textShadow: "1px 1px 3px rgba(0,0,0,0.7)", marginTop: 2 }}>{state.subText}</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              {/* Stats below preview */}
+              <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 16px", background: dark ? "rgba(39, 39, 42, 0.8)" : "rgba(241, 245, 249, 0.9)", borderRadius: 16, backdropFilter: "blur(10px)" }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: text1 }}>{state.photos.length}</div>
+                  <div style={{ fontSize: 8, color: text3, textTransform: "uppercase" }}>photos</div>
+                </div>
+                <div style={{ width: 1, height: 20, background: dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: accent }}>{layout.slots.length}</div>
+                  <div style={{ fontSize: 8, color: text3, textTransform: "uppercase" }}>slots</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Settings Panel */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: dark ? "linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98))" : "linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98))", borderRadius: 16, border: `1px solid ${dark ? "rgba(16, 185, 129, 0.15)" : "rgba(16, 185, 129, 0.1)"}`, boxShadow: dark ? "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)" : "0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)", backdropFilter: "blur(20px)", width: 140 }}>
+              {/* Duration */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: text3, textTransform: "uppercase" }}>Duration</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: accent }}>{state.photoDuration}s</span>
+                </div>
+                <input type="range" min={2} max={10} value={state.photoDuration} onChange={(e) => set({ photoDuration: +e.target.value })} style={{ width: "100%", height: 6, borderRadius: 3, appearance: "none", background: dark ? "#27272a" : "#e2e8f0", outline: "none", cursor: "pointer" }} />
+              </div>
+              {/* Transition */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: text3, marginBottom: 6, textTransform: "uppercase" }}>Effect</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {[{ v: "fade", l: "Fade" }, { v: "slideLeft", l: "Slide" }, { v: "scale", l: "Scale" }].map((t) => (
+                    <button key={t.v} style={{ padding: "6px 0", fontSize: 10, fontWeight: 600, border: "none", borderRadius: 6, cursor: "pointer", background: state.transitionEffect === t.v ? "linear-gradient(135deg, #10B981 0%, #059669 100%)" : (dark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.05)"), color: state.transitionEffect === t.v ? "#fff" : text3, transition: "all 0.2s ease" }} onClick={() => set({ transitionEffect: t.v as any })}>{t.l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>                               
+          </div>
+
+          {/* Photo Selection Section - NOW FIRST */}
+          <div style={{ width: "100%", maxWidth: 380, background: dark ? "linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98))" : "linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98))", borderRadius: 14, border: `1px solid ${dark ? "rgba(16, 185, 129, 0.15)" : "rgba(16, 185, 129, 0.1)"}`, padding: 12, overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: text1 }}>Add Photos</span>
+              <button onClick={() => fileRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", background: "linear-gradient(135deg, #10B981 0%, #059669 100%)", border: "none", borderRadius: 20, fontSize: 11, fontWeight: 600, color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(16, 185, 129, 0.4)" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                Upload
+              </button>
+            </div>
+            <input ref={fileRef} type="file" accept="image/*" multiple onChange={onFiles} style={{ display: "none" }} />
+            {/* Selected photos */}
+            {state.photos.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8 }}>
+                  {state.photos.map((p, idx) => (
+                    <div 
+                      key={p.id} 
+                      draggable
+                      onDragStart={() => setDraggedId(p.id)}
+                      onDragEnd={() => { setDraggedId(null); setDragOverId(null); }}
+                      onDragOver={(e) => { e.preventDefault(); setDragOverId(p.id); }}
+                      onDragLeave={() => setDragOverId(null)}
+                      onDrop={() => { if (draggedId && draggedId !== p.id) reorderPhotos(draggedId, p.id); setDragOverId(null); }}
+                      style={{ 
+                        position: "relative", 
+                        width: 52, 
+                        height: 52, 
+                        borderRadius: 10, 
+                        overflow: "hidden", 
+                        flexShrink: 0, 
+                        border: idx < layout.slots.length ? `2px solid ${accent}` : `2px solid ${dark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, 
+                        boxShadow: dragOverId === p.id && draggedId !== p.id ? `0 0 12px ${accent}` : (idx < layout.slots.length ? `0 0 10px ${accent}30` : "none"),
+                        opacity: draggedId === p.id ? 0.5 : 1,
+                        transform: dragOverId === p.id && draggedId !== p.id ? "scale(1.08)" : "scale(1)",
+                        cursor: "grab",
+                        transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                      }}
+                    >
+                      <img src={p.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", top: 2, left: 2, width: 16, height: 16, borderRadius: "50%", backgroundColor: idx < layout.slots.length ? accent : bg3, color: idx < layout.slots.length ? "#fff" : text3, fontSize: 9, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" }}>{idx + 1}</div>
+                      <button onClick={(e) => { e.stopPropagation(); removePhoto(p.id); }} style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(239,68,68,0.9)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Presets grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+              {PRESETS.map((src, idx) => {
+                const isAdded = state.photos.some(p => p.src === src);
+                return (
+                  <div key={idx} onClick={() => !isAdded && addPreset(src)} style={{ aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: isAdded ? "default" : "pointer", position: "relative", border: isAdded ? `2px solid ${accent}` : "2px solid transparent", opacity: isAdded ? 0.5 : 1, transition: "all 0.2s ease", boxShadow: dark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.1)" }}>
+                    <img src={src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    {isAdded && <div style={{ position: "absolute", inset: 0, background: "rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><polyline points="20 6 9 17 4 12" /></svg></div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Layout Selection Section - NOW SECOND */}
+          <div style={{ width: "100%", maxWidth: 380, background: dark ? "linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98))" : "linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 250, 252, 0.98))", borderRadius: 14, border: `1px solid ${dark ? "rgba(16, 185, 129, 0.15)" : "rgba(16, 185, 129, 0.1)"}`, padding: 12, overflow: "hidden" }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: text1, marginBottom: 10 }}>Choose Layout</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              {COLLAGE_LAYOUTS.slice(0, 12).map((l) => (
+                <div key={l.id} onClick={() => selectLayout(l.id)} style={{ aspectRatio: "9/16", backgroundColor: dark ? "#1a1a1d" : "#f1f5f9", borderRadius: 6, cursor: "pointer", border: `2px solid ${state.selectedLayoutId === l.id ? accent : "transparent"}`, position: "relative", overflow: "hidden", boxShadow: state.selectedLayoutId === l.id ? `0 0 12px ${accent}40` : "none" }}>
+                  {l.animated && <div style={{ position: "absolute", top: 2, right: 2, fontSize: 8, zIndex: 5 }}>⚡</div>}
+                  <div style={{ position: "absolute", inset: 2, backgroundColor: "#1a1a1a", borderRadius: 3, overflow: "hidden" }}>
+                    {l.slots.map((slot) => (
+                      <div key={slot.id} style={{ position: "absolute", left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.width}%`, height: `${slot.height}%`, backgroundColor: state.selectedLayoutId === l.id ? accent : "#444", opacity: state.selectedLayoutId === l.id ? 0.7 : 1 }} />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  };
+
+  // ============================================================================
   // MAIN RENDER
   // ============================================================================
 
+  // Mobile: return completely separate layout
+  if (isMobile) {
+    return renderMobileLayout();
+  }
+
+  // Desktop: return original layout exactly as provided
   return (
     <div style={{ minHeight: "100vh", backgroundColor: bg1, color: text1, display: "flex", flexDirection: "column" }}>
       <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 20px", backgroundColor: bg2, borderBottom: `1px solid ${border}` }}>

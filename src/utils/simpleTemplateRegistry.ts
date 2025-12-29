@@ -121,8 +121,6 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
       animation: { entrance: 'fade', entranceDuration: 60 },
     } as VideoLayer);
   } else if (bgType === 'gradient') {
-    // For gradient, we use a colored div via a text layer with full opacity background
-    // Or you could use image layer with a gradient image
     layers.push({
       id: 'background',
       type: 'image',
@@ -131,9 +129,10 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
       endFrame: totalFrames,
       visible: true,
       locked: false,
-      src: 'https://res.cloudinary.com/dcu9xuof0/image/upload/v1764429657/OIP_fchw6q.png', // fallback
-      isBackground: true,
-      objectFit: 'cover',
+      src: '', 
+    isBackground: true,
+    gradient: config?.background?.gradient || 'linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)',
+    objectFit: 'cover',
       filter: config?.background?.filter || 'brightness(0.6)',
       position: { x: 50, y: 50 },
       size: { width: 100, height: 100 },
@@ -795,10 +794,10 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
     // Defaults
     const chatStyle = config?.chatStyle || 'fakechatconversation';
     const senderName = config?.senderName || 'Sarah_Smith';
-    const avatarUrl = config?.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100';
+    const senderAvatarUrl = config?.senderAvatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100';
+    const receiverAvatarUrl = config?.receiverAvatarUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100';
     const backgroundVideoUrl = config?.backgroundVideoUrl || 'https://res.cloudinary.com/dcu9xuof0/video/upload/v1765260195/Subway_Surfers_2024_-_Gameplay_4K_9x16_No_Copyright_n4ym8w.mp4';
     const backgroundOpacity = config?.backgroundOpacity || 0.4;
-    const typingDuration = config?.typingDuration || 30;
     const totalFrames = config?.totalFrames || 300;
 
     const layers: any[] = [];
@@ -831,45 +830,22 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
       config.messages.forEach((msg: any, index: number) => {
         currentFrame += msg.delay || 30;
         
-        if (msg.isTyping) {
-          // Typing indicator (shows for typingDuration then disappears)
-          layers.push({
-            id: `msg-typing-${index}`,
-            type: 'chat-bubble',
-            name: 'Typing...',
-            startFrame: currentFrame,
-            endFrame: currentFrame + typingDuration,
-            visible: true,
-            locked: false,
-            message: "",
-            isSender: msg.isSender,
-            isTyping: true,
-            chatStyle: chatStyle,
-            senderName: senderName,
-            avatarUrl: avatarUrl,
-            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
-            size: { width: 15, height: 8 },
-            rotation: 0,
-            opacity: 1,
-            animation: { entrance: 'slideUp', entranceDuration: 15 },
-          });
-          currentFrame += typingDuration;
-        } else {
-          // Regular message
+        if (!msg.isTyping) {
+          // Regular message (skip typing indicators)
           layers.push({
             id: `msg-${index}`,
             type: 'chat-bubble',
             name: msg.isSender ? `Me: ${msg.message.substring(0, 15)}...` : `Them: ${msg.message.substring(0, 15)}...`,
-            startFrame: currentFrame,
-            endFrame: totalFrames,
+            startFrame: msg.startFrame ?? currentFrame,
+            endFrame: msg.endFrame ?? totalFrames,
             visible: true,
             locked: false,
             message: msg.message,
             isSender: msg.isSender,
             chatStyle: chatStyle,
             senderName: senderName,
-            avatarUrl: avatarUrl,
-            position: { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
+            avatarUrl: msg.isSender ? senderAvatarUrl : receiverAvatarUrl,
+            position: msg.position || { x: msg.isSender ? 65 : 35, y: 25 + (index * 12) },
             size: { width: 45, height: 8 },
             rotation: 0,
             opacity: 1,
@@ -892,32 +868,12 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           isSender: false,
           chatStyle: chatStyle,
           senderName: senderName,
-          avatarUrl: avatarUrl,
+          avatarUrl: receiverAvatarUrl,
           position: { x: 35, y: 25 },
           size: { width: 45, height: 8 },
           rotation: 0,
           opacity: 1,
           animation: { entrance: 'slideUp', entranceDuration: 20 },
-        },
-        {
-          id: 'msg-2',
-          type: 'chat-bubble',
-          name: 'Typing...',
-          startFrame: 40,
-          endFrame: 70,
-          visible: true,
-          locked: false,
-          message: "",
-          isSender: true,
-          isTyping: true,
-          chatStyle: chatStyle,
-          senderName: senderName,
-          avatarUrl: avatarUrl,
-          position: { x: 85, y: 37 },
-          size: { width: 10, height: 8 },
-          rotation: 0,
-          opacity: 1,
-          animation: { entrance: 'slideUp', entranceDuration: 15 },
         },
         {
           id: 'msg-3',
@@ -931,7 +887,7 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           isSender: true,
           chatStyle: chatStyle,
           senderName: senderName,
-          avatarUrl: avatarUrl,
+          avatarUrl: senderAvatarUrl,
           position: { x: 65, y: 37 },
           size: { width: 48, height: 8 },
           rotation: 0,
@@ -1102,8 +1058,11 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
         } as RedditStoryLayer,
 
 
-        // VOICEOVER - Always present in timeline
-        {
+        ];
+
+      // VOICEOVER - Only add if generated
+      if (config?.audio?.voiceoverPath && config.audio.voiceoverPath !== '') {
+        layers.push({
           id: 'reddit-voiceover',
           type: 'audio',
           name: '🎙️ AI Voiceover',
@@ -1111,10 +1070,10 @@ export const TEMPLATES: Record<number, TemplateDefinition> = {
           endFrame: totalFrames,
           visible: true,
           locked: false,
-          src: config?.audio?.voiceoverPath || '',
+          src: config.audio.voiceoverPath,
           volume: 1,
-        } as AudioLayer,
-      ];
+        } as AudioLayer);
+      }
 
       // Background music (optional)
       if (config?.audio?.backgroundMusicPath && config.audio.backgroundMusicPath !== '') {

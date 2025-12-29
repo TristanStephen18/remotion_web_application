@@ -15,6 +15,7 @@ export interface TimelineTrack {
   endFrame: number;
   locked?: boolean;
   visible?: boolean;
+  muted?: boolean;
   data?: Record<string, unknown>;
 }
 
@@ -177,6 +178,14 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const [hoveredTrackId, setHoveredTrackId] = useState<string | null>(null);
 
+  // Snap guide state
+  const [snapGuide, setSnapGuide] = useState<{
+    frame: number;
+    visible: boolean;
+  } | null>(null);
+  
+  const SNAP_THRESHOLD_FRAMES = 5; // Snap when within 5 frames
+
   const effectiveTotalFrames = useMemo(() => {
   const maxTrackEnd = Math.max(...tracks.map(t => t.endFrame), 0);
   return Math.max(totalFrames, maxTrackEnd);
@@ -190,6 +199,40 @@ export const Timeline: React.FC<TimelineProps> = ({
 
   const frameToPixel = useCallback((frame: number) => (frame / effectiveTotalFrames) * timelineWidth, [effectiveTotalFrames, timelineWidth]);
 const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timelineWidth) * effectiveTotalFrames), [effectiveTotalFrames, timelineWidth]);
+
+  // Get all snap points from other tracks
+  const getSnapPoints = useCallback((excludeTrackId: string) => {
+    const points: number[] = [0]; // Always snap to frame 0
+    tracks.forEach(track => {
+      if (track.id !== excludeTrackId) {
+        points.push(track.startFrame);
+        points.push(track.endFrame);
+      }
+    });
+    // Also add total frames as snap point
+    points.push(totalFrames);
+    return [...new Set(points)].sort((a, b) => a - b);
+  }, [tracks, totalFrames]);
+
+  // Find nearest snap point
+  const findSnapPoint = useCallback((frame: number, excludeTrackId: string): { snapped: number; shouldSnap: boolean } => {
+    const snapPoints = getSnapPoints(excludeTrackId);
+    let nearestPoint = frame;
+    let minDistance = Infinity;
+    
+    for (const point of snapPoints) {
+      const distance = Math.abs(frame - point);
+      if (distance < minDistance && distance <= SNAP_THRESHOLD_FRAMES) {
+        minDistance = distance;
+        nearestPoint = point;
+      }
+    }
+    
+    return {
+      snapped: nearestPoint,
+      shouldSnap: minDistance <= SNAP_THRESHOLD_FRAMES
+    };
+  }, [getSnapPoints, SNAP_THRESHOLD_FRAMES]);
 
   // Scroll Sync
   useEffect(() => {
@@ -418,6 +461,8 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
           const deltaX = x - dragState.startX;
           const deltaFrames = pixelToFrame(deltaX);
           
+          let snapFrame: number | null = null;
+          
           const updatedTracks = tracksRef.current.map((t) => {
             if (t.id !== dragState.trackId) return t;
             
@@ -425,23 +470,63 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
             let newEnd = dragState.endFrame;
             
             if (dragState.type === "move") {
-  const duration = dragState.endFrame - dragState.startFrame;
-  newStart = dragState.startFrame + deltaFrames;
-  newEnd = dragState.endFrame + deltaFrames;
-  
-  // Only clamp to start (preserve duration), allow extending past end
-  if (newStart < 0) {
-    newStart = 0;
-    newEnd = duration;
-  }
-} else if (dragState.type === "resize-left") {
+              const duration = dragState.endFrame - dragState.startFrame;
+              newStart = dragState.startFrame + deltaFrames;
+              newEnd = dragState.endFrame + deltaFrames;
+              
+              // Check snap for start edge
+              const startSnap = findSnapPoint(newStart, dragState.trackId);
+              // Check snap for end edge
+              const endSnap = findSnapPoint(newEnd, dragState.trackId);
+              
+              // Prefer the closer snap
+              if (startSnap.shouldSnap && (!endSnap.shouldSnap || Math.abs(newStart - startSnap.snapped) <= Math.abs(newEnd - endSnap.snapped))) {
+                const snapDelta = startSnap.snapped - newStart;
+                newStart = startSnap.snapped;
+                newEnd = newStart + duration;
+                snapFrame = startSnap.snapped;
+              } else if (endSnap.shouldSnap) {
+                const snapDelta = endSnap.snapped - newEnd;
+                newEnd = endSnap.snapped;
+                newStart = newEnd - duration;
+                snapFrame = endSnap.snapped;
+              }
+              
+              // Only clamp to start (preserve duration), allow extending past end
+              if (newStart < 0) {
+                newStart = 0;
+                newEnd = duration;
+                snapFrame = 0;
+              }
+            } else if (dragState.type === "resize-left") {
               newStart = Math.max(0, Math.min(dragState.endFrame - 1, dragState.startFrame + deltaFrames));
+              
+              // Snap the left edge
+              const startSnap = findSnapPoint(newStart, dragState.trackId);
+              if (startSnap.shouldSnap) {
+                newStart = Math.max(0, Math.min(dragState.endFrame - 1, startSnap.snapped));
+                snapFrame = startSnap.snapped;
+              }
             } else if (dragState.type === "resize-right") {
-  newEnd = Math.max(dragState.startFrame + 1, dragState.endFrame + deltaFrames);
-}
+              newEnd = Math.max(dragState.startFrame + 1, dragState.endFrame + deltaFrames);
+              
+              // Snap the right edge
+              const endSnap = findSnapPoint(newEnd, dragState.trackId);
+              if (endSnap.shouldSnap) {
+                newEnd = Math.max(dragState.startFrame + 1, endSnap.snapped);
+                snapFrame = endSnap.snapped;
+              }
+            }
             
             return { ...t, startFrame: newStart, endFrame: newEnd };
           });
+          
+          // Update snap guide
+          if (snapFrame !== null) {
+            setSnapGuide({ frame: snapFrame, visible: true });
+          } else {
+            setSnapGuide(null);
+          }
           
           if (onTracksChange) {
             onTracksChange(updatedTracks);
@@ -468,6 +553,7 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
       
       if (dragState) {
         setDragState(null);
+        setSnapGuide(null);
       }
       
       setDragDirection(null);
@@ -488,7 +574,7 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
       window.removeEventListener("touchend", handleEnd);
       window.removeEventListener("touchcancel", handleEnd);
     };
-  }, [dragState, reorderState, isResizingHorizontal, onTracksChange, onReorderTracks, pixelToFrame, totalFrames, onFrameChange, tracks.length, dragDirection]);
+  }, [dragState, reorderState, isResizingHorizontal, onTracksChange, onReorderTracks, pixelToFrame, totalFrames, onFrameChange, tracks.length, dragDirection, findSnapPoint]);
 
   const handleToggleLock = useCallback((trackId: string) => {
     const updatedTracks = tracks.map(t =>
@@ -500,6 +586,13 @@ const pixelToFrame = useCallback((pixel: number) => Math.round((pixel / timeline
   const handleToggleVisibility = useCallback((trackId: string) => {
     const updatedTracks = tracks.map(t =>
       t.id === trackId ? { ...t, visible: t.visible === false ? true : false } : t
+    );
+    onTracksChange?.(updatedTracks);
+  }, [tracks, onTracksChange]);
+
+  const handleToggleMute = useCallback((trackId: string) => {
+    const updatedTracks = tracks.map(t =>
+      t.id === trackId ? { ...t, muted: t.muted === true ? false : true } : t
     );
     onTracksChange?.(updatedTracks);
   }, [tracks, onTracksChange]);
@@ -860,6 +953,23 @@ cursor: "ew-resize",
                     >
                       {track.visible === false ? <EditorIcons.EyeOff /> : <EditorIcons.Eye />}
                     </button>
+                    {(track.type === "video" || track.type === "audio") && (
+                      <button 
+                        style={{ ...styles.trackLabelButton, color: track.muted ? "#ef4444" : colors.textMuted }} 
+                        onClick={(e) => { e.stopPropagation(); handleToggleMute(track.id); }} 
+                        title={track.muted ? "Unmute" : "Mute"} 
+                        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = colors.bgHover)} 
+                        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          {track.muted ? (
+                            <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></>
+                          ) : (
+                            <><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></>
+                          )}
+                        </svg>
+                      </button>
+                    )}
                     <button 
                       style={{ ...styles.trackLabelButton, color: track.locked ? "#f59e0b" : colors.textMuted }} 
                       onClick={(e) => { e.stopPropagation(); handleToggleLock(track.id); }} 
@@ -939,6 +1049,24 @@ cursor: "ew-resize",
                 />
                 <div style={styles.playheadLine} />
               </div>
+              
+              {/* Snap Guide Line */}
+              {snapGuide?.visible && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${frameToPixel(snapGuide.frame)}px`,
+                    top: 0,
+                    bottom: 0,
+                    width: "2px",
+                    backgroundColor: "#f43f5e",
+                    boxShadow: "0 0 8px rgba(244, 63, 94, 0.8)",
+                    zIndex: 100,
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+              
               {reorderState?.isDragging && reorderState.currentIndex !== reorderState.startIndex && (
                 <div style={{ ...styles.dropIndicator, top: `${reorderState.currentIndex * TRACK_ROW_HEIGHT}px` }} />
               )}

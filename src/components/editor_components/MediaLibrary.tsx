@@ -8,7 +8,7 @@ interface MediaLibraryProps {
   projectAssets: any[];
   onAddLayer: (media: any) => void;
   onOpenGallery: (tab: string) => void;
-  onAddText: () => void;
+  onAddText: (preset?: 'heading' | 'subheading' | 'body') => void;
   currentFrame: number;
   totalFrames: number;
 }
@@ -571,41 +571,121 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
   }
 
   // ============================================================================
-  // TEXT TAB
+  // TEXT TAB - CANVA STYLE
   // ============================================================================
   if (activeTab === "text") {
+    const textPresetStyle: React.CSSProperties = {
+      padding: '20px 16px',
+      background: colors.bgSecondary,
+      borderRadius: '8px',
+      cursor: 'pointer',
+      border: '1px solid rgba(255,255,255,0.05)',
+      transition: 'all 0.2s ease',
+      marginBottom: '8px',
+    };
+
     return (
-      <div style={{ padding: "16px" }}>
-        <h3 style={sectionHeaderStyle}>Add Text Layer</h3>
+      <div style={{ padding: "16px", overflowY: "auto", height: "100%" }}>
+        <h3 style={{ ...sectionHeaderStyle, marginTop: 0 }}>Click text to add to page</h3>
         
+        {/* Add a text box button */}
         <button
-          onClick={onAddText}
-          style={uploadButtonStyle}
+          onClick={() => onAddText('body')}
+          style={{
+            ...uploadButtonStyle,
+            background: 'transparent',
+            border: `2px dashed ${colors.textMuted}`,
+            color: colors.textPrimary,
+            marginBottom: '24px',
+          }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = "#2563eb";
-            e.currentTarget.style.transform = "translateY(-1px)";
-            e.currentTarget.style.boxShadow = "0 4px 12px rgba(59, 130, 246, 0.3)";
+            e.currentTarget.style.borderColor = '#3b82f6';
+            e.currentTarget.style.background = 'rgba(59, 130, 246, 0.1)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = "#3b82f6";
-            e.currentTarget.style.transform = "translateY(0)";
-            e.currentTarget.style.boxShadow = "none";
+            e.currentTarget.style.borderColor = colors.textMuted;
+            e.currentTarget.style.background = 'transparent';
           }}
         >
-          <span>➕</span>
-          <span>Add Text Layer</span>
+          <span style={{ fontSize: '18px' }}>T</span>
+          <span>Add a text box</span>
         </button>
 
-        <div style={{ 
-          marginTop: "16px",
-          padding: "12px",
-          background: colors.bgSecondary,
-          borderRadius: "8px",
-          fontSize: "11px",
-          color: colors.textMuted,
-          border: "1px solid rgba(255,255,255,0.05)",
-        }}>
-          💡 Click to add a new text layer to your composition
+        <h3 style={sectionHeaderStyle}>Default text styles</h3>
+
+        {/* Heading Preset */}
+        <div
+          onClick={() => onAddText('heading')}
+          style={textPresetStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.bgTertiary;
+            e.currentTarget.style.borderColor = '#3b82f6';
+            e.currentTarget.style.transform = 'translateX(4px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.bgSecondary;
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+        >
+          <span style={{ 
+            fontSize: '24px', 
+            fontWeight: 700, 
+            color: colors.textPrimary,
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            Add a heading
+          </span>
+        </div>
+
+        {/* Subheading Preset */}
+        <div
+          onClick={() => onAddText('subheading')}
+          style={textPresetStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.bgTertiary;
+            e.currentTarget.style.borderColor = '#3b82f6';
+            e.currentTarget.style.transform = 'translateX(4px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.bgSecondary;
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+        >
+          <span style={{ 
+            fontSize: '18px', 
+            fontWeight: 600, 
+            color: colors.textPrimary,
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            Add a subheading
+          </span>
+        </div>
+
+        {/* Body Text Preset */}
+        <div
+          onClick={() => onAddText('body')}
+          style={textPresetStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = colors.bgTertiary;
+            e.currentTarget.style.borderColor = '#3b82f6';
+            e.currentTarget.style.transform = 'translateX(4px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = colors.bgSecondary;
+            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)';
+            e.currentTarget.style.transform = 'translateX(0)';
+          }}
+        >
+          <span style={{ 
+            fontSize: '14px', 
+            fontWeight: 400, 
+            color: colors.textMuted,
+            fontFamily: 'Inter, sans-serif',
+          }}>
+            Add a little bit of body text
+          </span>
         </div>
       </div>
     );

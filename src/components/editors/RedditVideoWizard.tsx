@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import toast from "react-hot-toast";
@@ -243,6 +243,15 @@ const RedditVideoWizard: React.FC = () => {
 
   const updateState = useCallback((updates: Partial<WizardState>) => {
     setState((prev) => ({ ...prev, ...updates }));
+  }, []);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
   const currentStepIndex = STEPS.findIndex((s) => s.id === currentStep);
@@ -1948,9 +1957,544 @@ const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
   );
 
   // ============================================================================
+  // MOBILE LAYOUT
+  // ============================================================================
+  const renderMobileLayout = () => {
+    const accent = "#FF4500";
+    const text = isDark ? "#fff" : "#111";
+    const textSoft = isDark ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)";
+    const textMuted = isDark ? "rgba(255,255,255,0.35)" : "rgba(0,0,0,0.35)";
+    const border = isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)";
+
+    return (
+      <div style={{
+        height: "100vh",
+        maxHeight: "100vh",
+        background: isDark ? "linear-gradient(180deg, #09090b 0%, #0d0d10 50%, #09090b 100%)" : "linear-gradient(180deg, #f8fafc 0%, #f1f5f9 50%, #f8fafc 100%)",
+        color: text,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        overflow: "hidden",
+      }}>
+        {/* Hidden inputs */}
+        <input ref={videoInputRef} type="file" accept="video/*" onChange={handleVideoUpload} style={{ display: "none" }} />
+
+        {/* Mobile Header */}
+        <header style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 16px",
+          borderBottom: `1px solid ${border}`,
+          background: isDark ? "rgba(24, 24, 27, 0.98)" : "rgba(255, 255, 255, 0.98)",
+          backdropFilter: "blur(20px)",
+          flexShrink: 0,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }} onClick={() => navigate(-1)}>
+            <span style={{ fontSize: 16, opacity: 0.6 }}>←</span>
+            <span style={{ fontSize: 16, fontWeight: 800 }}><span style={{ color: accent }}>Reddit</span> Video</span>
+          </div>
+          <button
+            onClick={() => currentStep === "audio" ? proceedToEditor() : canProceed() && goToNextStep()}
+            disabled={!canProceed()}
+            style={{
+              padding: "10px 20px",
+              fontSize: 13,
+              fontWeight: 600,
+              borderRadius: 24,
+              border: "none",
+              background: canProceed() ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "#27272a" : "#e2e8f0"),
+              color: canProceed() ? "#fff" : textSoft,
+              cursor: canProceed() ? "pointer" : "default",
+              boxShadow: canProceed() ? `0 4px 16px ${accent}40` : "none",
+            }}
+          >
+            {currentStep === "audio" ? "Create" : "Next"} →
+          </button>
+        </header>
+
+        {/* Step Pills */}
+        <div style={{ display: "flex", gap: 4, padding: "10px 16px", overflowX: "auto", flexShrink: 0 }}>
+          {STEPS.map((step) => (
+            <button
+              key={step.id}
+              onClick={() => setCurrentStep(step.id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 12px",
+                borderRadius: 16,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                border: "none",
+                background: currentStep === step.id ? `${accent}20` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                color: currentStep === step.id ? accent : textSoft,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {step.icon} {step.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile Main Content */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", padding: "12px", gap: 12, overflow: "auto", minHeight: 0 }}>
+          
+          {/* Phone Preview */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 180,
+              height: 360,
+              backgroundColor: "#000",
+              borderRadius: 24,
+              padding: 6,
+              boxShadow: isDark ? "0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255, 69, 0, 0.25)" : "0 12px 40px rgba(0,0,0,0.2)",
+              position: "relative",
+              overflow: "hidden",
+            }}>
+              <div style={{ width: "100%", height: "100%", borderRadius: 18, overflow: "hidden", position: "relative", backgroundColor: "#1a1a1a" }}>
+                <video key={state.backgroundVideo} src={state.backgroundVideo} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} muted loop autoPlay playsInline />
+                <div style={{ position: "absolute", inset: 0, backgroundColor: state.backgroundOverlayColor, display: "flex", alignItems: "center", justifyContent: "center", padding: 8 }}>
+                  {/* Mini Reddit Card */}
+                  <div style={{ backgroundColor: "#fff", borderRadius: 6, padding: 8, width: "90%", boxShadow: "0 2px 8px rgba(0,0,0,0.2)" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                      {state.avatarUrl ? (
+                        <img src={state.avatarUrl} style={{ width: 12, height: 12, borderRadius: "50%", objectFit: "cover" }} />
+                      ) : (
+                        <div style={{ width: 12, height: 12, borderRadius: "50%", background: "linear-gradient(135deg, #00D8D6, #0079D3)" }} />
+                      )}
+                      <span style={{ fontSize: 7, fontWeight: 700, color: "#1a1a1b" }}>r/{state.subredditName || "Advice"}</span>
+                      <span style={{ fontSize: 6, color: "#576f76" }}>• {state.timePosted}</span>
+                    </div>
+                    <div style={{ fontSize: 8, fontWeight: 600, color: "#1a1a1b", marginBottom: 4, lineHeight: 1.2 }}>
+                      {state.postTitle || "Your title here..."}
+                    </div>
+                    <div style={{ fontSize: 6, color: "#576f76", lineHeight: 1.3, maxHeight: 40, overflow: "hidden" }}>
+                      {state.postText?.substring(0, 100) || "Story text preview..."}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4, fontSize: 6, color: "#576f76" }}>
+                      <span>⬆ {state.upvotes}</span>
+                      <span>💬 {state.commentCount}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            {/* Duration */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 14px", background: isDark ? "rgba(39, 39, 42, 0.8)" : "rgba(241, 245, 249, 0.9)", borderRadius: 16, backdropFilter: "blur(10px)" }}>
+              <span style={{ fontSize: 11, color: textSoft }}>⏱️ {state.estimatedDuration.toFixed(1)}s</span>
+              <span style={{ fontSize: 11, color: textMuted }}>•</span>
+              <span style={{ fontSize: 11, color: state.voiceoverGenerated ? "#10B981" : textSoft }}>🎙️ {state.voiceoverGenerated ? "Ready" : "Pending"}</span>
+            </div>
+          </div>
+
+          {/* ============== SCRIPT STEP ============== */}
+          {currentStep === "script" && (
+            <>
+              {/* Story Content */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>📝 Story Content</div>
+                
+                {/* Title */}
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Title</label>
+                  <input
+                    value={state.postTitle}
+                    onChange={e => updateState({ postTitle: e.target.value })}
+                    placeholder="Enter title..."
+                    style={{ width: "100%", padding: "8px 10px", fontSize: 12, borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }}
+                  />
+                </div>
+
+                {/* Story Text */}
+                <div style={{ marginBottom: 10 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <label style={{ fontSize: 10, color: textMuted }}>Story</label>
+                    <span style={{ fontSize: 10, color: textMuted }}>{state.postText.length}/4000</span>
+                  </div>
+                  <textarea
+                    value={state.postText}
+                    onChange={e => {
+                      const newText = e.target.value;
+                      updateState({ postText: newText, voiceoverGenerated: false, voiceoverUrl: "" });
+                      const words = estimateWordTimings(newText, state.speed);
+                      updateState({ words, estimatedDuration: calculateDuration(words) });
+                    }}
+                    placeholder="Enter your story..."
+                    rows={4}
+                    maxLength={4000}
+                    style={{ width: "100%", padding: "8px 10px", fontSize: 12, borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none", resize: "vertical" }}
+                  />
+                </div>
+
+                {/* Use Sample */}
+                <button onClick={loadSampleData} style={{ width: "100%", padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 8, border: `1px solid ${accent}40`, background: `${accent}10`, color: accent, cursor: "pointer" }}>
+                  ✨ Use Sample Story
+                </button>
+              </div>
+
+              {/* Reddit Card Details */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>👤 Reddit Card Settings</div>
+                
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Subreddit</label>
+                    <input value={state.subredditName} onChange={e => updateState({ subredditName: e.target.value })} placeholder="AmItheAsshole" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Username</label>
+                    <input value={state.posterUsername} onChange={e => updateState({ posterUsername: e.target.value })} placeholder="throwaway" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Time Posted</label>
+                    <input value={state.timePosted} onChange={e => updateState({ timePosted: e.target.value })} placeholder="1d ago" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Upvotes</label>
+                    <input value={state.upvotes} onChange={e => updateState({ upvotes: e.target.value })} placeholder="2.9K" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Comments</label>
+                    <input value={state.commentCount} onChange={e => updateState({ commentCount: e.target.value })} placeholder="1.8K" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Awards</label>
+                    <input value={state.awardsCount} onChange={e => updateState({ awardsCount: e.target.value })} placeholder="1" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Avatar URL (optional)</label>
+                  <input value={state.avatarUrl} onChange={e => updateState({ avatarUrl: e.target.value })} placeholder="https://example.com/avatar.png" style={{ width: "100%", padding: "6px 8px", fontSize: 11, borderRadius: 6, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }} />
+                </div>
+              </div>
+
+              {/* Import from URL */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🔗 Import from URL</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={state.postUrl}
+                    onChange={e => updateState({ postUrl: e.target.value })}
+                    placeholder="https://reddit.com/r/..."
+                    style={{ flex: 1, padding: "8px 10px", fontSize: 11, borderRadius: 8, border: `1px solid ${border}`, background: isDark ? "rgba(0,0,0,0.3)" : "#fff", color: text, outline: "none" }}
+                  />
+                  <button
+                    onClick={handleImportFromUrl}
+                    disabled={state.isImportingPost || !state.postUrl.trim()}
+                    style={{ padding: "8px 12px", fontSize: 11, fontWeight: 600, borderRadius: 8, border: "none", background: state.postUrl.trim() ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "#27272a" : "#e2e8f0"), color: state.postUrl.trim() ? "#fff" : textSoft, cursor: state.postUrl.trim() ? "pointer" : "default" }}
+                  >
+                    {state.isImportingPost ? "..." : "Import"}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ============== STYLE STEP ============== */}
+          {currentStep === "style" && (
+            <>
+              {/* Typography */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🔤 Typography</div>
+                
+                {/* Font Family */}
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 6 }}>Font Family</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {FONT_FAMILIES.map(f => (
+                      <button key={f.value} onClick={() => updateState({ fontFamily: f.value })} style={{
+                        padding: "6px 10px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        fontFamily: f.value,
+                        borderRadius: 6,
+                        border: "none",
+                        cursor: "pointer",
+                        background: state.fontFamily === f.value ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                        color: state.fontFamily === f.value ? "#fff" : textSoft,
+                      }}>
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Font Size */}
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                    <span style={{ fontSize: 10, color: textMuted }}>Font Size</span>
+                    <span style={{ fontSize: 10, color: accent }}>{state.fontSize}px</span>
+                  </div>
+                  <input type="range" min={32} max={72} value={state.fontSize} onChange={e => updateState({ fontSize: +e.target.value })} style={{ width: "100%", accentColor: accent }} />
+                </div>
+              </div>
+
+              {/* Colors */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🎨 Colors</div>
+                
+                <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Text Color</label>
+                    <input type="color" value={state.fontColor} onChange={e => updateState({ fontColor: e.target.value })} style={{ width: "100%", height: 32, borderRadius: 6, border: `1px solid ${border}`, cursor: "pointer" }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 4 }}>Highlight</label>
+                    <input type="color" value={state.sentenceBgColor} onChange={e => updateState({ sentenceBgColor: e.target.value })} style={{ width: "100%", height: 32, borderRadius: 6, border: `1px solid ${border}`, cursor: "pointer" }} />
+                  </div>
+                </div>
+
+                {/* Background Darkness */}
+                <div>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 6 }}>Background Darkness</label>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    {[
+                      { value: "rgba(0,0,0,0)", label: "None" },
+                      { value: "rgba(0,0,0,0.3)", label: "Light" },
+                      { value: "rgba(0,0,0,0.5)", label: "Medium" },
+                      { value: "rgba(0,0,0,0.7)", label: "Dark" },
+                    ].map(opt => (
+                      <button key={opt.value} onClick={() => updateState({ backgroundOverlayColor: opt.value })} style={{
+                        flex: 1,
+                        padding: "6px 8px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        border: "none",
+                        cursor: "pointer",
+                        background: state.backgroundOverlayColor === opt.value ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                        color: state.backgroundOverlayColor === opt.value ? "#fff" : textSoft,
+                      }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ============== VIDEO STEP ============== */}
+          {currentStep === "video" && (
+            <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🎬 Background Video</div>
+              
+              {/* Video Grid - 4 columns, smaller */}
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6, marginBottom: 10 }}>
+                {BACKGROUND_VIDEOS.map(v => (
+                  <div
+                    key={v.value}
+                    onClick={() => updateState({ backgroundVideo: v.value })}
+                    style={{
+                      aspectRatio: "9/16",
+                      borderRadius: 8,
+                      overflow: "hidden",
+                      cursor: "pointer",
+                      border: `2px solid ${state.backgroundVideo === v.value ? accent : "transparent"}`,
+                      position: "relative",
+                      boxShadow: state.backgroundVideo === v.value ? `0 0 8px ${accent}40` : "none",
+                    }}
+                  >
+                    <video src={v.value} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted loop autoPlay playsInline />
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 2, background: "linear-gradient(transparent, rgba(0,0,0,0.8))", fontSize: 7, color: "#fff", fontWeight: 600, textAlign: "center" }}>{v.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Upload Custom */}
+              <button onClick={() => videoInputRef.current?.click()} style={{ width: "100%", padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 8, border: `1px dashed ${border}`, background: "transparent", color: textSoft, cursor: "pointer" }}>
+                📁 Upload Custom
+              </button>
+            </div>
+          )}
+
+          {/* ============== AUDIO STEP ============== */}
+          {currentStep === "audio" && (
+            <>
+              {/* Voice Settings */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🎙️ AI Voice</div>
+                
+                {/* Voice Selection */}
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 6 }}>Voice</label>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
+                    {AI_VOICES.map(v => (
+                      <button
+                        key={v.value}
+                        onClick={() => updateState({ aiVoice: v.value, voiceoverGenerated: false, voiceoverUrl: "" })}
+                        style={{
+                          padding: "8px 6px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          background: state.aiVoice === v.value ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                          color: state.aiVoice === v.value ? "#fff" : textSoft,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <span>{v.label}</span>
+                        <span style={{ fontSize: 8, opacity: 0.7 }}>{v.gender}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Emotion */}
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 10, color: textMuted, display: "block", marginBottom: 6 }}>Emotion</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {EMOTIONS.map(e => (
+                      <button
+                        key={e.value}
+                        onClick={() => updateState({ emotion: e.value, voiceoverGenerated: false, voiceoverUrl: "" })}
+                        style={{
+                          padding: "6px 10px",
+                          fontSize: 10,
+                          fontWeight: 600,
+                          borderRadius: 6,
+                          border: "none",
+                          cursor: "pointer",
+                          background: state.emotion === e.value ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                          color: state.emotion === e.value ? "#fff" : textSoft,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        <span>{e.icon}</span>
+                        <span>{e.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Speed & Pitch */}
+                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: textMuted }}>Speed</span>
+                      <span style={{ fontSize: 10, color: accent }}>{state.speed.toFixed(1)}x</span>
+                    </div>
+                    <input type="range" min={0.5} max={2.0} step={0.1} value={state.speed} onChange={e => updateState({ speed: +e.target.value, voiceoverGenerated: false, voiceoverUrl: "" })} style={{ width: "100%", accentColor: accent }} />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: textMuted }}>Pitch</span>
+                      <span style={{ fontSize: 10, color: accent }}>{state.pitch.toFixed(1)}x</span>
+                    </div>
+                    <input type="range" min={0.5} max={1.5} step={0.1} value={state.pitch} onChange={e => updateState({ pitch: +e.target.value, voiceoverGenerated: false, voiceoverUrl: "" })} style={{ width: "100%", accentColor: accent }} />
+                  </div>
+                </div>
+
+                {/* Generate Button */}
+                <button
+                  onClick={handleGenerateVoiceover}
+                  disabled={state.isGeneratingVoiceover || !state.postText}
+                  style={{
+                    width: "100%",
+                    padding: "12px",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    borderRadius: 8,
+                    border: "none",
+                    cursor: state.isGeneratingVoiceover ? "wait" : "pointer",
+                    background: state.voiceoverGenerated ? "#10B981" : `linear-gradient(135deg, ${accent}, #FF5722)`,
+                    color: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 6,
+                  }}
+                >
+                  {state.isGeneratingVoiceover ? "⏳ Generating..." : state.voiceoverGenerated ? "✓ Regenerate Voiceover" : "🎙️ Generate Voiceover"}
+                </button>
+
+                {/* Preview/Download */}
+                {state.voiceoverGenerated && state.voiceoverUrl && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button onClick={handlePreviewVoiceover} style={{ flex: 1, padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 8, border: `1px solid #10B981`, background: "rgba(16, 185, 129, 0.1)", color: "#10B981", cursor: "pointer" }}>
+                      ▶️ Play
+                    </button>
+                    <button onClick={() => { const a = document.createElement("a"); a.href = state.voiceoverUrl; a.download = "voiceover.mp3"; a.click(); }} style={{ flex: 1, padding: "8px", fontSize: 11, fontWeight: 600, borderRadius: 8, border: `1px solid ${accent}`, background: `${accent}10`, color: accent, cursor: "pointer" }}>
+                      ⬇️ Download
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Background Music */}
+              <div style={{ width: "100%", maxWidth: 400, background: isDark ? "rgba(30, 30, 35, 0.95)" : "rgba(255, 255, 255, 0.95)", borderRadius: 14, border: `1px solid ${isDark ? "rgba(255, 69, 0, 0.15)" : "rgba(255, 69, 0, 0.1)"}`, padding: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: text, marginBottom: 10 }}>🎵 Background Music</div>
+                
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: state.backgroundMusicPath ? 10 : 0 }}>
+                  {BACKGROUND_MUSIC.map(m => (
+                    <button
+                      key={m.value}
+                      onClick={() => updateState({ backgroundMusicPath: m.value })}
+                      style={{
+                        padding: "8px 12px",
+                        fontSize: 10,
+                        fontWeight: 600,
+                        borderRadius: 6,
+                        border: "none",
+                        cursor: "pointer",
+                        background: state.backgroundMusicPath === m.value ? `linear-gradient(135deg, ${accent}, #FF5722)` : (isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)"),
+                        color: state.backgroundMusicPath === m.value ? "#fff" : textSoft,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                      }}
+                    >
+                      {m.icon} {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Volume Slider */}
+                {state.backgroundMusicPath && (
+                  <div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
+                      <span style={{ fontSize: 10, color: textMuted }}>Volume</span>
+                      <span style={{ fontSize: 10, color: accent }}>{Math.round(state.musicVolume * 100)}%</span>
+                    </div>
+                    <input type="range" min={0} max={100} value={state.musicVolume * 100} onChange={e => updateState({ musicVolume: +e.target.value / 100 })} style={{ width: "100%", accentColor: accent }} />
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </main>
+
+        <style>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  };
+
+  // ============================================================================
   // MAIN RENDER
   // ============================================================================
 
+  // Mobile: return mobile layout
+  if (isMobile) {
+    return renderMobileLayout();
+  }
+
+  // Desktop: return original layout
   return (
     <div style={styles.container}>
       <style>{`

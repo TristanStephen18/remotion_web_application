@@ -1127,7 +1127,7 @@ const DynamicLayerEditor: React.FC = () => {
   };
 
   const {
-    addTextLayer,
+    // addTextLayer,
     handleImageUpload,
     handleAudioUpload,
     handleVideoUpload,
@@ -2316,10 +2316,61 @@ const DynamicLayerEditor: React.FC = () => {
     }
   }, [isMobile, selectedLayerId]);
 
-  const handleAddText = useCallback(() => {
-    addTextLayer();
-    setActiveTab(null);
-  }, [addTextLayer]);
+  const handleAddText = useCallback((preset?: 'heading' | 'subheading' | 'body') => {
+  const presets = {
+    heading: {
+      content: 'Add a heading',
+      fontSize: 12,
+      fontWeight: '700',
+      fontFamily: 'Poppins',
+      size: { width: 80, height: 15 },
+    },
+    subheading: {
+      content: 'Add a subheading',
+      fontSize: 7,
+      fontWeight: '600',
+      fontFamily: 'Poppins',
+      size: { width: 70, height: 10 },
+    },
+    body: {
+      content: 'Add a little bit of body text',
+      fontSize: 4,
+      fontWeight: '400',
+      fontFamily: 'Inter',
+      size: { width: 60, height: 8 },
+    },
+  };
+
+  const style = preset ? presets[preset] : presets.body;
+  
+  const newLayer: TextLayer = {
+    id: generateId(),
+    type: 'text',
+    name: preset ? `${preset.charAt(0).toUpperCase() + preset.slice(1)}` : 'Text',
+    visible: true,
+    locked: false,
+    startFrame: currentFrame,
+    endFrame: Math.min(currentFrame + 150, totalFrames),
+    position: { x: 50, y: 50 },
+    size: style.size,
+    rotation: 0,
+    opacity: 1,
+    content: style.content,
+    fontFamily: style.fontFamily,
+    fontSize: style.fontSize,
+    fontColor: '#ffffff',
+    fontWeight: style.fontWeight,
+    fontStyle: 'normal',
+    textAlign: 'center',
+    lineHeight: 1.2,
+    letterSpacing: 0,
+    textTransform: 'none',
+  };
+  
+  pushState([...layers, newLayer]);
+  setSelectedLayerId(newLayer.id);
+  setActiveTab(null);
+}, [currentFrame, totalFrames, layers, pushState, setSelectedLayerId]);
 
   const addMediaToCanvas = useCallback(
     (media: any) => {
@@ -2726,6 +2777,7 @@ const DynamicLayerEditor: React.FC = () => {
       color: LAYER_COLORS[layer.type] || "#888",
       visible: layer.visible,
       locked: layer.locked,
+      muted: (layer as any).muted,
     }));
 }, [layers, template?.id]);
 
@@ -2769,6 +2821,7 @@ const DynamicLayerEditor: React.FC = () => {
             visible:
               track.visible !== undefined ? track.visible : layer.visible,
             locked: track.locked !== undefined ? track.locked : layer.locked,
+            muted: track.muted !== undefined ? track.muted : (layer as any).muted,
           };
         return layer;
       });
@@ -3289,14 +3342,17 @@ const DynamicLayerEditor: React.FC = () => {
                     activeTab !== "watch" &&
                     activeTab !== "carousel" && (
                       <MediaLibrary
-                        activeTab={activeTab as any}
-                        projectAssets={projectAssets}
-                        onAddLayer={addMediaToCanvas}
-                        onOpenGallery={openMediaGallery}
-                        onAddText={handleAddText}
-                        currentFrame={currentFrame}
-                        totalFrames={totalFrames}
-                      />
+  activeTab={activeTab as any}
+  projectAssets={projectAssets}
+  onAddLayer={addMediaToCanvas}
+  onOpenGallery={openMediaGallery}
+  onAddText={handleAddText}
+  // onAddHeading={() => handleAddText('heading')}
+  // onAddSubheading={() => handleAddText('subheading')}
+  // onAddBody={() => handleAddText('body')}
+  currentFrame={currentFrame}
+  totalFrames={totalFrames}
+/>
                     )}
 
                   {/* --- CHAT PANEL (Dedicated Tab) --- */}
@@ -3392,12 +3448,12 @@ const DynamicLayerEditor: React.FC = () => {
                             color="#10b981"
                             onClick={() => handleAddMessage(false)}
                           />
-                          <ToolCard
+                          {/* <ToolCard
                             icon={<span style={{ fontSize: "18px" }}>...</span>}
                             title="Typing"
                             color="#888"
                             onClick={() => handleAddMessage(false, true)}
-                          />
+                          /> */}
                         </div>
                       </div>
                     </div>
@@ -4116,9 +4172,7 @@ const DynamicLayerEditor: React.FC = () => {
                 }}
               >
                 <RemotionPreview
-                  key={`preview-${layers.length}-${layers
-                    .map((l) => l.id)
-                    .join(",")}`}
+                  key={`preview-${template?.id || 'default'}`}
                   ref={previewRef}
                   component={template?.composition || DynamicLayerComposition}
                   inputProps={previewInputProps}

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import toast from "react-hot-toast";
@@ -87,6 +87,15 @@ const KenBurnsWizard: React.FC = () => {
   const isDark = colors.bgPrimary !== "#ffffff";
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const previewIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>("media");
   const [state, setState] = useState<WizardState>({
@@ -1446,9 +1455,180 @@ const KenBurnsWizard: React.FC = () => {
   );
 
   // ============================================================================
+  // MOBILE RENDER (completely separate)
+  // ============================================================================
+
+  const renderMobileLayout = () => {
+    const currentMedia = state.mediaItems[state.previewIndex];
+    const isFullscreen = state.layout === 'layout1';
+    const cardSize = isFullscreen ? '100%' : '82%';
+    const cardRadius = isFullscreen ? 0 : 16;
+
+    return (
+      <div style={{ height: "100vh", maxHeight: "100vh", backgroundColor: isDark ? "#0a0a0b" : "#f8f9fa", background: isDark ? "linear-gradient(180deg, #0a0a0b 0%, #0d0d10 50%, #0a0a0b 100%)" : "linear-gradient(180deg, #f8f9fa 0%, #f1f3f5 50%, #f8f9fa 100%)", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <style>{`
+          @keyframes kenBurnsZoomIn { 0% { transform: scale(1.05) translate(0px, 0px); } 100% { transform: scale(1.12) translate(-8px, -5px); } }
+          @keyframes kenBurnsZoomOut { 0% { transform: scale(1.12) translate(0px, 0px); } 100% { transform: scale(1.05) translate(5px, 3px); } }
+          @keyframes wipeIn { 0% { clip-path: inset(0 0 0 100%); } 100% { clip-path: inset(0 0 0 0); } }
+          input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; background: #8B5CF6; border-radius: 50%; cursor: pointer; }
+        `}</style>
+        
+        {/* Mobile Header */}
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderBottom: `1px solid ${isDark ? "#1f1f23" : "#e5e7eb"}`, background: isDark ? "linear-gradient(180deg, rgba(17, 17, 19, 0.98), rgba(10, 10, 11, 0.95))" : "linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95))", backdropFilter: "blur(20px)", flexShrink: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 700, color: colors.textPrimary, cursor: "pointer" }} onClick={() => navigate(-1)}>
+            <span style={{ fontSize: 14, opacity: 0.6 }}>←</span>
+            <span style={{ background: "linear-gradient(135deg, #8B5CF6, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", fontWeight: 800 }}>Ken Burns</span>
+          </div>
+          <button style={{ padding: "8px 16px", background: canProceed() ? "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" : (isDark ? "#2d2d30" : "#e5e7eb"), border: "none", borderRadius: 20, fontSize: 12, fontWeight: 600, color: canProceed() ? "#fff" : colors.textSecondary, cursor: canProceed() ? "pointer" : "default", boxShadow: canProceed() ? "0 4px 16px rgba(139, 92, 246, 0.4)" : "none" }} onClick={proceedToEditor} disabled={!canProceed()}>Create →</button>
+        </header>
+
+        {/* Mobile Main Content */}
+        <main style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-start", padding: "50px 12px 12px", gap: 12, overflow: "auto", minHeight: 0 }}>
+          
+          {/* Preview + Settings Row */}
+          <div style={{ display: "flex", flexDirection: "row", gap: 12, alignItems: "stretch", justifyContent: "center" }}>
+            
+            {/* Phone Preview */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+              <div style={{ fontSize: 9, fontWeight: 600, color: colors.textSecondary, textTransform: "uppercase", letterSpacing: "0.08em" }}>LIVE PREVIEW</div>
+              <div style={{ width: 175, aspectRatio: "9/16", backgroundColor: "#000", borderRadius: 22, padding: 5, boxShadow: isDark ? "0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(139, 92, 246, 0.2)" : "0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px rgba(139, 92, 246, 0.15)", position: "relative", overflow: "hidden" }}>
+                <div style={{ width: "100%", height: "100%", borderRadius: 17, overflow: "hidden", position: "relative", backgroundColor: "#0a0a0a" }}>
+                  {state.mediaItems.length > 0 && currentMedia ? (
+                    <>
+                      {!isFullscreen && (
+                        <div style={{ position: "absolute", inset: 0, overflow: "hidden", zIndex: 0 }}>
+                          <img src={currentMedia.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "blur(35px) saturate(1.4) brightness(0.6)", transform: "scale(1.2)" }} />
+                          <div style={{ position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.2)" }} />
+                        </div>
+                      )}
+                      <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                        <div style={{ width: cardSize, height: cardSize, borderRadius: cardRadius, overflow: "hidden", boxShadow: isFullscreen ? "none" : "0 12px 40px rgba(0,0,0,0.6)", position: "relative" }}>
+                          <div style={{ width: "100%", height: "100%", transform: 'scale(1.05)' }}>
+                            {currentMedia.type === 'video' ? (
+                              <video src={currentMedia.src} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted loop autoPlay playsInline />
+                            ) : (
+                              <img src={currentMedia.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover", filter: "contrast(1.05) saturate(1.1) brightness(1.02)" }} />
+                            )}
+                          </div>
+                          <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse 80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,0.4) 100%)", pointerEvents: "none" }} />
+                        </div>
+                      </div>
+                      <div style={{ ...styles.slideDots, bottom: 12 }}>
+                        {state.mediaItems.map((_, idx) => (
+                          <div key={idx} style={{ ...styles.slideDot, ...(idx === state.previewIndex ? styles.slideDotActive : {}) }} onClick={() => updateState({ previewIndex: idx })} />
+                        ))}
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ ...styles.emptyState, background: "linear-gradient(145deg, rgba(139, 92, 246, 0.05), transparent)" }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: isDark ? "rgba(139, 92, 246, 0.15)" : "rgba(139, 92, 246, 0.1)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 8 }}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8B5CF6" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+                      </div>
+                      <span style={{ fontSize: 9, color: colors.textSecondary, fontWeight: 500 }}>Add photos below</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Settings Panel */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6, padding: 12, background: isDark ? "linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98))" : "linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98))", borderRadius: 16, border: `1px solid ${isDark ? "rgba(139, 92, 246, 0.15)" : "rgba(139, 92, 246, 0.1)"}`, boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)" : "0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)", backdropFilter: "blur(20px)" }}>
+              {/* Duration */}
+              <div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <span style={{ fontSize: 10, fontWeight: 600, color: colors.textSecondary }}>Duration</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, background: "linear-gradient(135deg, #8B5CF6, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>{state.defaultDuration}s</span>
+                </div>
+                <input type="range" min={1} max={10} step={0.5} value={state.defaultDuration} onChange={(e) => updateState({ defaultDuration: Number(e.target.value) })} style={{ width: "100%", height: 4, borderRadius: 2, appearance: "none", background: isDark ? "linear-gradient(90deg, #8B5CF6, #6366f1)" : "linear-gradient(90deg, #8B5CF6, #a78bfa)", outline: "none", cursor: "pointer", opacity: 0.7 }} />
+              </div>
+              {/* Transition */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: colors.textSecondary, marginBottom: 6 }}>Transition</div>
+                <div style={{ display: "flex", gap: 3, padding: 3, background: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.04)", borderRadius: 8 }}>
+                  {TRANSITION_SPEEDS.map((speed) => (
+                    <button key={speed.value} style={{ flex: 1, padding: "5px 0", fontSize: 9, fontWeight: 600, border: "none", borderRadius: 6, cursor: "pointer", background: state.transitionDuration === speed.value ? "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" : "transparent", color: state.transitionDuration === speed.value ? "#fff" : colors.textSecondary, transition: "all 0.2s ease", boxShadow: state.transitionDuration === speed.value ? "0 2px 8px rgba(139, 92, 246, 0.4)" : "none" }} onClick={() => updateState({ transitionDuration: speed.value })}>{speed.label}</button>
+                  ))}
+                </div>
+              </div>
+              {/* Layout */}
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 600, color: colors.textSecondary, marginBottom: 6 }}>Layout</div>
+                <div style={{ display: "flex", gap: 3, padding: 3, background: isDark ? "rgba(0,0,0,0.3)" : "rgba(0,0,0,0.04)", borderRadius: 8 }}>
+                  <button style={{ flex: 1, padding: "6px 0", fontSize: 9, fontWeight: 600, border: "none", borderRadius: 6, cursor: "pointer", background: state.layout === "layout1" ? "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" : "transparent", color: state.layout === "layout1" ? "#fff" : colors.textSecondary, transition: "all 0.2s ease", boxShadow: state.layout === "layout1" ? "0 2px 8px rgba(139, 92, 246, 0.4)" : "none" }} onClick={() => updateState({ layout: "layout1" })}>Full</button>
+                  <button style={{ flex: 1, padding: "6px 0", fontSize: 9, fontWeight: 600, border: "none", borderRadius: 6, cursor: "pointer", background: state.layout === "layout2" ? "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)" : "transparent", color: state.layout === "layout2" ? "#fff" : colors.textSecondary, transition: "all 0.2s ease", boxShadow: state.layout === "layout2" ? "0 2px 8px rgba(139, 92, 246, 0.4)" : "none" }} onClick={() => updateState({ layout: "layout2" })}>Center</button>
+                </div>
+              </div>
+              {/* Stats */}
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 16, padding: "8px 0 4px", marginTop: 2, borderTop: `1px solid ${isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"}` }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: colors.textPrimary, lineHeight: 1 }}>{state.mediaItems.length}</div>
+                  <div style={{ fontSize: 8, color: colors.textSecondary, textTransform: "uppercase", marginTop: 2 }}>slides</div>
+                </div>
+                <div style={{ width: 1, height: 24, background: isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)" }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 18, fontWeight: 800, background: "linear-gradient(135deg, #8B5CF6, #a78bfa)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", lineHeight: 1 }}>{getTotalDuration()}s</div>
+                  <div style={{ fontSize: 8, color: colors.textSecondary, textTransform: "uppercase", marginTop: 2 }}>total</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Media Section */}
+          <div style={{ width: "100%", maxWidth: 420, background: isDark ? "linear-gradient(145deg, rgba(30, 30, 35, 0.95), rgba(20, 20, 25, 0.98))" : "linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 249, 250, 0.98))", borderRadius: 16, border: `1px solid ${isDark ? "rgba(139, 92, 246, 0.15)" : "rgba(139, 92, 246, 0.1)"}`, boxShadow: isDark ? "0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255,255,255,0.05)" : "0 8px 32px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255,255,255,0.8)", padding: 12, overflow: "hidden" }}>
+            {/* Header */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: colors.textPrimary }}>Add Photos</span>
+              <button onClick={() => fileInputRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 12px", background: "linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)", border: "none", borderRadius: 20, fontSize: 10, fontWeight: 600, color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(139, 92, 246, 0.4)" }}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" /></svg>
+                Upload
+              </button>
+            </div>
+            {/* Selected slides */}
+            {state.mediaItems.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ display: "flex", gap: 6, overflowX: "auto", paddingBottom: 6 }}>
+                  {state.mediaItems.map((item, index) => (
+                    <div key={item.id} onClick={() => updateState({ previewIndex: index })} style={{ position: "relative", width: 48, height: 48, borderRadius: 8, overflow: "hidden", flexShrink: 0, border: state.previewIndex === index ? "2px solid #8B5CF6" : `2px solid ${isDark ? "rgba(255,255,255,0.1)" : "rgba(0,0,0,0.1)"}`, cursor: "pointer", boxShadow: state.previewIndex === index ? "0 0 12px rgba(139, 92, 246, 0.4)" : "none" }}>
+                      {item.type === 'video' ? <video src={item.src} style={{ width: "100%", height: "100%", objectFit: "cover" }} muted /> : <img src={item.src} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />}
+                      <button onClick={(e) => { e.stopPropagation(); handleRemoveItem(item.id); }} style={{ position: "absolute", top: 2, right: 2, width: 16, height: 16, borderRadius: "50%", background: "rgba(0,0,0,0.7)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                      </button>
+                      <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "linear-gradient(transparent, rgba(0,0,0,0.8))", padding: "8px 2px 2px", fontSize: 7, fontWeight: 600, color: "#fff", textAlign: "center" }}>{item.duration}s</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {/* Presets grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 6 }}>
+              {PRESET_IMAGES.map((preset, idx) => {
+                const isAdded = state.mediaItems.some(item => item.src === preset.src);
+                return (
+                  <div key={idx} onClick={() => !isAdded && handleAddPreset(preset)} style={{ aspectRatio: "1", borderRadius: 10, overflow: "hidden", cursor: isAdded ? "default" : "pointer", position: "relative", border: isAdded ? "2px solid #8B5CF6" : "2px solid transparent", opacity: isAdded ? 0.5 : 1, transition: "all 0.2s ease", boxShadow: isDark ? "0 2px 8px rgba(0,0,0,0.3)" : "0 2px 8px rgba(0,0,0,0.1)" }}>
+                    <img src={preset.src} alt={preset.label} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <div style={{ position: "absolute", inset: 0, background: isAdded ? "rgba(139, 92, 246, 0.3)" : "linear-gradient(transparent 50%, rgba(0,0,0,0.7))", display: "flex", alignItems: "flex-end", justifyContent: "center", padding: 4 }}>
+                      {isAdded ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}><polyline points="20 6 9 17 4 12" /></svg> : <span style={{ fontSize: 8, fontWeight: 600, color: "#fff", textShadow: "0 1px 2px rgba(0,0,0,0.5)" }}>{preset.label}</span>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  };
+
+  // ============================================================================
   // MAIN RENDER
   // ============================================================================
 
+  // Mobile: return completely separate layout
+  if (isMobile) {
+    return renderMobileLayout();
+  }
+
+  // Desktop: return original layout exactly as provided
   return (
     <div style={styles.container}>
       <style>{`

@@ -113,6 +113,14 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
   
   const [grabOffset, setGrabOffset] = useState({ x: 0, y: 0 });
 
+  // Snap guides state
+  const [snapGuides, setSnapGuides] = useState<{
+    horizontal: boolean;
+    vertical: boolean;
+  }>({ horizontal: false, vertical: false });
+  
+  const SNAP_THRESHOLD = 1.5; 
+
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
@@ -307,8 +315,29 @@ export const DynamicPreviewOverlay: React.FC<DynamicPreviewOverlayProps> = ({
       const rect = overlayRef.current?.getBoundingClientRect();
       if (!rect) return;
 
-      const centerX = rect.left + (layer.position.x / 100) * actualWidth;
-      const centerY = rect.top + (layer.position.y / 100) * actualHeight;
+      let centerX = rect.left + (layer.position.x / 100) * actualWidth;
+      let centerY = rect.top + (layer.position.y / 100) * actualHeight;
+
+      // Adjust for chat bubble positioning
+      if (isChatBubbleLayer(layer)) {
+        const chatLayer = layer as ChatBubbleLayer;
+        const layerWidthPx = (layer.size.width / 100) * actualWidth;
+        const layerHeightPx = (layer.size.height / 100) * actualHeight;
+        if (chatLayer.chatStyle === 'fakechatconversation') {
+          // Sender: right edge positioning, Receiver: left edge positioning
+          if (chatLayer.isSender) {
+            // right = (100 - x)%, so left edge of box = x% - width
+            const rightPercent = 100 - layer.position.x;
+            centerX = rect.right - (rightPercent / 100 * actualWidth) - (layerWidthPx / 2);
+          } else {
+            // left = x%, left edge of box = x%
+            centerX = rect.left + (layer.position.x / 100 * actualWidth) + (layerWidthPx / 2);
+          }
+          centerY += layerHeightPx / 2;
+        } else {
+          centerX -= layerWidthPx * (chatLayer.isSender ? 0.45 : 0.70);
+        }
+      }
       const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
 const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
 const offsetX = clientX - centerX;
@@ -460,8 +489,49 @@ setDragStart({ x: clientX, y: clientY });
         const relativeY = targetCenterY - rect.top;
         const newX = (relativeX / actualWidth) * 100;
         const newY = (relativeY / actualHeight) * 100;
-        const boundedX = Math.max(0, Math.min(100, newX));
-        const boundedY = Math.max(0, Math.min(100, newY));
+        let boundedX = Math.max(0, Math.min(100, newX));
+        let boundedY = Math.max(0, Math.min(100, newY));
+
+        // Snap to center guides
+        let snappedHorizontal = false;
+        let snappedVertical = false;
+
+        // Snap to vertical center (X = 50%)
+        if (Math.abs(boundedX - 50) < SNAP_THRESHOLD) {
+          boundedX = 50;
+          snappedVertical = true;
+        }
+
+        // Snap to horizontal center (Y = 50%)
+        if (Math.abs(boundedY - 50) < SNAP_THRESHOLD) {
+          boundedY = 50;
+          snappedHorizontal = true;
+        }
+
+        setSnapGuides({ horizontal: snappedHorizontal, vertical: snappedVertical });
+
+        // Prevent chat bubbles from overflowing
+        if (isChatBubbleLayer(layer)) {
+          const chatLayer = layer as ChatBubbleLayer;
+          const w = layer.size.width;
+          if (chatLayer.chatStyle === 'fakechatconversation') {
+            if (chatLayer.isSender) {
+              // right = (100 - x)%, so x must be >= width to stay on screen
+              boundedX = Math.max(w, Math.min(100, boundedX));
+            } else {
+              // left = x%, so x + width <= 100
+              boundedX = Math.max(0, Math.min(100 - w, boundedX));
+            }
+          } else if (chatLayer.isSender) {
+            const minX = w * 0.45;
+            const maxX = 100 - (w * 0.55);
+            boundedX = Math.max(minX, Math.min(maxX, boundedX));
+          } else {
+            const minX = w * 0.70;
+            const maxX = 100 - (w * 0.30);
+            boundedX = Math.max(minX, Math.min(maxX, boundedX));
+          }
+        }
 
         onLayerUpdate(dragLayerId, { position: { x: boundedX, y: boundedY } });
       } else if (dragMode === "rotate") {
@@ -710,6 +780,7 @@ setDragStart({ x: clientX, y: clientY });
       setDragMode(null);
       setDragLayerId(null);
       setGrabOffset({ x: 0, y: 0 }); 
+      setSnapGuides({ horizontal: false, vertical: false });
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -1287,11 +1358,23 @@ document.removeEventListener("touchend", handleMouseUp);
         let left: string, top: string, transform: string;
 
         if (isChatLayer) {
-  const chatLayer = layer as ChatBubbleLayer;
-  left = `${adjustedCenterX}%`;
-  top = `${adjustedCenterY}%`;
-  transform = `translate(${chatLayer.isSender ? -30 : -80}%, -50%) rotate(${rotation}deg)`;
-} else {
+          const chatLayer = layer as ChatBubbleLayer;
+          top = `${adjustedCenterY}%`;
+          if (chatLayer.chatStyle === 'fakechatconversation') {
+            // Match composition: left/right edge positioning
+            if (chatLayer.isSender) {
+              left = 'auto';
+              transform = `rotate(${rotation}deg)`;
+              // Use right positioning via style override below
+            } else {
+              left = '4%';
+              transform = `rotate(${rotation}deg)`;
+            }
+          } else {
+            left = `${adjustedCenterX}%`;
+            transform = `translate(${chatLayer.isSender ? -45 : -70}%, -50%) rotate(${rotation}deg)`;
+          }
+        } else {
           left = `${adjustedCenterX - displayWidth / 2}%`;
           top = `${adjustedCenterY - displayHeight / 2}%`;
           transform = `rotate(${rotation}deg)`;
@@ -1299,12 +1382,21 @@ document.removeEventListener("touchend", handleMouseUp);
 
         const baseZIndex = visibleLayers.length - renderIndex;
 
+        // Handle right positioning for sender chat bubbles
+        const isFakeChatSender = isChatLayer && 
+          (layer as ChatBubbleLayer).chatStyle === 'fakechatconversation' && 
+          (layer as ChatBubbleLayer).isSender;
+        const isFakeChatReceiver = isChatLayer && 
+          (layer as ChatBubbleLayer).chatStyle === 'fakechatconversation' && 
+          !(layer as ChatBubbleLayer).isSender;
+
         return (
           <div
             key={layer.id}
             style={{
               ...styles.elementBox,
-              left,
+              left: isFakeChatSender ? 'auto' : (isFakeChatReceiver ? `${layer.position.x}%` : left),
+              right: isFakeChatSender ? `${100 - layer.position.x}%` : 'auto',
               top,
               width,
               height,
@@ -1846,8 +1938,43 @@ onTouchStart={(e) => handleResizeStart(e, layer, "r")}
           </div>
         );
       })}
+
+      {/* Snap Guide Lines */}
+      {snapGuides.vertical && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: 0,
+            bottom: 0,
+            width: "2px",
+            backgroundColor: "#f43f5e",
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
+            zIndex: 9999,
+            boxShadow: "0 0 8px rgba(244, 63, 94, 0.6)",
+          }}
+        />
+      )}
+      {snapGuides.horizontal && (
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: 0,
+            right: 0,
+            height: "2px",
+            backgroundColor: "#f43f5e",
+            transform: "translateY(-50%)",
+            pointerEvents: "none",
+            zIndex: 9999,
+            boxShadow: "0 0 8px rgba(244, 63, 94, 0.6)",
+          }}
+        />
+      )}
     </div>
   );
 };
 
 export default DynamicPreviewOverlay;
+   

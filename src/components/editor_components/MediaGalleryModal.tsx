@@ -4,8 +4,9 @@ import { useVideoUpload } from '../../hooks/uploads/HandleVideoUploads';
 import { useUploadHooks } from '../../hooks/dashboardhooks/UploadHooks';
 
 //lipat mo to sa ennv
-const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
-const PEXELS_API_KEY = import.meta.env.VITE_PIXELS_API_KEY;
+const GIPHY_API_KEY = 'O5BtxgjjpsBjF4TAo83JWbPBoBadmqvz';
+const PEXELS_API_KEY = 'crciZF0CfmUY5TD8TfGOwgLm0MGzcNUqJhDlSSqNBNdXQ15NYKLmDTnx';
+const FREESOUND_API_KEY = 'RPEEJeFpRxSepvK0mXJvpcq3KluQaTmglpQylUDp';
 
 interface MediaGalleryModalProps {
   isOpen: boolean;
@@ -18,7 +19,7 @@ interface MediaGalleryModalProps {
   onUploadComplete?: () => void;
 }
 
-type SidebarTab = 'home' | 'giphy' | 'pexels' | 'viewFiles' | 'addMedia';
+type SidebarTab = 'home' | 'giphy' | 'pexels' | 'music' | 'sfx' | 'viewFiles' | 'addMedia';
 
 interface FilePreview {
   file: File;
@@ -58,6 +59,20 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
   const [pexelsResults, setPexelsResults] = useState<any[]>([]);
   const [pexelsLoading, setPexelsLoading] = useState(false);
   const [selectedPexelsIds, setSelectedPexelsIds] = useState<number[]>([]);
+
+  // Pixabay Music states
+  const [musicSearchQuery, setMusicSearchQuery] = useState('');
+  const [musicResults, setMusicResults] = useState<any[]>([]);
+  const [musicLoading, setMusicLoading] = useState(false);
+  const [selectedMusicIds, setSelectedMusicIds] = useState<number[]>([]);
+  const [playingMusicId, setPlayingMusicId] = useState<number | null>(null);
+  
+  // Pixabay SFX states
+  const [sfxSearchQuery, setSfxSearchQuery] = useState('');
+  const [sfxResults, setSfxResults] = useState<any[]>([]);
+  const [sfxLoading, setSfxLoading] = useState(false);
+  const [selectedSfxIds, setSelectedSfxIds] = useState<number[]>([]);
+  const [playingSfxId, setPlayingSfxId] = useState<number | null>(null);
   
   const [isMobile, setIsMobile] = useState(false);
 
@@ -112,6 +127,10 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
       setSelectedUploadIds([]);
       setSelectedGiphyIds([]);
       setSelectedPexelsIds([]);
+      setSelectedMusicIds([]);
+      setSelectedSfxIds([]);
+      setPlayingMusicId(null);
+      setPlayingSfxId(null);
       fetchUploads();
     }
   }, [isOpen]);
@@ -294,6 +313,124 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
     }
     onClose();
   }, [pexelsResults, selectedPexelsIds, onConfirm, onClose, replaceMode, replaceLayerId]);
+
+// ============================================================================
+  // PIXABAY MUSIC FUNCTIONS
+  // ============================================================================
+
+  const searchMusic = useCallback(async (query: string = '') => {
+    setMusicLoading(true);
+    try {
+      const searchQuery = query.trim() || 'Background';
+      const response = await fetch(
+        `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(searchQuery)}&filter=duration:[30 TO 300]&fields=id,name,duration,username,previews&page_size=20&token=${FREESOUND_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results) {
+        const tracks = data.results.map((s: any) => ({
+          id: s.id,
+          tags: s.name,
+          duration: Math.round(s.duration),
+          user: s.username,
+          audio: s.previews?.['preview-hq-mp3'] || s.previews?.['preview-lq-mp3'],
+        }));
+        setMusicResults(tracks);
+      }
+    } catch (error) {
+      console.error('Freesound search failed:', error);
+    } finally {
+      setMusicLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (sidebarTab === 'music' && musicResults.length === 0) {
+      searchMusic();
+    }
+  }, [sidebarTab, searchMusic]);
+
+  const handleMusicSelect = useCallback((trackId: number) => {
+    setSelectedMusicIds(prev => 
+      prev.includes(trackId) ? prev.filter(id => id !== trackId) : replaceMode ? [trackId] : [...prev, trackId]
+    );
+  }, [replaceMode]);
+
+  const handleAddSelectedMusic = useCallback(() => {
+    const selectedTracks = musicResults.filter(track => selectedMusicIds.includes(track.id));
+    if (selectedTracks.length === 0) return;
+    const mediaData = selectedTracks.map(track => ({
+      id: track.id.toString(),
+      name: track.tags || `Music ${track.id}`,
+      type: 'audio',
+      source: track.audio,
+      url: track.audio,
+      preview: track.audio,
+      duration: track.duration,
+      replaceMode,
+      replaceLayerId,
+    }));
+    console.log('Adding music:', mediaData);
+    onConfirm(replaceMode ? mediaData[0] : mediaData);
+    onClose();
+  }, [musicResults, selectedMusicIds, onConfirm, onClose, replaceMode, replaceLayerId]);
+
+  // ============================================================================
+  // PIXABAY SFX FUNCTIONS
+  // ============================================================================
+
+ const searchSfx = useCallback(async (query: string = '') => {
+    setSfxLoading(true);
+    try {
+      const searchQuery = query.trim() || 'sound effect';
+      const response = await fetch(
+        `https://freesound.org/apiv2/search/text/?query=${encodeURIComponent(searchQuery)}&filter=duration:[0 TO 10]&fields=id,name,duration,username,previews&page_size=20&token=${FREESOUND_API_KEY}`
+      );
+      const data = await response.json();
+      if (data.results) {
+        const effects = data.results.map((s: any) => ({
+          id: s.id,
+          tags: s.name,
+          duration: Math.round(s.duration),
+          user: s.username,
+          audio: s.previews?.['preview-hq-mp3'] || s.previews?.['preview-lq-mp3'],
+        }));
+        setSfxResults(effects);
+      }
+    } catch (error) {
+      console.error('Freesound SFX search failed:', error);
+    } finally {
+      setSfxLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (sidebarTab === 'sfx' && sfxResults.length === 0) {
+      searchSfx();
+    }
+  }, [sidebarTab, searchSfx]);
+
+  const handleSfxSelect = useCallback((sfxId: number) => {
+    setSelectedSfxIds(prev => 
+      prev.includes(sfxId) ? prev.filter(id => id !== sfxId) : replaceMode ? [sfxId] : [...prev, sfxId]
+    );
+  }, [replaceMode]);
+
+  const handleAddSelectedSfx = useCallback(() => {
+    const selectedEffects = sfxResults.filter(sfx => selectedSfxIds.includes(sfx.id));
+    if (selectedEffects.length === 0) return;
+    const mediaData = selectedEffects.map(sfx => ({
+      id: sfx.id.toString(),
+      name: sfx.tags?.split(',')[0]?.trim() || `SFX ${sfx.id}`,
+      type: 'audio',
+      source: sfx.audio,
+      url: sfx.audio,
+      duration: sfx.duration,
+      replaceMode,
+      replaceLayerId,
+    }));
+    onConfirm(replaceMode ? mediaData[0] : mediaData);
+    onClose();
+  }, [sfxResults, selectedSfxIds, onConfirm, onClose, replaceMode, replaceLayerId]);
 
   // ============================================================================
   // FILE UPLOAD HANDLING
@@ -1025,6 +1162,24 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
             <button
               style={{
                 ...styles.sidebarButton,
+                ...(sidebarTab === 'music' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('music')}
+            >
+              🎵 Music
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
+                ...(sidebarTab === 'sfx' ? styles.sidebarButtonActive : {}),
+              }}
+              onClick={() => setSidebarTab('sfx')}
+            >
+              🔊 Sound FX
+            </button>
+            <button
+              style={{
+                ...styles.sidebarButton,
                 ...(sidebarTab === 'home' ? styles.sidebarButtonActive : {}),
               }}
               onClick={() => setSidebarTab('home')}
@@ -1388,6 +1543,126 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   </>
                 )}
               </div>
+            ) : sidebarTab === 'music' ? (
+              <div style={styles.giphyContainer}>
+                <div style={styles.giphySearch}>
+                  <input
+                    type="text"
+                    placeholder="Search music... (happy, cinematic, lofi)"
+                    value={musicSearchQuery}
+                    onChange={(e) => setMusicSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchMusic(musicSearchQuery)}
+                    style={styles.searchInput}
+                  />
+                </div>
+                {musicLoading ? (
+                  <div style={styles.loadingSpinner}>⏳ Loading...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>
+                    {musicResults.map((track) => (
+                      <div
+                        key={track.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px',
+                          backgroundColor: selectedMusicIds.includes(track.id) ? 'rgba(59,130,246,0.2)' : c.inputBg,
+                          border: `2px solid ${selectedMusicIds.includes(track.id) ? '#3b82f6' : 'transparent'}`,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleMusicSelect(track.id)}
+                      >
+                        <button
+                          onClick={(e) => {
+  e.stopPropagation();
+  document.querySelectorAll('audio').forEach(a => a.pause());
+  if (playingMusicId === track.id) {
+    setPlayingMusicId(null);
+  } else {
+    setPlayingMusicId(track.id);
+    setPlayingSfxId(null);
+    const audio = document.getElementById(`audio-${track.id}`) as HTMLAudioElement;
+    if (audio) audio.play().catch(() => {});
+  }
+}}
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '50%', border: 'none',
+                            backgroundColor: playingMusicId === track.id ? '#ef4444' : '#3b82f6',
+                            color: '#fff', cursor: 'pointer', fontSize: '14px',
+                          }}
+                        >
+                          {playingMusicId === track.id ? '⏹' : '▶'}
+                        </button>
+                        <audio id={`audio-${track.id}`} src={track.audio || track.previewURL || track.music} preload="none" />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{track.tags?.split(',')[0] || 'Track'}</div>
+                          <div style={{ fontSize: '11px', color: c.textTertiary }}>{Math.floor(track.duration/60)}:{String(track.duration%60).padStart(2,'0')} • {track.user}</div>
+                        </div>
+                        {selectedMusicIds.includes(track.id) && <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✓</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={styles.giphyAttribution}>Sounds by <a href="https://freesound.org" target="_blank" style={{ color: '#3b82f6' }}>Freesound</a> • CC Licensed</div>
+              </div>
+            ) : sidebarTab === 'sfx' ? (
+              <div style={styles.giphyContainer}>
+                <div style={styles.giphySearch}>
+                  <input
+                    type="text"
+                    placeholder="Search sounds... (whoosh, click, explosion)"
+                    value={sfxSearchQuery}
+                    onChange={(e) => setSfxSearchQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && searchSfx(sfxSearchQuery)}
+                    style={styles.searchInput}
+                  />
+                </div>
+                {sfxLoading ? (
+                  <div style={styles.loadingSpinner}>⏳ Loading...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', overflowY: 'auto', flex: 1 }}>
+                    {sfxResults.map((sfx) => (
+                      <div
+                        key={sfx.id}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: '12px', padding: '12px', borderRadius: '8px',
+                          backgroundColor: selectedSfxIds.includes(sfx.id) ? 'rgba(59,130,246,0.2)' : c.inputBg,
+                          border: `2px solid ${selectedSfxIds.includes(sfx.id) ? '#3b82f6' : 'transparent'}`,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleSfxSelect(sfx.id)}
+                      >
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            document.querySelectorAll('audio').forEach(a => a.pause());
+                            if (playingSfxId === sfx.id) {
+                              setPlayingSfxId(null);
+                            } else {
+                              setPlayingSfxId(sfx.id);
+                              setPlayingMusicId(null);
+                              const audio = document.getElementById(`sfx-${sfx.id}`) as HTMLAudioElement;
+if (audio) audio.play().catch(() => {});
+                            }
+                          }}
+                          style={{
+                            width: '36px', height: '36px', borderRadius: '50%', border: 'none',
+                            backgroundColor: playingSfxId === sfx.id ? '#ef4444' : '#10b981',
+                            color: '#fff', cursor: 'pointer', fontSize: '14px',
+                          }}
+                        >
+                          {playingSfxId === sfx.id ? '⏹' : '▶'}
+                        </button>
+                        <audio id={`sfx-${sfx.id}`} src={sfx.audio} preload="none" />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 500, color: c.text }}>{sfx.tags?.split(',')[0] || 'Sound'}</div>
+                          <div style={{ fontSize: '11px', color: c.textTertiary }}>{sfx.duration}s • {sfx.user}</div>
+                        </div>
+                        {selectedSfxIds.includes(sfx.id) && <div style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#3b82f6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✓</div>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={styles.giphyAttribution}>Sound effects by <a href="https://freesound.org" target="_blank" style={{ color: '#3b82f6' }}>Freesound</a> • CC Licensed</div>
+              </div>
             ) : (
               <div style={styles.uploadArea}>
                 {sidebarTab === 'viewFiles' ? (
@@ -1526,7 +1801,7 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
               </div>
             )}
 
-            {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && (
+            {(selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0 || selectedMusicIds.length > 0 || selectedSfxIds.length > 0) && (
               <div style={styles.footer}>
                 <div style={styles.fileCount}>
                   {selectedFiles.length > 0 
@@ -1535,7 +1810,11 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                       ? `${selectedUploadIds.length} ${selectedUploadIds.length === 1 ? 'upload' : 'uploads'} selected`
                       : selectedGiphyIds.length > 0
                         ? `${selectedGiphyIds.length} ${selectedGiphyIds.length === 1 ? 'GIF' : 'GIFs'} selected`
-                        : `${selectedPexelsIds.length} ${selectedPexelsIds.length === 1 ? 'photo' : 'photos'} selected`
+                        : selectedPexelsIds.length > 0
+                          ? `${selectedPexelsIds.length} ${selectedPexelsIds.length === 1 ? 'photo' : 'photos'} selected`
+                          : selectedMusicIds.length > 0
+                            ? `${selectedMusicIds.length} ${selectedMusicIds.length === 1 ? 'track' : 'tracks'} selected`
+                            : `${selectedSfxIds.length} ${selectedSfxIds.length === 1 ? 'sound' : 'sounds'} selected`
                   }
                 </div>
                 <div style={styles.buttonGroup}>
@@ -1555,28 +1834,32 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                   <button
                     style={{
                       ...styles.addButton,
-                      ...((selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0) || isUploading 
+                      ...((selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0 && selectedMusicIds.length === 0 && selectedSfxIds.length === 0) || isUploading 
                         ? styles.addButtonDisabled 
                         : {}),
                     }}
                     onClick={
-                      selectedFiles.length > 0 
-                        ? handleAddToProject 
-                        : selectedUploadIds.length > 0
-                          ? handleAddSelectedUploads
-                          : selectedGiphyIds.length > 0
-                            ? handleAddSelectedGiphys
-                            : handleAddSelectedPexels
-                    }
-                    disabled={(selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0) || isUploading}
+  selectedFiles.length > 0 
+    ? handleAddToProject 
+    : selectedUploadIds.length > 0
+      ? handleAddSelectedUploads
+      : selectedGiphyIds.length > 0
+        ? handleAddSelectedGiphys
+        : selectedPexelsIds.length > 0
+          ? handleAddSelectedPexels
+          : selectedMusicIds.length > 0
+            ? handleAddSelectedMusic
+            : handleAddSelectedSfx
+}
+                    disabled={(selectedFiles.length === 0 && selectedUploadIds.length === 0 && selectedGiphyIds.length === 0 && selectedPexelsIds.length === 0 && selectedMusicIds.length === 0 && selectedSfxIds.length === 0) || isUploading}
                     onMouseOver={(e) => {
-                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && !isUploading) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0 || selectedMusicIds.length > 0 || selectedSfxIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#5558e3';
                         e.currentTarget.style.transform = 'translateY(-1px)';
                       }
                     }}
                     onMouseOut={(e) => {
-                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0) && !isUploading) {
+                      if ((selectedFiles.length > 0 || selectedUploadIds.length > 0 || selectedGiphyIds.length > 0 || selectedPexelsIds.length > 0 || selectedMusicIds.length > 0 || selectedSfxIds.length > 0) && !isUploading) {
                         e.currentTarget.style.backgroundColor = '#6366f1';
                         e.currentTarget.style.transform = 'translateY(0)';
                       }
@@ -1592,7 +1875,11 @@ export const MediaGalleryModal: React.FC<MediaGalleryModalProps> = ({
                             ? `Add ${selectedUploadIds.length} to project`
                             : selectedGiphyIds.length > 0
                               ? `Add ${selectedGiphyIds.length} to project`
-                              : `Add ${selectedPexelsIds.length} to project`
+                              : selectedPexelsIds.length > 0
+                                ? `Add ${selectedPexelsIds.length} to project`
+                                : selectedMusicIds.length > 0
+                                  ? `Add ${selectedMusicIds.length} to project`
+                                  : `Add ${selectedSfxIds.length} to project`
                     }
                   </button>
                 </div>

@@ -795,6 +795,65 @@ export const TextEditor: React.FC<TextEditorProps> = ({
             </div>
           </div>
 
+          {/* TEXT CURVE / BEND */}
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Text Curve</label>
+            <div style={styles.sliderWrapper}>
+              <input
+                type="range"
+                style={styles.slider}
+                min="-100"
+                max="100"
+                step="5"
+                value={layer.textBend || 0}
+                onChange={(e) => onUpdate(layer.id, { textBend: parseInt(e.target.value) })}
+              />
+              <span style={styles.sliderValue}>
+                {layer.textBend || 0}%
+              </span>
+            </div>
+          </div>
+          
+          {/* Curve preset buttons */}
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '8px' }}>
+            <button
+              style={{
+                ...styles.toggleButton,
+                flex: 1,
+                padding: '6px 8px',
+                fontSize: '11px',
+                ...(layer.textBend === -50 ? styles.toggleButtonActive : {}),
+              }}
+              onClick={() => onUpdate(layer.id, { textBend: -50 })}
+            >
+              ⌒ Down
+            </button>
+            <button
+              style={{
+                ...styles.toggleButton,
+                flex: 1,
+                padding: '6px 8px',
+                fontSize: '11px',
+                ...((layer.textBend === 0 || !layer.textBend) ? styles.toggleButtonActive : {}),
+              }}
+              onClick={() => onUpdate(layer.id, { textBend: 0 })}
+            >
+              — Flat
+            </button>
+            <button
+              style={{
+                ...styles.toggleButton,
+                flex: 1,
+                padding: '6px 8px',
+                fontSize: '11px',
+                ...(layer.textBend === 50 ? styles.toggleButtonActive : {}),
+              }}
+              onClick={() => onUpdate(layer.id, { textBend: 50 })}
+            >
+              ⌣ Up
+            </button>
+          </div>
+
           <div style={styles.formGroup}>
             <label style={styles.label}>Highlight Words (comma separated)</label>
             <input
@@ -1326,6 +1385,63 @@ export const TextEditor: React.FC<TextEditorProps> = ({
                   } 
                 })}
               />
+            </div>
+
+            {/* TEXT CURVE / BEND */}
+            <div style={mobileStyles.sectionHeader}>TEXT CURVE</div>
+            <div style={mobileStyles.sliderRow}>
+              <div style={mobileStyles.sliderTopRow}>
+                <span style={mobileStyles.sliderLabel}>Bend</span>
+                <span style={mobileStyles.sliderValue}>{layer.textBend || 0}%</span>
+              </div>
+              <input
+                type="range"
+                style={mobileStyles.sliderInput}
+                min="-100"
+                max="100"
+                step="5"
+                value={layer.textBend || 0}
+                onChange={(e) => onUpdate(layer.id, { textBend: parseInt(e.target.value) })}
+              />
+            </div>
+            {/* Curve preset buttons */}
+            <div style={{ display: 'flex', gap: '6px', marginBottom: '16px' }}>
+              <button
+                style={{
+                  ...mobileStyles.button,
+                  flex: 1,
+                  marginBottom: 0,
+                  backgroundColor: layer.textBend === -50 ? colors.accent + '30' : colors.bgSecondary,
+                  borderColor: layer.textBend === -50 ? colors.accent : colors.border,
+                }}
+                onClick={() => onUpdate(layer.id, { textBend: -50 })}
+              >
+                ⌒ Down
+              </button>
+              <button
+                style={{
+                  ...mobileStyles.button,
+                  flex: 1,
+                  marginBottom: 0,
+                  backgroundColor: (layer.textBend === 0 || !layer.textBend) ? colors.accent + '30' : colors.bgSecondary,
+                  borderColor: (layer.textBend === 0 || !layer.textBend) ? colors.accent : colors.border,
+                }}
+                onClick={() => onUpdate(layer.id, { textBend: 0 })}
+              >
+                — Flat
+              </button>
+              <button
+                style={{
+                  ...mobileStyles.button,
+                  flex: 1,
+                  marginBottom: 0,
+                  backgroundColor: layer.textBend === 50 ? colors.accent + '30' : colors.bgSecondary,
+                  borderColor: layer.textBend === 50 ? colors.accent : colors.border,
+                }}
+                onClick={() => onUpdate(layer.id, { textBend: 50 })}
+              >
+                ⌣ Up
+              </button>
             </div>
 
             {/* HIGHLIGHT WORDS */}

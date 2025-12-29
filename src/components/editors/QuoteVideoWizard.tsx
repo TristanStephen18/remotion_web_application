@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../contexts/ThemeContext";
 import toast from "react-hot-toast";
@@ -247,6 +247,17 @@ const QuoteVideoWizard: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
   const videoInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Mobile responsiveness
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const [currentStep, setCurrentStep] = useState<WizardStep>("content");
   const [state, setState] = useState<WizardState>({
@@ -534,15 +545,17 @@ const QuoteVideoWizard: React.FC = () => {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "16px 24px",
+      padding: isMobile ? "12px 16px" : "16px 24px",
       borderBottom: `1px solid ${isDark ? "#1f1f23" : "#e5e7eb"}`,
       backgroundColor: isDark ? "#111113" : "#ffffff",
+      flexWrap: isMobile ? "wrap" : "nowrap",
+      gap: isMobile ? 12 : 0,
     },
     logo: {
       display: "flex",
       alignItems: "center",
-      gap: 10,
-      fontSize: 18,
+      gap: isMobile ? 6 : 10,
+      fontSize: isMobile ? 15 : 18,
       fontWeight: 700,
       color: colors.textPrimary,
       cursor: "pointer",
@@ -550,24 +563,29 @@ const QuoteVideoWizard: React.FC = () => {
     stepNav: {
       display: "flex",
       alignItems: "center",
-      gap: 4,
+      gap: isMobile ? 2 : 4,
       backgroundColor: isDark ? "#1a1a1d" : "#f3f4f6",
-      padding: 4,
-      borderRadius: 12,
+      padding: isMobile ? 3 : 4,
+      borderRadius: isMobile ? 10 : 12,
+      order: isMobile ? 3 : 0,
+      width: isMobile ? "100%" : "auto",
+      justifyContent: isMobile ? "space-between" : "flex-start",
     },
     stepPill: {
       display: "flex",
       alignItems: "center",
-      gap: 6,
-      padding: "8px 16px",
-      borderRadius: 8,
-      fontSize: 13,
+      gap: isMobile ? 4 : 6,
+      padding: isMobile ? "6px 10px" : "8px 16px",
+      borderRadius: isMobile ? 6 : 8,
+      fontSize: isMobile ? 11 : 13,
       fontWeight: 500,
       cursor: "pointer",
       transition: "all 0.2s",
       border: "none",
       background: "transparent",
       color: colors.textSecondary,
+      flex: isMobile ? 1 : "none",
+      justifyContent: "center",
     },
     stepPillActive: {
       backgroundColor: isDark ? "#2d2d30" : "#ffffff",
@@ -577,110 +595,122 @@ const QuoteVideoWizard: React.FC = () => {
     headerActions: {
       display: "flex",
       alignItems: "center",
-      gap: 12,
+      gap: isMobile ? 8 : 12,
     },
     btnSecondary: {
-      padding: "10px 20px",
+      padding: isMobile ? "8px 12px" : "10px 20px",
       backgroundColor: "transparent",
       border: `1px solid ${isDark ? "#333" : "#e5e7eb"}`,
-      borderRadius: 10,
-      fontSize: 14,
+      borderRadius: isMobile ? 8 : 10,
+      fontSize: isMobile ? 12 : 14,
       fontWeight: 500,
       color: colors.textPrimary,
       cursor: "pointer",
     },
     btnPrimary: {
-      padding: "10px 24px",
+      padding: isMobile ? "8px 14px" : "10px 24px",
       background: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%)",
       border: "none",
-      borderRadius: 10,
-      fontSize: 14,
+      borderRadius: isMobile ? 8 : 10,
+      fontSize: isMobile ? 12 : 14,
       fontWeight: 600,
       color: "#fff",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
-      gap: 8,
+      gap: isMobile ? 4 : 8,
     },
     main: {
       flex: 1,
       display: "flex",
+      flexDirection: isMobile ? "column" : "row",
       maxWidth: 1400,
       margin: "0 auto",
       width: "100%",
-      padding: 24,
-      gap: 32,
+      padding: isMobile ? 12 : 24,
+      gap: isMobile ? 12 : 32,
+      overflow: isMobile ? "hidden" : "visible",
+      height: isMobile ? "calc(100vh - 110px)" : "auto",
     },
     previewPanel: {
-      width: 340,
+      width: isMobile ? "100%" : 340,
       flexShrink: 0,
       display: "flex",
-      flexDirection: "column",
+      flexDirection: isMobile ? "row" : "column",
       alignItems: "center",
-      gap: 16,
+      justifyContent: isMobile ? "center" : "flex-start",
+      gap: isMobile ? 8 : 16,
+      padding: isMobile ? "8px 0" : 0,
+      borderBottom: isMobile ? `1px solid ${isDark ? "#1f1f23" : "#e5e7eb"}` : "none",
     },
     phoneFrame: {
-      width: 300,
-      height: 600,
+      width: isMobile ? 180 : 300,
+      height: isMobile ? 360 : 600,
       backgroundColor: "#000",
-      borderRadius: 36,
-      padding: 10,
+      borderRadius: isMobile ? 22 : 36,
+      padding: isMobile ? 5 : 10,
       boxShadow: isDark 
         ? "0 25px 50px rgba(0,0,0,0.5), inset 0 0 0 2px #333"
         : "0 25px 50px rgba(0,0,0,0.15), inset 0 0 0 2px #e5e7eb",
       position: "relative",
       overflow: "hidden",
+      flexShrink: 0,
     },
     phoneScreen: {
       width: "100%",
       height: "100%",
-      borderRadius: 26,
+      borderRadius: isMobile ? 17 : 26,
       overflow: "hidden",
       position: "relative",
       backgroundColor: "#1a1a1a",
     },
     previewLabel: {
-      fontSize: 12,
+      fontSize: isMobile ? 10 : 12,
       fontWeight: 600,
       color: colors.textSecondary,
       textTransform: "uppercase",
       letterSpacing: "0.05em",
+      display: isMobile ? "none" : "block",
+    },
+    mobilePreviewToggle: {
+      display: "none",
     },
     controlsPanel: {
       flex: 1,
       minWidth: 0,
       display: "flex",
       flexDirection: "column",
-      gap: 20,
-      maxHeight: "calc(100vh - 140px)",
+      gap: isMobile ? 12 : 20,
+      maxHeight: isMobile ? "100%" : "calc(100vh - 140px)",
       overflowY: "auto",
+      paddingBottom: isMobile ? 16 : 0,
     },
     card: {
       backgroundColor: isDark ? "#141416" : "#ffffff",
-      borderRadius: 16,
+      borderRadius: isMobile ? 10 : 16,
       border: `1px solid ${isDark ? "#1f1f23" : "#e5e7eb"}`,
-      padding: 24,
+      padding: isMobile ? 12 : 24,
     },
     cardTitle: {
-      fontSize: 15,
+      fontSize: isMobile ? 12 : 15,
       fontWeight: 600,
       color: colors.textPrimary,
-      marginBottom: 16,
+      marginBottom: isMobile ? 8 : 16,
       display: "flex",
       alignItems: "center",
-      gap: 10,
+      gap: isMobile ? 5 : 10,
     },
     inputGroup: {
-      marginBottom: 16,
+      marginBottom: isMobile ? 8 : 16,
     },
     label: {
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
-      fontSize: 12,
+      fontSize: isMobile ? 9 : 12,
       fontWeight: 500,
       color: colors.textSecondary,
-      marginBottom: 6,
+      marginBottom: isMobile ? 3 : 6,
       textTransform: "uppercase",
       letterSpacing: "0.03em",
     },
@@ -690,50 +720,50 @@ const QuoteVideoWizard: React.FC = () => {
     },
     input: {
       width: "100%",
-      padding: "12px 14px",
+      padding: isMobile ? "8px 10px" : "12px 14px",
       backgroundColor: isDark ? "#1a1a1d" : "#f9fafb",
       border: `1px solid ${isDark ? "#2d2d30" : "#e5e7eb"}`,
-      borderRadius: 10,
-      fontSize: 14,
+      borderRadius: isMobile ? 6 : 10,
+      fontSize: isMobile ? 12 : 14,
       color: colors.textPrimary,
       outline: "none",
     },
     textarea: {
       width: "100%",
-      padding: "12px 14px",
+      padding: isMobile ? "8px 10px" : "12px 14px",
       backgroundColor: isDark ? "#1a1a1d" : "#f9fafb",
       border: `1px solid ${isDark ? "#2d2d30" : "#e5e7eb"}`,
-      borderRadius: 10,
-      fontSize: 14,
+      borderRadius: isMobile ? 6 : 10,
+      fontSize: isMobile ? 12 : 14,
       color: colors.textPrimary,
       outline: "none",
       resize: "vertical",
-      minHeight: 100,
+      minHeight: isMobile ? 60 : 100,
       fontFamily: "'Libre Baskerville', Georgia, serif",
       fontStyle: "italic",
-      lineHeight: 1.6,
+      lineHeight: 1.5,
     },
     sampleBtn: {
       display: "flex",
       alignItems: "center",
-      gap: 6,
-      padding: "8px 14px",
+      gap: isMobile ? 4 : 6,
+      padding: isMobile ? "5px 8px" : "8px 14px",
       backgroundColor: isDark ? "#2d2d30" : "#f3f4f6",
       border: "none",
-      borderRadius: 8,
-      fontSize: 13,
+      borderRadius: isMobile ? 5 : 8,
+      fontSize: isMobile ? 11 : 13,
       color: colors.textSecondary,
       cursor: "pointer",
     },
     pillGroup: {
       display: "flex",
       flexWrap: "wrap",
-      gap: 8,
+      gap: isMobile ? 4 : 8,
     },
     pill: {
-      padding: "10px 16px",
-      borderRadius: 20,
-      fontSize: 13,
+      padding: isMobile ? "5px 8px" : "10px 16px",
+      borderRadius: isMobile ? 12 : 20,
+      fontSize: isMobile ? 10 : 13,
       fontWeight: 500,
       cursor: "pointer",
       transition: "all 0.2s",
@@ -749,14 +779,16 @@ const QuoteVideoWizard: React.FC = () => {
     colorPicker: {
       display: "flex",
       alignItems: "center",
-      gap: 12,
+      gap: isMobile ? 4 : 12,
+      flexWrap: isMobile ? "wrap" : "nowrap",
     },
     colorSwatch: {
-      width: 40,
-      height: 40,
-      borderRadius: 10,
+      width: isMobile ? 28 : 40,
+      height: isMobile ? 28 : 40,
+      borderRadius: isMobile ? 4 : 10,
       border: `2px solid ${isDark ? "#333" : "#e5e7eb"}`,
       cursor: "pointer",
+      flexShrink: 0,
     },
     slider: {
       width: "100%",
@@ -768,21 +800,23 @@ const QuoteVideoWizard: React.FC = () => {
     },
     row: {
       display: "flex",
-      gap: 16,
+      flexDirection: "row",
+      gap: isMobile ? 8 : 16,
     },
     col: {
       flex: 1,
+      minWidth: 0,
     },
     imageGrid: {
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
-      gap: 10,
+      gap: isMobile ? 4 : 10,
     },
     imageThumbnail: {
       width: "100%",
       aspectRatio: "9/16",
       objectFit: "cover",
-      borderRadius: 8,
+      borderRadius: isMobile ? 3 : 8,
       cursor: "pointer",
       border: `2px solid transparent`,
       transition: "all 0.2s",
@@ -794,11 +828,11 @@ const QuoteVideoWizard: React.FC = () => {
     voiceGrid: {
       display: "grid",
       gridTemplateColumns: "repeat(3, 1fr)",
-      gap: 10,
+      gap: isMobile ? 4 : 10,
     },
     voiceCard: {
-      padding: 14,
-      borderRadius: 12,
+      padding: isMobile ? 6 : 14,
+      borderRadius: isMobile ? 6 : 12,
       border: `1px solid ${isDark ? "#2d2d30" : "#e5e7eb"}`,
       backgroundColor: isDark ? "#1a1a1d" : "#f9fafb",
       cursor: "pointer",
@@ -810,35 +844,36 @@ const QuoteVideoWizard: React.FC = () => {
       backgroundColor: "rgba(139, 92, 246, 0.1)",
     },
     voiceName: {
-      fontSize: 14,
+      fontSize: isMobile ? 10 : 14,
       fontWeight: 600,
       color: colors.textPrimary,
     },
     voiceGender: {
-      fontSize: 11,
+      fontSize: isMobile ? 8 : 11,
       color: "#8B5CF6",
-      marginTop: 2,
+      marginTop: isMobile ? 1 : 2,
     },
     voiceDesc: {
-      fontSize: 11,
+      fontSize: isMobile ? 8 : 11,
       color: colors.textSecondary,
-      marginTop: 2,
+      marginTop: isMobile ? 1 : 2,
+      display: isMobile ? "none" : "block",
     },
     generateBtn: {
       width: "100%",
-      padding: "14px 20px",
+      padding: isMobile ? "8px 12px" : "14px 20px",
       background: "linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%)",
       border: "none",
-      borderRadius: 12,
-      fontSize: 14,
+      borderRadius: isMobile ? 6 : 12,
+      fontSize: isMobile ? 11 : 14,
       fontWeight: 600,
       color: "#fff",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: 10,
-      marginTop: 16,
+      gap: isMobile ? 5 : 10,
+      marginTop: isMobile ? 8 : 16,
     },
     generateBtnDisabled: {
       opacity: 0.5,
@@ -848,18 +883,18 @@ const QuoteVideoWizard: React.FC = () => {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "12px 16px",
+      padding: isMobile ? "6px 8px" : "12px 16px",
       backgroundColor: isDark ? "rgba(139, 92, 246, 0.15)" : "rgba(139, 92, 246, 0.1)",
       border: "1px solid rgba(139, 92, 246, 0.3)",
-      borderRadius: 10,
-      marginTop: 12,
+      borderRadius: isMobile ? 5 : 10,
+      marginTop: isMobile ? 6 : 12,
     },
     previewBtn: {
-      padding: "6px 12px",
+      padding: isMobile ? "3px 6px" : "6px 12px",
       backgroundColor: "#8B5CF6",
       border: "none",
-      borderRadius: 6,
-      fontSize: 12,
+      borderRadius: isMobile ? 3 : 6,
+      fontSize: isMobile ? 9 : 12,
       fontWeight: 500,
       color: "#fff",
       cursor: "pointer",
@@ -867,32 +902,32 @@ const QuoteVideoWizard: React.FC = () => {
     divider: {
       height: 1,
       backgroundColor: isDark ? "#2d2d30" : "#e5e7eb",
-      margin: "20px 0",
+      margin: isMobile ? "10px 0" : "20px 0",
     },
     uploadBtn: {
       width: "100%",
-      padding: "12px 16px",
+      padding: isMobile ? "6px 8px" : "12px 16px",
       backgroundColor: isDark ? "#1a1a1d" : "#f9fafb",
       border: `2px dashed ${isDark ? "#2d2d30" : "#e5e7eb"}`,
-      borderRadius: 10,
-      fontSize: 13,
+      borderRadius: isMobile ? 5 : 10,
+      fontSize: isMobile ? 10 : 13,
       color: colors.textSecondary,
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      gap: 8,
+      gap: isMobile ? 3 : 8,
     },
     toggleRow: {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "12px 0",
+      padding: isMobile ? "6px 0" : "12px 0",
     },
     toggle: {
-      width: 48,
-      height: 26,
-      borderRadius: 13,
+      width: isMobile ? 36 : 48,
+      height: isMobile ? 20 : 26,
+      borderRadius: isMobile ? 10 : 13,
       backgroundColor: isDark ? "#2d2d30" : "#e5e7eb",
       cursor: "pointer",
       position: "relative",
@@ -903,16 +938,16 @@ const QuoteVideoWizard: React.FC = () => {
     },
     toggleKnob: {
       position: "absolute",
-      top: 3,
-      left: 3,
-      width: 20,
-      height: 20,
-      borderRadius: 10,
+      top: isMobile ? 2 : 3,
+      left: isMobile ? 2 : 3,
+      width: isMobile ? 16 : 20,
+      height: isMobile ? 16 : 20,
+      borderRadius: isMobile ? 8 : 10,
       backgroundColor: "#fff",
       transition: "all 0.2s",
     },
     toggleKnobActive: {
-      left: 25,
+      left: isMobile ? 18 : 25,
     },
     spinner: {
       width: 16,
@@ -981,7 +1016,7 @@ const QuoteVideoWizard: React.FC = () => {
                 top: "15%",
                 left: "50%",
                 transform: "translateX(-50%)",
-                fontSize: `${state.quotationMarkSize * 3}px`,
+                fontSize: `${state.quotationMarkSize * (isMobile ? 1.8 : 3)}px`,
                 fontFamily: "'Libre Baskerville', Georgia, serif",
                 fontStyle: "italic",
                 color: state.quotationMarkColor,
@@ -998,23 +1033,23 @@ const QuoteVideoWizard: React.FC = () => {
             style={{
               position: "absolute",
               top: "35%",
-              left: "10%",
-              right: "10%",
+              left: "8%",
+              right: "8%",
               textAlign: state.quoteTextAlign,
             }}
           >
             <p
               style={{
-                fontSize: `${state.quoteFontSize * 3}px`,
+                fontSize: `${state.quoteFontSize * (isMobile ? 1.8 : 3)}px`,
                 fontFamily: state.quoteFontFamily,
                 fontStyle: state.quoteFontStyle,
                 color: state.quoteFontColor,
-                lineHeight: 1.5,
-                textShadow: "0 2px 10px rgba(0,0,0,0.8)",
+                lineHeight: 1.4,
+                textShadow: "0 1px 4px rgba(0,0,0,0.8)",
                 margin: 0,
               }}
             >
-              {state.quoteText || "Your quote will appear here..."}
+              {state.quoteText || "Your quote..."}
             </p>
           </div>
 
@@ -1023,19 +1058,19 @@ const QuoteVideoWizard: React.FC = () => {
             <div
               style={{
                 position: "absolute",
-                bottom: "18%",
-                left: "10%",
-                right: "10%",
+                bottom: "15%",
+                left: "8%",
+                right: "8%",
                 textAlign: "center",
               }}
             >
               <p
                 style={{
-                  fontSize: `${state.authorFontSize * 3}px`,
+                  fontSize: `${state.authorFontSize * (isMobile ? 1.8 : 3)}px`,
                   fontFamily: state.quoteFontFamily,
                   color: state.authorFontColor,
                   margin: 0,
-                  textShadow: "0 2px 8px rgba(0,0,0,0.6)",
+                  textShadow: "0 1px 4px rgba(0,0,0,0.6)",
                 }}
               >
                 — {state.authorName.toUpperCase()}
@@ -1043,9 +1078,9 @@ const QuoteVideoWizard: React.FC = () => {
               {state.authorTitle && (
                 <p
                   style={{
-                    fontSize: `${(state.authorFontSize - 0.5) * 3}px`,
+                    fontSize: `${(state.authorFontSize - 0.5) * (isMobile ? 1.8 : 3)}px`,
                     color: "rgba(255,255,255,0.7)",
-                    marginTop: 4,
+                    marginTop: isMobile ? 2 : 4,
                   }}
                 >
                   {state.authorTitle}
@@ -1168,13 +1203,13 @@ const QuoteVideoWizard: React.FC = () => {
                 type="text"
                 value={state.quoteFontColor}
                 onChange={(e) => updateState({ quoteFontColor: e.target.value })}
-                style={{ ...styles.input, width: 100 }}
+                style={{ ...styles.input, width: isMobile ? 60 : 100 }}
               />
             </div>
           </div>
         </div>
 
-        <div style={{ ...styles.row, marginTop: 16 }}>
+        <div style={{ ...styles.row, marginTop: isMobile ? 8 : 16 }}>
           <div style={styles.col}>
             <label style={styles.label}>Font Style</label>
             <div style={styles.pillGroup}>
@@ -1223,7 +1258,7 @@ const QuoteVideoWizard: React.FC = () => {
         <div style={styles.cardTitle}>📝 Quotation Mark</div>
         
         <div style={styles.toggleRow}>
-          <span style={{ color: colors.textPrimary }}>Show Quotation Mark</span>
+          <span style={{ color: colors.textPrimary, fontSize: isMobile ? 11 : 14 }}>Show Quotation Mark</span>
           <div
             style={{
               ...styles.toggle,
@@ -1338,7 +1373,7 @@ const QuoteVideoWizard: React.FC = () => {
               ))}
             </div>
             <button 
-              style={{ ...styles.uploadBtn, marginTop: 12 }} 
+              style={{ ...styles.uploadBtn, marginTop: isMobile ? 6 : 12 }} 
               onClick={() => imageInputRef.current?.click()}
             >
               📁 Upload Custom Image
@@ -1364,7 +1399,7 @@ const QuoteVideoWizard: React.FC = () => {
               ))}
             </div>
             <button 
-              style={{ ...styles.uploadBtn, marginTop: 12 }} 
+              style={{ ...styles.uploadBtn, marginTop: isMobile ? 6 : 12 }} 
               onClick={() => videoInputRef.current?.click()}
             >
               📁 Upload Custom Video
@@ -1375,13 +1410,13 @@ const QuoteVideoWizard: React.FC = () => {
         {state.backgroundType === "gradient" && (
           <>
             <label style={styles.label}>Choose Gradient</label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: isMobile ? 4 : 10 }}>
               {BACKGROUND_GRADIENTS.map((grad) => (
                 <div
                   key={grad.value}
                   style={{
-                    height: 60,
-                    borderRadius: 8,
+                    height: isMobile ? 35 : 60,
+                    borderRadius: isMobile ? 3 : 8,
                     background: grad.value,
                     cursor: "pointer",
                     border: state.backgroundGradient === grad.value 
@@ -1421,7 +1456,7 @@ const QuoteVideoWizard: React.FC = () => {
         <div style={styles.cardTitle}>🎙️ Voiceover (Optional)</div>
 
         <div style={styles.toggleRow}>
-          <span style={{ color: colors.textPrimary }}>Enable AI Voiceover</span>
+          <span style={{ color: colors.textPrimary, fontSize: isMobile ? 11 : 14 }}>Enable AI Voiceover</span>
           <div
             style={{
               ...styles.toggle,
@@ -1472,7 +1507,7 @@ const QuoteVideoWizard: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: isMobile ? 8 : 16 }}>
               <label style={styles.label}>
                 <span>Speed</span>
                 <span style={styles.labelValue}>{state.speed.toFixed(1)}x</span>
@@ -1510,7 +1545,7 @@ const QuoteVideoWizard: React.FC = () => {
 
             {state.voiceoverGenerated && state.voiceoverUrl && (
               <div style={styles.successBadge}>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#8B5CF6" }}>
+                <span style={{ fontSize: isMobile ? 10 : 13, fontWeight: 500, color: "#8B5CF6" }}>
                   ✓ Voiceover Ready
                 </span>
                 <button style={styles.previewBtn} onClick={handlePreviewVoiceover}>
@@ -1538,7 +1573,7 @@ const QuoteVideoWizard: React.FC = () => {
         </div>
 
         {state.backgroundMusicPath && (
-          <div style={{ marginTop: 16 }}>
+          <div style={{ marginTop: isMobile ? 8 : 16 }}>
             <label style={styles.label}>Volume: {Math.round(state.musicVolume * 100)}%</label>
             <input
               type="range"
@@ -1568,7 +1603,7 @@ const QuoteVideoWizard: React.FC = () => {
       
       <header style={styles.header}>
         <div style={styles.logo} onClick={() => navigate(-1)}>
-          <span style={{ fontSize: 20 }}>←</span>
+          <span style={{ fontSize: isMobile ? 16 : 20 }}>←</span>
           <span style={{ color: "#8B5CF6" }}>Quote</span> Video
         </div>
 
@@ -1579,7 +1614,7 @@ const QuoteVideoWizard: React.FC = () => {
               style={{ ...styles.stepPill, ...(currentStep === step.id ? styles.stepPillActive : {}) }}
               onClick={() => setCurrentStep(step.id)}
             >
-              {step.icon} {step.label}
+              {step.icon} {!isMobile && step.label}
             </button>
           ))}
         </div>

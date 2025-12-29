@@ -60,12 +60,14 @@ export interface TextLayer extends LayerBase {
   shadowBlur?: number;
   highlightWords?: string[];
   highlightColor?: string;
+  textBend?: number;
 }
 
 export interface ImageLayer extends LayerBase {
   type: "image";
   src: string;
   isBackground?: boolean;
+  gradient?: string;
   objectFit?: "cover" | "contain" | "fill";
   filter?: string;
   crop?: CropData;
@@ -1459,7 +1461,6 @@ const ChatBubbleComponent: React.FC<{
     );
     const charsToShow = Math.floor(message.length * typingProgress);
     const visibleText = message.slice(0, charsToShow);
-    const isTyping = typingProgress < 1;
 
     const bubbleColor = layer.isSender ? "#0EA5E9" : "#E5E5EA";
     const textColor = layer.isSender ? "#fff" : "#000";
@@ -1469,17 +1470,17 @@ const ChatBubbleComponent: React.FC<{
       <div
         style={{
           position: "absolute",
-          left: `${layer.position.x}%`,
+          left: layer.isSender ? 'auto' : `${layer.position.x}%`,
+          right: layer.isSender ? `${100 - layer.position.x}%` : 'auto',
           top: `${layer.position.y}%`,
-          width: `${layer.size.width}%`, 
-          minHeight: `${layer.size.height}%`, 
-          transform: `translate(-50%, -50%) rotate(${rotation}deg) ${entrance.transform}`,
+          transform: entrance.transform,
           display: "flex",
           flexDirection: layer.isSender ? "row-reverse" : "row",
           alignItems: "flex-end",
           gap: 18,
-          opacity: layer.opacity * entrance.opacity,
-          padding: "0",
+          opacity: entrance.opacity,
+          width: "max-content",
+          maxWidth: "80%",
         }}
       >
         <div
@@ -1488,10 +1489,8 @@ const ChatBubbleComponent: React.FC<{
               height: AVATAR_SIZE,
               minWidth: AVATAR_SIZE,
               minHeight: AVATAR_SIZE,
-              aspectRatio: "1 / 1",
+              flexShrink: 0,
               borderRadius: "50%",
-              flex: "0 0 auto", 
-              
               overflow: "hidden",
               border: `4px solid ${avatarColor}`,
               backgroundColor: "#fff",
@@ -1502,7 +1501,7 @@ const ChatBubbleComponent: React.FC<{
             <img
               src={layer.avatarUrl}
               alt={layer.senderName || "Avatar"}
-              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+              style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
             />
           ) : (
             <div
@@ -1510,6 +1509,7 @@ const ChatBubbleComponent: React.FC<{
                 width: "100%",
                 height: "100%",
                 background: avatarColor,
+                borderRadius: "50%",
               }}
             />
           )}
@@ -1517,8 +1517,8 @@ const ChatBubbleComponent: React.FC<{
 
         <div
           style={{
-            width: "fit-content",
-            maxWidth: "80%",
+            minWidth: 200,
+            maxWidth: 450,
             backgroundColor: bubbleColor,
             color: textColor,
             borderRadius: 28,
@@ -1534,53 +1534,7 @@ const ChatBubbleComponent: React.FC<{
               wordBreak: "break-word",
           }}
         >
-          {layer.isTyping ? (
-            <div
-              style={{
-                display: "flex",
-                gap: "5px",
-                padding: "10px 0",
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-            >
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: "32px",
-                    height: "32px",
-                    borderRadius: "50%",
-                    backgroundColor: textColor,
-                    animation: `typingBounce 1.4s infinite ease-in-out both`,
-                    animationDelay: `${i * 0.16}s`,
-                  }}
-                />
-              ))}
-              <style>{`
-                @keyframes typingBounce { 
-                  0%, 80%, 100% { transform: scale(0.6); opacity: 0.6; } 
-                  40% { transform: scale(1); opacity: 1; } 
-                }
-              `}</style>
-            </div>
-          ) : (
-            <>
-              <span>{visibleText}</span>
-              {isTyping && (
-                <span
-                  style={{
-                    display: "inline-block",
-                    width: 12,
-                    marginLeft: 4,
-                    borderBottom: `3px solid ${textColor}`,
-                    animation: "blink 1s step-end infinite",
-                    transform: "translateY(-2px)",
-                  }}
-                />
-              )}
-            </>
-          )}
+          <span>{visibleText}</span>
           <div
             style={{
               position: "absolute",
@@ -1695,6 +1649,74 @@ const ChatBubbleComponent: React.FC<{
 // ============================================================================
 // OTHER LAYERS (Standard)
 // ============================================================================
+
+
+// ========== CURVED TEXT COMPONENT ==========
+const CurvedText: React.FC<{
+  text: string;
+  bend: number;
+  fontSize: number;
+  fontFamily: string;
+  fontWeight: string;
+  fontColor: string;
+  letterSpacing?: number;
+  textShadow?: string;
+  width: number;
+  height: number;
+}> = ({ text, bend, fontSize, fontFamily, fontWeight, fontColor, letterSpacing, textShadow, width, height }) => {
+  const pathId = `curve-${Math.random().toString(36).substr(2, 9)}`;
+  const curveAmount = bend / 100;
+  
+  const svgWidth = width;
+  const svgHeight = height * 1.5;
+  const centerX = svgWidth / 2;
+  const baseY = svgHeight / 2;
+  const curveOffset = Math.abs(curveAmount) * height * 0.6;
+  
+  let pathD: string;
+  if (curveAmount > 0) {
+    // Arch up (smile)
+    pathD = `M 0,${baseY + curveOffset} Q ${centerX},${baseY - curveOffset} ${svgWidth},${baseY + curveOffset}`;
+  } else if (curveAmount < 0) {
+    // Arch down (frown)
+    pathD = `M 0,${baseY - curveOffset} Q ${centerX},${baseY + curveOffset} ${svgWidth},${baseY - curveOffset}`;
+  } else {
+    pathD = `M 0,${baseY} L ${svgWidth},${baseY}`;
+  }
+
+  return (
+    <svg
+      width="100%"
+      height="100%"
+      viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+      style={{ overflow: 'visible', position: 'absolute', inset: 0 }}
+      preserveAspectRatio="xMidYMid meet"
+    >
+      <defs>
+        <path id={pathId} d={pathD} fill="none" />
+      </defs>
+      <text
+        fill={fontColor}
+        fontSize={fontSize}
+        fontFamily={fontFamily}
+        fontWeight={fontWeight}
+        letterSpacing={letterSpacing || 0}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{ 
+          filter: textShadow && textShadow !== 'none' 
+            ? `drop-shadow(${textShadow})` 
+            : undefined 
+        }}
+      >
+        <textPath href={`#${pathId}`} startOffset="50%">
+          {text}
+        </textPath>
+      </text>
+    </svg>
+  );
+};
+
 
 const TextLayerComponent: React.FC<{
   layer: TextLayer;
@@ -1926,6 +1948,10 @@ const TextLayerComponent: React.FC<{
   const highlightColor = layer.highlightColor || "rgba(255, 215, 0, 0.4)";
   const hasHighlights = layer.highlightWords && layer.highlightWords.length > 0;
 
+  // Calculate actual dimensions for curved text
+  const containerWidth = (layer.size.width / 100) * 1080; 
+  const containerHeight = (layer.size.height / 100) * 1920; 
+
   return (
     <div
       style={{
@@ -1935,22 +1961,39 @@ const TextLayerComponent: React.FC<{
         opacity: layer.opacity * entrance.opacity,
       }}
     >
-      {hasHighlights
-        ? words.map((word, i) => (
-            <React.Fragment key={i}>
-              <span
-                style={{
-                  backgroundColor: shouldHighlight(word) ? highlightColor : "transparent",
-                  padding: shouldHighlight(word) ? "2px 4px" : "0",
-                  borderRadius: shouldHighlight(word) ? "3px" : "0",
-                }}
-              >
-                {word}
-              </span>
-              {i < words.length - 1 && " "}
-            </React.Fragment>
-          ))
-        : layer.content}
+      {layer.textBend && layer.textBend !== 0 ? (
+        <CurvedText
+          text={layer.content}
+          bend={layer.textBend}
+          fontSize={scaledFontSize}
+          fontFamily={layer.fontFamily}
+          fontWeight={layer.fontWeight}
+          fontColor={layer.fontColor}
+          letterSpacing={layer.letterSpacing}
+          textShadow={layer.textShadow 
+            ? `${layer.shadowX}px ${layer.shadowY}px ${layer.shadowBlur}px ${layer.shadowColor}` 
+            : undefined}
+          width={containerWidth}
+          height={containerHeight}
+        />
+      ) : hasHighlights ? (
+        words.map((word, i) => (
+          <React.Fragment key={i}>
+            <span
+              style={{
+                backgroundColor: shouldHighlight(word) ? highlightColor : "transparent",
+                padding: shouldHighlight(word) ? "2px 4px" : "0",
+                borderRadius: shouldHighlight(word) ? "3px" : "0",
+              }}
+            >
+              {word}
+            </span>
+            {i < words.length - 1 && " "}
+          </React.Fragment>
+        ))
+      ) : (
+        layer.content
+      )}
     </div>
   );
 };
@@ -1976,6 +2019,18 @@ const ImageLayerComponent: React.FC<{
     const bgOpacity = interpolate(relativeFrame, [0, 60], [0, 1], {
       extrapolateRight: "clamp",
     });
+
+
+      if (layer.gradient) {
+    return (
+      <AbsoluteFill style={{ 
+        opacity: bgOpacity * layer.opacity,
+        background: layer.gradient,
+        filter: layer.filter,
+      }} />
+    );
+  }
+
     return (
       <AbsoluteFill style={{ opacity: bgOpacity * layer.opacity }}>
         <Img
@@ -2791,6 +2846,47 @@ export const DynamicLayerComposition: React.FC<DynamicCompositionProps> = ({
 
           return null;
         })}
+
+      {/* Fake Chat Conversation Container */}
+      {/* {activeChatStyle === "fakechatconversation" && (
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: "25%",
+            display: "flex",
+            flexDirection: "column-reverse",
+            justifyContent: "flex-end",
+            gap: 12,
+            padding: "0 40px",
+            maxHeight: "70%",
+            overflowY: "auto",
+            zIndex: 10,
+          }}
+        >
+          {[...layers]
+            .filter((layer): layer is ChatBubbleLayer => 
+              isChatBubbleLayer(layer) && 
+              layer.chatStyle === "fakechatconversation" &&
+              layer.visible &&
+              frame >= layer.startFrame &&
+              frame <= layer.endFrame
+            )
+            .reverse()
+            .map((layer) => {
+              const relativeFrame = Math.max(0, frame - layer.startFrame);
+              return (
+                <ChatBubbleComponent
+                  key={layer.id}
+                  layer={layer}
+                  relativeFrame={relativeFrame}
+                  fps={fps}
+                />
+              );
+            })}
+        </div>
+      )} */}
 
       {/* Chat Interface Overlay */}
       {(templateId === 9 || activeChatStyle) &&
