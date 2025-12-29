@@ -44,11 +44,12 @@ const ViralMotionLanding: React.FC = () => {
 
   // Sample video URLs for the preview carousel
   const previewVideos = [
-    "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794242/QuoteSpotlight_jn0iya.mp4", // Quote Spotlight
-    "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760964357/splitscreenVideo-1760963733064_dkczll.mp4", // Split Screen
-    "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794240/KenBurnsCarousel_jpnilj.mp4", // Ken Burns Carousel
+    "https://res.cloudinary.com/dfr01aiia/video/upload/v1766929072/quotecomp2_zry4gr.mp4", // Quote Spotlight
+    "https://res.cloudinary.com/dfr01aiia/video/upload/v1766935375/SplitScreen_uuc2jn.mp4", // Split Screen
+    "https://res.cloudinary.com/dfr01aiia/video/upload/v1766933218/quote-video_2_zn4f86.mp4",
+    "https://res.cloudinary.com/dfr01aiia/video/upload/v1766935712/KenBurnsCarousel_adaztm.mp4", // Ken Burns Carousel
     "https://res.cloudinary.com/dcu9xuof0/video/upload/v1764649309/Screen_Recording_2025-12-02_062120_r0gyir.mp4", // Photo Collage
-    "https://res.cloudinary.com/dnxc1lw18/video/upload/v1760794240/FakeTextConversation_og7tke.mp4", // Fake Text Conversation
+    "https://res.cloudinary.com/dfr01aiia/video/upload/v1766937210/ChatVideo_dyhan6.mp4", // Fake Text Conversation
   ];
 
   // Handle video end - advance to next video
